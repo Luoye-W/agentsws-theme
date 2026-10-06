@@ -1,0 +1,70 @@
+{% doc %}
+  @description Video frame with a fixed aspect ratio. A Shopify-hosted video plays with native controls (optionally muted autoplay + loop, paused off screen and for reduced motion). A YouTube or Vimeo link shows a poster with a play button and loads the player only when clicked. Shows a placeholder when neither is set. Needs assets/c-video-media.js (loaded here).
+  Use when: the video theme block, timeline items, or any block that shows one video.
+
+  @param {object} [video] - Shopify-hosted video (video setting)
+  @param {object} [video_url] - YouTube / Vimeo link (video_url setting)
+  @param {object} [poster] - Cover image for external videos (image_picker); without one a plain panel with the description shows (nothing loads from YouTube / Vimeo before the click)
+  @param {string} [description] - What the video shows; names the play button and the player for screen readers
+  @param {boolean} [autoplay] - Hosted video only: start muted when on screen
+  @param {boolean} [loop] - Hosted video only: loop playback
+  @param {string} [ratio] - CSS aspect ratio such as '16 / 9' (default '16 / 9')
+  @param {string} [sizes] - Poster sizes attribute, default '(min-width: 990px) 50vw, 100vw'
+
+  @example
+  {% render 'video-media', video: block.settings.video, video_url: block.settings.video_url, poster: block.settings.poster, description: block.settings.description, ratio: '16 / 9' %}
+{% enddoc %}
+{%- liquid
+  assign frame_ratio = ratio | default: '16 / 9'
+  assign poster_sizes = sizes | default: '(min-width: 990px) 50vw, 100vw'
+  assign label = description | default: video.alt | default: ''
+  if label == blank
+    assign label = 'blocks.video.default_label' | t
+  endif
+  assign label_attr = label | escape
+  assign poster_alt = ''
+-%}
+<div class="relative w-full overflow-hidden rounded-media bg-fg/5 aspect-(--video-ratio)" style="--video-ratio: {{ frame_ratio }};">
+  {%- if video != blank -%}
+    <aw-video-media class="block size-full" {% if autoplay %}data-autoplay{% endif %}>
+      {%- if autoplay -%}
+        {{ video | video_tag: autoplay: true, muted: true, loop: loop, playsinline: true, controls: true, preload: 'metadata', image_size: '1600x', class: 'size-full object-cover' }}
+      {%- else -%}
+        {{ video | video_tag: controls: true, playsinline: true, loop: loop, preload: 'none', image_size: '1600x', class: 'size-full object-cover' }}
+      {%- endif -%}
+    </aw-video-media>
+    <script src="{{ 'c-video-media.js' | asset_url }}" type="module"></script>
+  {%- elsif video_url != blank -%}
+    {%- liquid
+      if video_url.type == 'youtube'
+        assign embed_src = 'https://www.youtube-nocookie.com/embed/' | append: video_url.id | append: '?autoplay=1&rel=0&playsinline=1'
+      else
+        assign embed_src = 'https://player.vimeo.com/video/' | append: video_url.id | append: '?autoplay=1&dnt=1'
+      endif
+    -%}
+    <aw-video-media class="block size-full">
+      <button type="button" class="group relative block size-full cursor-pointer" data-ref="play" aria-label="{{ 'blocks.video.play' | t: title: label_attr }}">
+        {%- if poster != blank -%}
+          {{ poster | image_url: width: 1600 | image_tag: widths: '400, 800, 1200, 1600', sizes: poster_sizes, loading: 'lazy', class: 'size-full object-cover', alt: poster_alt }}
+        {%- else -%}
+          <span class="flex size-full items-end bg-fg/10 p-4 text-start type-sm font-semibold">{{ label_attr }}</span>
+        {%- endif -%}
+        <span class="absolute inset-0 m-auto flex size-16 items-center justify-center rounded-full bg-bg text-fg shadow-md transition group-hover:scale-105" aria-hidden="true">
+          {%- render 'icon', name: 'play', class: 'size-7' -%}
+        </span>
+      </button>
+      <template data-ref="content">
+        <iframe
+          src="{{ embed_src }}"
+          title="{{ label_attr }}"
+          class="size-full"
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+          allowfullscreen
+        ></iframe>
+      </template>
+    </aw-video-media>
+    <script src="{{ 'c-video-media.js' | asset_url }}" type="module"></script>
+  {%- else -%}
+    {{ 'lifestyle-1' | placeholder_svg_tag: 'size-full bg-placeholder' }}
+  {%- endif -%}
+</div>

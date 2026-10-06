@@ -1,0 +1,175 @@
+{% comment %}
+  @description "Recently viewed" row: products this shopper opened on this device, newest first, without the product currently shown. History stays in the shopper's browser (up to 12 products); the section is hidden until there is something to show. Cards load after the page, near the viewport.
+  Use when: product pages (below recommendations), cart page, search page, 404 page — anywhere a "pick up where you left off" row helps.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+
+  case s.columns_desktop
+    when 2
+      assign desktop_cols = 'md:grid-cols-2'
+    when 3
+      assign desktop_cols = 'md:grid-cols-3'
+    when 5
+      assign desktop_cols = 'md:grid-cols-3 lg:grid-cols-5'
+    when 6
+      assign desktop_cols = 'md:grid-cols-3 lg:grid-cols-6'
+    else
+      assign desktop_cols = 'md:grid-cols-3 lg:grid-cols-4'
+  endcase
+
+  if s.mobile_layout == 'slider'
+    assign list_class = 'flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] -mx-(--s-gutter) px-(--s-gutter) scroll-px-(--s-gutter) md:mx-0 md:grid md:overflow-visible md:px-0'
+    assign item_class = 'w-[72%] shrink-0 snap-start md:w-auto'
+  else
+    assign list_class = 'grid grid-cols-2'
+    assign item_class = ''
+  endif
+
+  assign fragment_url = routes.root_url | append: '/products/[handle]?section_id=product-card-fragment' | replace: '//', '/'
+-%}
+<aw-recently-viewed
+  class="block surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+  data-url="{{ fragment_url }}"
+  data-limit="{{ s.products_to_show }}"
+  data-item-class="{{ item_class }}"
+  {% if product %}
+    data-exclude="{{ product.handle }}"
+  {% endif %}
+  {% if s.card_quick_add %}
+    data-quick-add
+  {% endif %}
+  {% if s.card_show_highlights %}
+    data-highlights
+  {% endif %}
+  {% if s.card_rating_chip %}
+    data-rating-chip
+  {% endif %}
+  {% unless request.design_mode %}
+    hidden
+  {% endunless %}
+>
+  <div class="page-width flex flex-col gap-8">
+    {%- if s.heading != blank -%}
+      <h2 class="type-h3">{{ s.heading }}</h2>
+    {%- endif -%}
+    <ul class="{{ list_class }} {{ desktop_cols }} grid-gap" role="list" data-ref="list"></ul>
+    {%- if request.design_mode -%}
+      <p class="type-sm text-muted">{{ 'sections.recently_viewed.editor_hint' | t }}</p>
+    {%- endif -%}
+  </div>
+</aw-recently-viewed>
+<script src="{{ 'c-recently-viewed.js' | asset_url }}" type="module"></script>
+{%- if s.card_quick_add -%}
+  <script src="{{ 'c-quick-add.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.recently_viewed.name",
+  "class": "section-recently-viewed",
+  "settings": [
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:sections.featured_collection.settings.heading.label",
+      "default": "Recently viewed"
+    },
+    {
+      "type": "range",
+      "id": "products_to_show",
+      "label": "t:sections.featured_collection.settings.products_to_show.label",
+      "min": 2,
+      "max": 12,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "label": "t:shared.columns_desktop",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "select",
+      "id": "mobile_layout",
+      "label": "t:sections.featured_collection.settings.mobile_layout.label",
+      "options": [
+        {
+          "value": "slider",
+          "label": "t:sections.featured_collection.settings.mobile_layout.options.slider"
+        },
+        {
+          "value": "grid",
+          "label": "t:sections.featured_collection.settings.mobile_layout.options.grid"
+        }
+      ],
+      "default": "slider"
+    },
+    {
+      "type": "checkbox",
+      "id": "card_quick_add",
+      "label": "t:shared.card_quick_add.label",
+      "info": "t:shared.card_quick_add.info",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "card_show_highlights",
+      "label": "t:shared.card_show_highlights.label",
+      "info": "t:shared.card_show_highlights.info",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "card_rating_chip",
+      "label": "t:shared.card_rating_chip.label",
+      "info": "t:shared.card_rating_chip.info",
+      "default": false
+    },
+    {
+      "type": "paragraph",
+      "content": "t:sections.recently_viewed.settings.info"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.recently_viewed.name"
+    }
+  ]
+}
+{% endschema %}

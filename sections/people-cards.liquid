@@ -1,0 +1,541 @@
+{% comment %}
+  @description Portrait cards for people or portfolio pieces (designers, team members, athletes, case studies): image, name and role. "Overlay" cards put the name on a frosted panel over the image with a round "+" button; "Below" cards show name, role, a short bio excerpt and a "Read more" link under the image. The button opens a side panel with the full profile: image, role, bio, optional content of a store page and an optional link — or, with "Card button opens: Link", goes straight to the person's link (e.g. their profile page). Grid, swipe row with previous / next buttons, or "staggered": two columns with the left one set lower. The heading group sits above the cards or beside them (sticky on desktop), optional "View all" button.
+  Use when: "Meet our designers", team / about pages, ambassadors, portfolio or case-study cards that need more text than fits on a card.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign heading_id = 'PeopleHeading-' | append: section.id
+
+  case s.columns
+    when 2
+      assign grid_cols = 'md:grid-cols-2'
+    when 3
+      assign grid_cols = 'md:grid-cols-3'
+    when 5
+      assign grid_cols = 'md:grid-cols-3 lg:grid-cols-5'
+    else
+      assign grid_cols = 'md:grid-cols-3 lg:grid-cols-4'
+  endcase
+
+  if s.columns_mobile == '2'
+    assign mobile_cols = 'grid-cols-2'
+    assign slide_width = '46%'
+  else
+    assign mobile_cols = 'grid-cols-1'
+    assign slide_width = '74%'
+  endif
+
+  assign scroll_classes = 'snap-x snap-mandatory overflow-x-auto [scrollbar-width:none]'
+  if s.mobile_layout == 'slider' and s.layout == 'slider'
+    assign list_class = 'flex gap-4 md:gap-5 -mx-(--s-gutter) px-(--s-gutter) scroll-px-(--s-gutter) md:mx-0 md:px-0 md:scroll-px-0 ' | append: scroll_classes
+  elsif s.mobile_layout == 'slider'
+    assign list_class = 'flex gap-4 -mx-(--s-gutter) px-(--s-gutter) scroll-px-(--s-gutter) md:mx-0 md:grid md:gap-5 md:overflow-visible md:px-0 ' | append: scroll_classes | append: ' ' | append: grid_cols
+  elsif s.layout == 'slider'
+    assign list_class = 'grid gap-4 md:flex md:gap-5 md:snap-x md:snap-mandatory md:overflow-x-auto md:[scrollbar-width:none] ' | append: mobile_cols
+  else
+    assign list_class = 'grid gap-4 md:gap-5 ' | append: mobile_cols | append: ' ' | append: grid_cols
+  endif
+
+  case s.image_ratio
+    when 'square'
+      assign ratio = '1'
+    when 'landscape'
+      assign ratio = '1.333'
+    else
+      assign ratio = '0.75'
+  endcase
+
+  assign read_more_label = 'sections.people_cards.read_more' | t
+  assign has_view_all = false
+  if s.view_all_label != blank and s.view_all_link != blank
+    assign has_view_all = true
+  endif
+
+  assign is_stagger = false
+  assign mobile_mode = s.mobile_layout
+  if s.layout == 'stagger'
+    assign is_stagger = true
+    assign mobile_mode = 'stack'
+  endif
+  assign is_side = false
+  if is_stagger
+    assign side_grid_class = 'lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]'
+  else
+    assign side_grid_class = 'lg:grid-cols-[minmax(0,1fr)_minmax(0,3fr)]'
+  endif
+  if s.heading_position == 'side'
+    assign is_side = true
+  endif
+
+  assign items_all = ''
+  assign items_a = ''
+  assign items_b = ''
+-%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1)); --person-ratio: {{ ratio }}; --per-view: {{ s.columns }}; --slide-w: {{ slide_width }};"
+  data-layout="{{ s.layout }}"
+  data-mobile="{{ mobile_mode }}"
+  data-card="{{ s.card_style }}"
+>
+  <div class="page-width flex flex-col gap-8 md:gap-10{% if is_side %} lg:grid lg:items-start lg:gap-16 {{ side_grid_class }}{% endif %}">
+    {%- if is_side -%}
+      <div class="flex flex-col items-start gap-6 lg:sticky lg:top-[calc(var(--header-h,0px)+2rem)]">
+        {%- render 'section-intro', eyebrow: s.eyebrow, heading: s.heading, highlight: s.heading_highlight, text: s.text, align: 'start', id: heading_id -%}
+        {%- if has_view_all -%}
+          <a href="{{ s.view_all_link }}" class="btn btn-secondary">{{ s.view_all_label | escape }}</a>
+        {%- endif -%}
+      </div>
+    {%- else -%}
+      {%- render 'section-intro', eyebrow: s.eyebrow, heading: s.heading, highlight: s.heading_highlight, text: s.text, align: s.heading_alignment, id: heading_id -%}
+    {%- endif -%}
+
+    {%- if section.blocks.size > 0 -%}
+          {%- for person in section.blocks -%}
+            {%- liquid
+              assign p = person.settings
+              assign drawer_id = 'Person-' | append: section.id | append: '-' | append: person.id
+              assign name = p.name | escape
+              assign role = p.role | escape
+              assign image_alt = p.image.alt | default: p.name | escape
+              assign bio_excerpt = p.bio | strip_html | strip | truncatewords: 28
+              assign has_more = false
+              if p.bio != blank or p.page != blank or p.link != blank
+                assign has_more = true
+              endif
+              assign more_label = 'sections.people_cards.more_about' | t: name: p.name
+              if p.name == blank
+                assign more_label = 'sections.people_cards.read_more' | t
+              endif
+              assign as_link = false
+              if s.card_action == 'link' and p.link != blank
+                assign as_link = true
+              endif
+            -%}
+            {%- capture item_html -%}
+            <li
+              style="order: {{ forloop.index }};"
+              class="shrink-0 snap-start max-md:in-data-[mobile=slider]:w-(--slide-w) md:in-data-[layout=slider]:w-[calc((100%-1.25rem*(min(var(--per-view),3)-1))/min(var(--per-view),3))] lg:in-data-[layout=slider]:w-[calc((100%-1.25rem*(var(--per-view)-1))/var(--per-view))]"
+              {{ person.shopify_attributes }}
+            >
+              {%- if s.card_style == 'overlay' -%}
+                <article class="group relative isolate flex aspect-(--person-ratio) flex-col justify-end overflow-hidden rounded-media bg-placeholder">
+                  {%- if p.image != blank -%}
+                    {{ p.image | image_url: width: 1000 | image_tag: widths: '300, 450, 600, 800, 1000', sizes: '(min-width: 990px) 25vw, (min-width: 750px) 33vw, 74vw', loading: 'lazy', alt: image_alt, class: 'absolute inset-0 -z-10 size-full object-cover transition duration-500 group-hover:scale-[1.03] motion-reduce:transition-none' }}
+                  {%- else -%}
+                    {{ 'image' | placeholder_svg_tag: 'absolute inset-0 -z-10 size-full' }}
+                  {%- endif -%}
+                  <div class="flex items-center justify-between gap-3 bg-bg/60 p-4 backdrop-blur-md md:p-6">
+                    <div class="flex min-w-0 flex-col gap-1">
+                      {%- if name != blank -%}<h3 class="type-h4">{{ name }}</h3>{%- endif -%}
+                      {%- if s.show_role and role != blank -%}<p class="type-sm text-muted">{{ role }}</p>{%- endif -%}
+                    </div>
+                    {%- if as_link -%}
+                      <a
+                        href="{{ p.link }}"
+                        class="flex size-10 shrink-0 items-center justify-center rounded-full bg-fg text-bg transition after:absolute after:inset-0 after:rounded-media focus-visible:outline-2 focus-visible:outline-offset-2"
+                        aria-label="{{ p.link_label | default: more_label | escape }}"
+                      >
+                        {%- render 'icon', name: 'arrow-right', class: 'size-5 transition-transform duration-300 group-hover:translate-x-0.5 motion-reduce:transition-none rtl:-scale-x-100' -%}
+                      </a>
+                    {%- elsif has_more -%}
+                      <button
+                        type="button"
+                        class="flex size-10 shrink-0 items-center justify-center rounded-full bg-fg text-bg transition after:absolute after:inset-0 after:rounded-media focus-visible:outline-2 focus-visible:outline-offset-2"
+                        data-drawer-open="{{ drawer_id }}"
+                        aria-controls="{{ drawer_id }}"
+                        aria-expanded="false"
+                        aria-haspopup="dialog"
+                        aria-label="{{ more_label | escape }}"
+                      >
+                        {%- render 'icon', name: 'plus', class: 'size-5 transition-transform duration-300 group-hover:rotate-90 motion-reduce:transition-none' -%}
+                      </button>
+                    {%- endif -%}
+                  </div>
+                </article>
+              {%- else -%}
+                <article class="group relative flex h-full flex-col gap-4">
+                  <div class="overflow-hidden rounded-media bg-placeholder aspect-(--person-ratio)">
+                    {%- if p.image != blank -%}
+                      {{ p.image | image_url: width: 1000 | image_tag: widths: '300, 450, 600, 800, 1000', sizes: '(min-width: 990px) 25vw, (min-width: 750px) 33vw, 74vw', loading: 'lazy', alt: image_alt, class: 'size-full object-cover transition duration-500 group-hover:scale-[1.03] motion-reduce:transition-none' }}
+                    {%- else -%}
+                      {{ 'image' | placeholder_svg_tag: 'size-full' }}
+                    {%- endif -%}
+                  </div>
+                  <div class="flex flex-1 flex-col gap-2">
+                    {%- if name != blank -%}<h3 class="type-h4">{{ name }}</h3>{%- endif -%}
+                    {%- if s.show_role and role != blank -%}<p class="type-sm text-muted">{{ role }}</p>{%- endif -%}
+                    {%- if bio_excerpt != blank -%}<p class="text-muted">{{ bio_excerpt }}</p>{%- endif -%}
+                    {%- if as_link -%}
+                      <a href="{{ p.link }}" class="mt-auto self-start pt-2 type-sm underline underline-offset-4 after:absolute after:inset-0 hover:no-underline">
+                        {{- p.link_label | default: read_more_label | escape -}}
+                        {%- if name != blank -%}<span class="sr-only">: {{ name }}</span>{%- endif -%}
+                      </a>
+                    {%- elsif has_more -%}
+                      <button
+                        type="button"
+                        class="relative mt-auto self-start pt-2 type-sm underline underline-offset-4 hover:no-underline"
+                        data-drawer-open="{{ drawer_id }}"
+                        aria-controls="{{ drawer_id }}"
+                        aria-expanded="false"
+                        aria-haspopup="dialog"
+                      >
+                        {{- 'sections.people_cards.read_more' | t -}}
+                        {%- if name != blank -%}<span class="sr-only">: {{ name }}</span>{%- endif -%}
+                      </button>
+                    {%- endif -%}
+                  </div>
+                </article>
+              {%- endif -%}
+
+              {%- if has_more and as_link == false -%}
+                <aw-drawer id="{{ drawer_id }}">
+                  <dialog
+                    data-ref="dialog"
+                    class="m-0 ms-auto h-dvh max-h-dvh w-full max-w-lg surface-{{ settings.drawer_color_scheme }} p-0 backdrop:bg-overlay"
+                    aria-labelledby="{{ drawer_id }}-title"
+                  >
+                    <div class="flex h-full flex-col">
+                      <div class="flex items-center justify-between gap-4 border-b border-border px-5 py-3">
+                        <h2 id="{{ drawer_id }}-title" class="type-h5">{{ name | default: more_label }}</h2>
+                        <button type="button" class="-me-2 flex size-11 items-center justify-center" data-drawer-close aria-label="{{ 'general.accessibility.close' | t }}">
+                          {%- render 'icon', name: 'close', class: 'size-6' -%}
+                        </button>
+                      </div>
+                      <div class="flex flex-1 flex-col gap-5 overflow-y-auto px-5 py-6">
+                        {%- if p.image != blank and s.drawer_image -%}
+                          <div class="overflow-hidden rounded-media bg-placeholder aspect-(--person-ratio) max-h-[50dvh]">
+                            {{ p.image | image_url: width: 1000 | image_tag: widths: '400, 600, 800, 1000', sizes: '(min-width: 750px) 512px, 100vw', loading: 'lazy', alt: '', class: 'size-full object-cover' }}
+                          </div>
+                        {%- endif -%}
+                        {%- if role != blank -%}<p class="type-eyebrow text-muted">{{ role }}</p>{%- endif -%}
+                        {%- if p.bio != blank -%}<div class="rte type-lg">{{ p.bio }}</div>{%- endif -%}
+                        {%- if p.page != blank -%}<div class="rte">{{ p.page.content }}</div>{%- endif -%}
+                        {%- if p.link != blank -%}
+                          <a href="{{ p.link }}" class="btn btn-secondary self-start">
+                            {{- p.link_label | default: more_label | escape -}}
+                          </a>
+                        {%- endif -%}
+                      </div>
+                    </div>
+                  </dialog>
+                </aw-drawer>
+              {%- endif -%}
+            </li>
+            {%- endcapture -%}
+            {%- liquid
+              if is_stagger
+                assign column = forloop.index0 | modulo: 2
+                if column == 0
+                  assign items_a = items_a | append: item_html
+                else
+                  assign items_b = items_b | append: item_html
+                endif
+              else
+                assign items_all = items_all | append: item_html
+              endif
+            -%}
+          {%- endfor -%}
+      {%- if is_stagger -%}
+        <div
+          class="grid gap-4 {{ mobile_cols }} md:grid-cols-2 md:gap-5"
+          {% if s.heading != blank %}
+            role="group" aria-labelledby="{{ heading_id }}"
+          {% endif %}
+        >
+          <ul class="contents md:flex md:flex-col md:gap-5 md:pt-[35%]" role="list">{{ items_a }}</ul>
+          <ul class="contents md:flex md:flex-col md:gap-5" role="list">{{ items_b }}</ul>
+        </div>
+      {%- else -%}
+        <aw-slider class="flex flex-col gap-4">
+          <ul
+            class="{{ list_class }}"
+            role="list"
+            data-ref="track"
+            {% if s.heading != blank %}
+              aria-labelledby="{{ heading_id }}"
+            {% endif %}
+          >
+            {{ items_all }}
+          </ul>
+          {%- if s.layout == 'slider' or s.mobile_layout == 'slider' -%}
+            {%- render 'slider-buttons', class: 'justify-end' -%}
+          {%- endif -%}
+        </aw-slider>
+      {%- endif -%}
+    {%- endif -%}
+
+    {%- if has_view_all and is_side == false -%}
+      <div class="flex justify-center">
+        <a href="{{ s.view_all_link }}" class="btn btn-secondary">{{ s.view_all_label | escape }}</a>
+      </div>
+    {%- endif -%}
+  </div>
+</div>
+<script src="{{ 'c-drawer.js' | asset_url }}" type="module"></script>
+{%- if s.layout == 'slider' or mobile_mode == 'slider' -%}
+  <script src="{{ 'c-slider.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.people_cards.name",
+  "tag": "section",
+  "class": "section-people-cards",
+  "disabled_on": {
+    "groups": ["header", "footer", "custom.overlay"]
+  },
+  "max_blocks": 16,
+  "blocks": [
+    {
+      "type": "person",
+      "name": "t:sections.people_cards.blocks.person.name",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "t:sections.people_cards.blocks.person.settings.image.label"
+        },
+        {
+          "type": "text",
+          "id": "name",
+          "label": "t:sections.people_cards.blocks.person.settings.name.label",
+          "default": "Name"
+        },
+        {
+          "type": "text",
+          "id": "role",
+          "label": "t:sections.people_cards.blocks.person.settings.role.label",
+          "info": "t:sections.people_cards.blocks.person.settings.role.info"
+        },
+        {
+          "type": "richtext",
+          "id": "bio",
+          "label": "t:sections.people_cards.blocks.person.settings.bio.label",
+          "info": "t:sections.people_cards.blocks.person.settings.bio.info"
+        },
+        {
+          "type": "page",
+          "id": "page",
+          "label": "t:sections.people_cards.blocks.person.settings.page.label",
+          "info": "t:sections.people_cards.blocks.person.settings.page.info"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "t:sections.people_cards.blocks.person.settings.link.label"
+        },
+        {
+          "type": "text",
+          "id": "link_label",
+          "label": "t:sections.people_cards.blocks.person.settings.link_label.label",
+          "visible_if": "{{ block.settings.link != blank }}"
+        }
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:shared.section_heading.eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:shared.section_heading.heading",
+      "default": "Meet the team"
+    },
+    {
+      "type": "select",
+      "id": "heading_highlight",
+      "label": "t:shared.heading_highlight.label",
+      "info": "t:shared.heading_highlight.info",
+      "options": [
+        { "value": "none", "label": "t:shared.heading_highlight.options.none" },
+        { "value": "color", "label": "t:shared.heading_highlight.options.color" },
+        { "value": "marker", "label": "t:shared.heading_highlight.options.marker" },
+        { "value": "underline", "label": "t:shared.heading_highlight.options.underline" },
+        { "value": "outline", "label": "t:shared.heading_highlight.options.outline" },
+        { "value": "circle", "label": "t:shared.heading_highlight.options.circle" },
+        { "value": "squiggle", "label": "t:shared.heading_highlight.options.squiggle" }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:shared.section_heading.description"
+    },
+    {
+      "type": "select",
+      "id": "heading_alignment",
+      "label": "t:shared.section_heading.alignment",
+      "options": [
+        { "value": "start", "label": "t:shared.align.options.start" },
+        { "value": "center", "label": "t:shared.align.options.center" }
+      ],
+      "default": "start"
+    },
+    {
+      "type": "select",
+      "id": "heading_position",
+      "label": "t:sections.people_cards.settings.heading_position.label",
+      "info": "t:sections.people_cards.settings.heading_position.info",
+      "options": [
+        { "value": "top", "label": "t:sections.people_cards.settings.heading_position.options.top" },
+        { "value": "side", "label": "t:sections.people_cards.settings.heading_position.options.side" }
+      ],
+      "default": "top"
+    },
+    {
+      "type": "text",
+      "id": "view_all_label",
+      "label": "t:sections.people_cards.settings.view_all_label.label"
+    },
+    {
+      "type": "url",
+      "id": "view_all_link",
+      "label": "t:sections.people_cards.settings.view_all_link.label",
+      "visible_if": "{{ section.settings.view_all_label != blank }}"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.people_cards.settings.cards_header"
+    },
+    {
+      "type": "select",
+      "id": "card_style",
+      "label": "t:sections.people_cards.settings.card_style.label",
+      "options": [
+        { "value": "overlay", "label": "t:sections.people_cards.settings.card_style.options.overlay" },
+        { "value": "below", "label": "t:sections.people_cards.settings.card_style.options.below" }
+      ],
+      "default": "overlay"
+    },
+    {
+      "type": "select",
+      "id": "image_ratio",
+      "label": "t:sections.multicolumn.settings.image_ratio.label",
+      "options": [
+        { "value": "portrait", "label": "t:shared.ratio.options.portrait" },
+        { "value": "square", "label": "t:shared.ratio.options.square" },
+        { "value": "landscape", "label": "t:shared.ratio.options.landscape" }
+      ],
+      "default": "portrait"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_role",
+      "label": "t:sections.people_cards.settings.show_role.label",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "card_action",
+      "label": "t:sections.people_cards.settings.card_action.label",
+      "info": "t:sections.people_cards.settings.card_action.info",
+      "options": [
+        { "value": "panel", "label": "t:sections.people_cards.settings.card_action.options.panel" },
+        { "value": "link", "label": "t:sections.people_cards.settings.card_action.options.link" }
+      ],
+      "default": "panel"
+    },
+    {
+      "type": "checkbox",
+      "id": "drawer_image",
+      "label": "t:sections.people_cards.settings.drawer_image.label",
+      "default": true,
+      "visible_if": "{{ section.settings.card_action == 'panel' }}"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.layout"
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "t:sections.collection_list.settings.layout.label",
+      "options": [
+        { "value": "grid", "label": "t:sections.testimonials.settings.layout.options.grid" },
+        { "value": "slider", "label": "t:sections.testimonials.settings.layout.options.slider" },
+        { "value": "stagger", "label": "t:sections.people_cards.settings.layout.options.stagger" }
+      ],
+      "info": "t:sections.people_cards.settings.layout.info",
+      "default": "grid"
+    },
+    {
+      "type": "range",
+      "id": "columns",
+      "label": "t:shared.columns_desktop",
+      "min": 2,
+      "max": 5,
+      "step": 1,
+      "default": 4,
+      "visible_if": "{{ section.settings.layout != 'stagger' }}"
+    },
+    {
+      "type": "select",
+      "id": "mobile_layout",
+      "label": "t:shared.mobile_layout.label",
+      "options": [
+        { "value": "slider", "label": "t:shared.mobile_layout.options.slider" },
+        { "value": "stack", "label": "t:shared.mobile_layout.options.stack" }
+      ],
+      "default": "slider",
+      "visible_if": "{{ section.settings.layout != 'stagger' }}"
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "label": "t:shared.columns_mobile.label",
+      "options": [
+        { "value": "1", "label": "t:shared.columns_mobile.options.one" },
+        { "value": "2", "label": "t:shared.columns_mobile.options.two" }
+      ],
+      "default": "1"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.people_cards.name",
+      "blocks": [
+        { "type": "person" },
+        { "type": "person" },
+        { "type": "person" },
+        { "type": "person" }
+      ]
+    }
+  ]
+}
+{% endschema %}

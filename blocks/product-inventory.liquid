@@ -1,0 +1,111 @@
+{% doc %}
+  @description Stock status of the selected variant, read from Shopify's real inventory: "In stock", "Only 3 left" with a small bar under the low-stock threshold, "Out of stock", "Available to order" when overselling is allowed, and optionally the next incoming stock date. Shows nothing for variants whose inventory Shopify does not track. Updates when the variant changes.
+  Use when: product info column, near the buy buttons ("show stock", "low stock message", "only X left").
+
+  @example
+  {% content_for 'block', type: 'product-inventory', id: 'inventory' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  assign product = closest.product
+  assign variant = product.selected_or_first_available_variant
+  assign quantity = variant.inventory_quantity | default: 0
+  assign tracked = false
+  if variant.inventory_management == 'shopify'
+    assign tracked = true
+  endif
+-%}
+<div class="flex flex-col gap-2 type-sm empty:hidden" data-swap="inventory-{{ block.id }}" {{ block.shopify_attributes }}>
+  {%- if product and tracked -%}
+    {%- if quantity > 0 -%}
+      {%- if s.low_stock_threshold > 0 and quantity <= s.low_stock_threshold -%}
+        <p class="flex items-center gap-2" role="status">
+          <span class="size-2 shrink-0 rounded-full bg-sale" aria-hidden="true"></span>
+          {{- 'products.inventory.low_stock' | t: count: quantity -}}
+        </p>
+        {%- if s.show_bar -%}
+          {%- assign fill = quantity | times: 100 | divided_by: s.low_stock_threshold -%}
+          <span class="block h-1 w-full max-w-60 overflow-hidden rounded-full bg-fg/10" aria-hidden="true">
+            <span class="block h-full w-(--fill) rounded-full bg-sale" style="--fill: {{ fill }}%;"></span>
+          </span>
+        {%- endif -%}
+      {%- else -%}
+        <p class="flex items-center gap-2" role="status">
+          <span class="size-2 shrink-0 rounded-full bg-success" aria-hidden="true"></span>
+          {%- if s.show_count == 'always' -%}
+            {{- 'products.inventory.in_stock_count' | t: count: quantity -}}
+          {%- else -%}
+            {{- 'products.inventory.in_stock' | t -}}
+          {%- endif -%}
+        </p>
+      {%- endif -%}
+    {%- elsif variant.available -%}
+      <p class="flex items-center gap-2" role="status">
+        <span class="size-2 shrink-0 rounded-full bg-success" aria-hidden="true"></span>
+        {{- 'products.inventory.backorder' | t -}}
+      </p>
+    {%- else -%}
+      <p class="flex items-center gap-2" role="status">
+        <span class="size-2 shrink-0 rounded-full bg-error" aria-hidden="true"></span>
+        {{- 'products.inventory.out_of_stock' | t -}}
+      </p>
+    {%- endif -%}
+    {%- if s.show_incoming and quantity <= 0 and variant.incoming and variant.next_incoming_date -%}
+      {%- assign incoming_date = variant.next_incoming_date | date: format: 'date' -%}
+      <p class="text-muted">{{ 'products.inventory.incoming' | t: date: incoming_date }}</p>
+    {%- endif -%}
+  {%- endif -%}
+</div>
+
+{% schema %}
+{
+  "name": "t:blocks.product_inventory.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:blocks.product_inventory.settings.info"
+    },
+    {
+      "type": "range",
+      "id": "low_stock_threshold",
+      "label": "t:blocks.product_inventory.settings.low_stock_threshold.label",
+      "info": "t:blocks.product_inventory.settings.low_stock_threshold.info",
+      "min": 0,
+      "max": 50,
+      "step": 1,
+      "default": 10
+    },
+    {
+      "type": "checkbox",
+      "id": "show_bar",
+      "label": "t:blocks.product_inventory.settings.show_bar.label",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "show_count",
+      "label": "t:blocks.product_inventory.settings.show_count.label",
+      "options": [
+        {
+          "value": "low",
+          "label": "t:blocks.product_inventory.settings.show_count.options.low"
+        },
+        {
+          "value": "always",
+          "label": "t:blocks.product_inventory.settings.show_count.options.always"
+        }
+      ],
+      "default": "low"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_incoming",
+      "label": "t:blocks.product_inventory.settings.show_incoming.label",
+      "info": "t:blocks.product_inventory.settings.show_incoming.info",
+      "default": true
+    }
+  ],
+  "presets": [{ "name": "t:blocks.product_inventory.name" }]
+}
+{% endschema %}

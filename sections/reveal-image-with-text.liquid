@@ -1,0 +1,296 @@
+{% comment %}
+  @description Scroll-driven reveal: a full-screen image opens from a small centred window to full bleed while the section is pinned, then the text blocks (heading, text, buttons) fade in over it. Pure CSS scroll-driven animations — no JavaScript. Browsers without support, and shoppers who prefer reduced motion, get a normal full-height image banner with the text shown at once.
+  Can make the header transparent when it is the first section on the page (the text moves below the header).
+  Use when: a statement moment between sections — launch story, brand manifesto, one big product image with a short message.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign desktop_image = s.image
+  assign mobile_image = s.image_mobile | default: s.image
+  assign image_alt = desktop_image.alt | escape
+
+  assign loading = 'lazy'
+  assign fetch_priority = 'auto'
+  if section.index <= 2
+    assign loading = 'eager'
+    assign fetch_priority = 'high'
+  endif
+
+  case s.content_position
+    when 'top_left'
+      assign position_class = 'items-start justify-start text-start'
+    when 'top_center'
+      assign position_class = 'items-start justify-center text-center'
+    when 'middle_left'
+      assign position_class = 'items-center justify-start text-start'
+    when 'bottom_left'
+      assign position_class = 'items-end justify-start text-start'
+    when 'bottom_center'
+      assign position_class = 'items-end justify-center text-center'
+    else
+      assign position_class = 'items-center justify-center text-center'
+  endcase
+
+  case s.content_align
+    when 'start'
+      assign content_align_class = 'items-start'
+    when 'end'
+      assign content_align_class = 'items-end'
+    else
+      assign content_align_class = 'items-center'
+  endcase
+
+  comment
+    With a transparent header on top (first section only) the text moves down by the header height.
+  endcomment
+  if s.transparent_header
+    assign content_padding_class = 'pt-[calc(3rem+var(--transparent-header-offset,0px))] pb-12 md:pt-[calc(5rem+var(--transparent-header-offset,0px))] md:pb-20'
+  else
+    assign content_padding_class = 'py-12 md:py-20'
+  endif
+-%}
+<div
+  class="reveal-image surface-{{ s.color_scheme }}"
+  style="--reveal-overlay: {{ s.overlay_opacity | divided_by: 100.0 }}; --reveal-start: {{ s.start_size }}%;"
+  {% if s.transparent_header %}
+    data-transparent-header
+  {% endif %}
+>
+  <div class="reveal-image__stage relative">
+    <div class="reveal-image__pin relative flex min-h-[80svh] overflow-hidden">
+      <div class="reveal-image__media absolute inset-0 bg-placeholder">
+        {%- if desktop_image != blank -%}
+          <picture>
+            {%- if s.image_mobile != blank -%}
+              <source
+                media="(max-width: 749px)"
+                srcset="{{ mobile_image | image_url: width: 750 }} 750w, {{ mobile_image | image_url: width: 1100 }} 1100w, {{ mobile_image | image_url: width: 1500 }} 1500w"
+                sizes="100vw"
+                width="{{ mobile_image.width }}"
+                height="{{ mobile_image.height }}"
+              >
+            {%- endif -%}
+            {{
+              desktop_image
+              | image_url: width: 3000
+              | image_tag:
+                widths: '750, 1100, 1500, 1800, 2400, 3000',
+                sizes: '100vw',
+                loading: loading,
+                fetchpriority: fetch_priority,
+                class: 'size-full object-cover',
+                alt: image_alt
+            }}
+          </picture>
+        {%- else -%}
+          {{ 'lifestyle-1' | placeholder_svg_tag: 'size-full object-cover opacity-60' }}
+        {%- endif -%}
+        <div class="absolute inset-0 bg-[rgb(0_0_0/var(--reveal-overlay))]" aria-hidden="true"></div>
+      </div>
+      <div class="reveal-image__content page-width relative flex w-full {{ content_padding_class }} {{ position_class }}">
+        <div
+          class="surface-{{ s.text_color_scheme }} flex max-w-2xl flex-col gap-5 bg-transparent {{ content_align_class }}"
+          data-heading-highlight="{{ s.heading_highlight }}"
+        >
+          {% content_for 'blocks' %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% stylesheet %}
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      /* The stage is two screens tall; its inner frame stays pinned for one screen of scrolling. */
+      .reveal-image__stage {
+        height: 200svh;
+        view-timeline-name: --reveal-image;
+      }
+      .reveal-image__pin {
+        position: sticky;
+        top: 0;
+        height: 100svh;
+        min-height: 0;
+      }
+      .reveal-image__media {
+        animation: reveal-image-open linear both;
+        animation-timeline: --reveal-image;
+        animation-range: contain 0% contain 55%;
+      }
+      .reveal-image__content {
+        animation: reveal-image-text linear both;
+        animation-timeline: --reveal-image;
+        animation-range: contain 45% contain 75%;
+      }
+    }
+  }
+  @keyframes reveal-image-open {
+    from {
+      clip-path: inset(calc((100% - var(--reveal-start)) / 2) round var(--s-radius-media, 0px));
+    }
+    to {
+      clip-path: inset(0 round 0);
+    }
+  }
+  @keyframes reveal-image-text {
+    from {
+      opacity: 0;
+      transform: translateY(2rem);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.reveal_image.name",
+  "tag": "section",
+  "class": "section-reveal-image",
+  "blocks": [
+    {
+      "type": "@theme"
+    },
+    {
+      "type": "@app"
+    }
+  ],
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:sections.hero.settings.image.label"
+    },
+    {
+      "type": "image_picker",
+      "id": "image_mobile",
+      "label": "t:sections.hero.settings.image_mobile.label",
+      "info": "t:sections.hero.settings.image_mobile.info"
+    },
+    {
+      "type": "range",
+      "id": "start_size",
+      "label": "t:sections.reveal_image.settings.start_size.label",
+      "info": "t:sections.reveal_image.settings.start_size.info",
+      "min": 20,
+      "max": 80,
+      "step": 5,
+      "unit": "%",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "overlay_opacity",
+      "label": "t:sections.hero.settings.overlay_opacity.label",
+      "min": 0,
+      "max": 90,
+      "step": 5,
+      "unit": "%",
+      "default": 40
+    },
+    {
+      "type": "checkbox",
+      "id": "transparent_header",
+      "label": "t:sections.hero.settings.transparent_header.label",
+      "info": "t:sections.hero.settings.transparent_header.info",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:sections.hero.settings.content_header"
+    },
+    {
+      "type": "select",
+      "id": "content_position",
+      "label": "t:sections.hero.settings.position.label",
+      "options": [
+        { "value": "top_left", "label": "t:sections.hero.settings.position.options.top_left" },
+        { "value": "top_center", "label": "t:sections.hero.settings.position.options.top_center" },
+        { "value": "middle_left", "label": "t:sections.hero.settings.position.options.middle_left" },
+        { "value": "middle_center", "label": "t:sections.hero.settings.position.options.middle_center" },
+        { "value": "bottom_left", "label": "t:sections.hero.settings.position.options.bottom_left" },
+        { "value": "bottom_center", "label": "t:sections.hero.settings.position.options.bottom_center" }
+      ],
+      "default": "middle_center"
+    },
+    {
+      "type": "select",
+      "id": "content_align",
+      "label": "t:sections.hero.settings.content_align.label",
+      "options": [
+        { "value": "start", "label": "t:shared.align.options.start" },
+        { "value": "center", "label": "t:shared.align.options.center" },
+        { "value": "end", "label": "t:shared.align.options.end" }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "select",
+      "id": "heading_highlight",
+      "label": "t:shared.heading_highlight.label",
+      "info": "t:shared.heading_highlight.info",
+      "options": [
+        { "value": "none", "label": "t:shared.heading_highlight.options.none" },
+        { "value": "color", "label": "t:shared.heading_highlight.options.color" },
+        { "value": "marker", "label": "t:shared.heading_highlight.options.marker" },
+        { "value": "underline", "label": "t:shared.heading_highlight.options.underline" },
+        { "value": "outline", "label": "t:shared.heading_highlight.options.outline" },
+        { "value": "circle", "label": "t:shared.heading_highlight.options.circle" },
+        { "value": "squiggle", "label": "t:shared.heading_highlight.options.squiggle" }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "color_scheme",
+      "id": "text_color_scheme",
+      "label": "t:sections.hero.settings.text_surface.label",
+      "info": "t:sections.hero.settings.text_surface.info",
+      "default": "scheme-3"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "info": "t:sections.reveal_image.settings.color_scheme.info",
+      "default": "scheme-1"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.reveal_image.name",
+      "blocks": [
+        {
+          "type": "heading",
+          "settings": {
+            "text": "Make a <em>big</em> statement",
+            "size": "display",
+            "tag": "h2",
+            "alignment": "center"
+          }
+        },
+        {
+          "type": "text",
+          "settings": {
+            "text": "<p>Scroll to reveal the image, then share one short message.</p>",
+            "size": "lg",
+            "alignment": "center"
+          }
+        },
+        {
+          "type": "button",
+          "settings": {
+            "label": "Discover more"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

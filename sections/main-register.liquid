@@ -1,0 +1,146 @@
+{% comment %}
+  @description Create-account page (classic accounts): first name, last name, email, password (with show / hide), optional extra fields you add as blocks (saved to the customer note), optional email-marketing checkbox, errors next to each field with the entered values kept.
+  Use when: templates/customers/register.json only. Add "Registration field" blocks to collect extra details.
+{% endcomment %}
+{%- assign s = section.settings -%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+>
+  <div class="page-width">
+    <div class="mx-auto flex w-full max-w-md flex-col gap-6">
+      <h1 class="type-h1 text-center">{{ 'customer.register.title' | t }}</h1>
+      {%- form 'create_customer', class: 'flex flex-col gap-4' -%}
+        {%- if form.errors -%}
+          {%- assign register_errors = form.errors | default_errors -%}
+          {% render 'form-alert', tone: 'error', message: register_errors, focus: true %}
+        {%- endif -%}
+        <div class="grid gap-4 md:grid-cols-2">
+          {%- assign first_name_label = 'customer.fields.first_name' | t -%}
+          {% render 'account-field',
+            name: 'customer[first_name]',
+            id: 'RegisterFirstName',
+            label: first_name_label,
+            value: form.first_name,
+            autocomplete: 'given-name'
+          %}
+          {%- assign last_name_label = 'customer.fields.last_name' | t -%}
+          {% render 'account-field',
+            name: 'customer[last_name]',
+            id: 'RegisterLastName',
+            label: last_name_label,
+            value: form.last_name,
+            autocomplete: 'family-name'
+          %}
+        </div>
+        {%- assign email_label = 'customer.fields.email' | t -%}
+        {%- assign email_error = form.errors.messages.email -%}
+        {% render 'account-field',
+          type: 'email',
+          name: 'customer[email]',
+          id: 'RegisterEmail',
+          label: email_label,
+          value: form.email,
+          autocomplete: 'email',
+          required: true,
+          error: email_error
+        %}
+        {%- assign password_label = 'customer.fields.password' | t -%}
+        {%- assign password_error = form.errors.messages.password -%}
+        {%- assign password_hint = 'customer.register.password_hint' | t -%}
+        {% render 'account-field',
+          type: 'password',
+          name: 'customer[password]',
+          id: 'RegisterPassword',
+          label: password_label,
+          autocomplete: 'new-password',
+          required: true,
+          error: password_error,
+          hint: password_hint
+        %}
+
+        {% content_for 'blocks' %}
+
+        {%- if s.show_marketing -%}
+          <label class="flex items-start gap-3 type-sm">
+            <input type="checkbox" name="customer[accepts_marketing]" value="true" class="mt-0.5 size-5 shrink-0 accent-primary">
+            <span>{{ 'customer.register.marketing' | t }}</span>
+          </label>
+        {%- endif -%}
+        {%- if s.consent_text != blank -%}
+          <div class="rte type-xs text-muted">{{ s.consent_text }}</div>
+        {%- endif -%}
+
+        <div class="mt-2 grid gap-3 md:grid-cols-2">
+          <button type="submit" class="btn btn-primary">{{ 'customer.register.submit' | t }}</button>
+          <a href="{{ routes.account_login_url }}" class="btn btn-secondary">{{ 'customer.register.login' | t }}</a>
+        </div>
+      {%- endform -%}
+      <a href="{{ routes.root_url }}" class="self-center type-sm underline">{{ 'customer.return_to_store' | t }}</a>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "t:sections.main_register.name",
+  "tag": "section",
+  "class": "section-main-register",
+  "enabled_on": {
+    "templates": ["customers/register"]
+  },
+  "blocks": [
+    {
+      "type": "_register-field"
+    }
+  ],
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:sections.main_register.settings.fields_info"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_marketing",
+      "label": "t:sections.main_register.settings.show_marketing.label",
+      "default": true
+    },
+    {
+      "type": "richtext",
+      "id": "consent_text",
+      "label": "t:sections.main_register.settings.consent_text.label",
+      "info": "t:sections.main_register.settings.consent_text.info"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 80
+    }
+  ]
+}
+{% endschema %}

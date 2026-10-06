@@ -1,0 +1,97 @@
+{% doc %}
+  @description Heading text with a semantic tag (H1–H6) and a size preset. Size and tag are independent so SEO structure never dictates looks.
+  Use when: titles and section headings. For paragraphs use the "text" block.
+
+  @example
+  {% content_for 'block', type: 'heading', id: 'title' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  assign tag = s.tag | default: 'h2'
+
+  case s.size
+    when 'display'
+      assign size_class = 'type-display'
+    when 'h1'
+      assign size_class = 'type-h1'
+    when 'h3'
+      assign size_class = 'type-h3'
+    when 'h4'
+      assign size_class = 'type-h4'
+    when 'h5'
+      assign size_class = 'type-h5'
+    when 'eyebrow'
+      assign size_class = 'type-eyebrow'
+    else
+      assign size_class = 'type-h2'
+  endcase
+
+  case s.alignment
+    when 'center'
+      assign align_class = 'text-center'
+    when 'right'
+      assign align_class = 'text-end'
+    else
+      assign align_class = 'text-start'
+  endcase
+-%}
+<{{ tag }} class="{{ size_class }} {{ align_class }} max-w-3xl" {{ block.shopify_attributes }}>
+  {{- s.text -}}
+</{{ tag }}>
+
+{% schema %}
+{
+  "name": "t:blocks.heading.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "inline_richtext",
+      "id": "text",
+      "label": "t:blocks.heading.settings.text.label",
+      "default": "Heading"
+    },
+    {
+      "type": "select",
+      "id": "size",
+      "label": "t:blocks.heading.settings.size.label",
+      "options": [
+        { "value": "display", "label": "t:blocks.heading.settings.size.options.display" },
+        { "value": "h1", "label": "t:blocks.heading.settings.size.options.h1" },
+        { "value": "h2", "label": "t:blocks.heading.settings.size.options.h2" },
+        { "value": "h3", "label": "t:blocks.heading.settings.size.options.h3" },
+        { "value": "h4", "label": "t:blocks.heading.settings.size.options.h4" },
+        { "value": "h5", "label": "t:blocks.heading.settings.size.options.h5" },
+        { "value": "eyebrow", "label": "t:blocks.heading.settings.size.options.eyebrow" }
+      ],
+      "default": "h2"
+    },
+    {
+      "type": "select",
+      "id": "tag",
+      "label": "t:blocks.heading.settings.tag.label",
+      "info": "t:blocks.heading.settings.tag.info",
+      "options": [
+        { "value": "h1", "label": "H1" },
+        { "value": "h2", "label": "H2" },
+        { "value": "h3", "label": "H3" },
+        { "value": "h4", "label": "H4" },
+        { "value": "h5", "label": "H5" },
+        { "value": "h6", "label": "H6" },
+        { "value": "p", "label": "t:blocks.heading.settings.tag.options.p" }
+      ],
+      "default": "h2"
+    },
+    {
+      "type": "text_alignment",
+      "id": "alignment",
+      "label": "t:shared.text_alignment",
+      "default": "left"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:blocks.heading.name"
+    }
+  ]
+}
+{% endschema %}

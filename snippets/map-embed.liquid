@@ -1,0 +1,97 @@
+{% doc %}
+  @description Google Maps embed for one address, without an API key: an iframe of Google's public embed (lazy loaded), tinted with a style (standard, grey, muted or dark). With "load on click" the fallback image is shown with a "Show map" button and nothing is requested from Google until the visitor presses it. Without an address it shows the fallback image (or a placeholder in the editor). Optional "Open in Google Maps" link for keyboard and phone users.
+  Use when: map block, map section, contact form with map. Fill the parent box: the snippet is absolutely positioned inside a relative wrapper with a height.
+
+  @param {string} address - Street address or place name, e.g. "620 King St W, Toronto"
+  @param {number} [zoom] - Zoom level 3–20 (default 15)
+  @param {string} [style] - 'standard' (default), 'grey', 'muted' or 'dark'
+  @param {object} [image] - Fallback / poster image (image object)
+  @param {boolean} [load_on_click] - Show the image and a "Show map" button; load Google Maps only after the click
+  @param {boolean} [show_link] - Add an "Open in Google Maps" link in the corner
+  @param {string} [sizes] - sizes attribute for the fallback image (default 100vw)
+
+  @example
+  <div class="relative h-96 overflow-hidden rounded-media">
+    {% render 'map-embed', address: s.address, zoom: s.zoom, style: s.map_style, image: s.image, load_on_click: s.load_on_click, show_link: true %}
+  </div>
+{% enddoc %}
+{%- liquid
+  assign map_address = address | strip
+  assign map_zoom = zoom | default: 15
+  assign image_sizes = sizes | default: '100vw'
+
+  case style
+    when 'grey'
+      assign filter_class = 'grayscale'
+    when 'muted'
+      assign filter_class = 'grayscale-[.85] contrast-[.9] brightness-[1.05]'
+    when 'dark'
+      assign filter_class = 'grayscale invert-[.92] contrast-[.85]'
+    else
+      assign filter_class = ''
+  endcase
+
+  if map_address != blank
+    assign encoded = map_address | url_encode
+    assign embed_url = 'https://maps.google.com/maps?output=embed&q=' | append: encoded | append: '&z=' | append: map_zoom
+    assign open_url = 'https://www.google.com/maps/search/?api=1&query=' | append: encoded
+    assign frame_title = 'sections.map.frame_title' | t: address: map_address
+  endif
+-%}
+{%- capture poster -%}
+  {%- if image != blank -%}
+    {{ image | image_url: width: 2400 | image_tag: widths: '600, 900, 1200, 1600, 2000, 2400', sizes: image_sizes, loading: 'lazy', alt: '', class: 'absolute inset-0 size-full object-cover' }}
+  {%- else -%}
+    {{ 'image' | placeholder_svg_tag: 'absolute inset-0 size-full bg-placeholder' }}
+  {%- endif -%}
+{%- endcapture -%}
+{%- if map_address == blank -%}
+  <div class="absolute inset-0 overflow-hidden bg-placeholder">
+    {%- if image != blank or request.design_mode -%}
+      {{ poster }}
+    {%- endif -%}
+  </div>
+{%- elsif load_on_click -%}
+  <aw-map class="absolute inset-0 block overflow-hidden bg-placeholder">
+    <template data-ref="template">
+      <iframe
+        src="{{ embed_url }}"
+        title="{{ frame_title | escape }}"
+        class="absolute inset-0 size-full border-0 {{ filter_class }}"
+        referrerpolicy="no-referrer-when-downgrade"
+        allowfullscreen
+      ></iframe>
+    </template>
+    <div class="absolute inset-0" data-ref="poster">
+      {{ poster }}
+      <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-bg/40 p-6 text-center">
+        <button type="button" class="btn btn-primary" data-ref="load">
+          {%- render 'icon', name: 'map-pin', class: 'size-5' -%}
+          {{- 'sections.map.show_map' | t -}}
+        </button>
+        <p class="max-w-xs rounded-card bg-bg/80 px-3 py-1.5 type-xs">{{ 'sections.map.consent_note' | t }}</p>
+      </div>
+    </div>
+  </aw-map>
+  <script src="{{ 'c-map.js' | asset_url }}" type="module"></script>
+{%- else -%}
+  <iframe
+    src="{{ embed_url }}"
+    title="{{ frame_title | escape }}"
+    class="absolute inset-0 size-full border-0 bg-placeholder {{ filter_class }}"
+    loading="lazy"
+    referrerpolicy="no-referrer-when-downgrade"
+    allowfullscreen
+  ></iframe>
+{%- endif -%}
+{%- if show_link and map_address != blank -%}
+  <a
+    href="{{ open_url }}"
+    class="absolute end-3 bottom-3 z-[1] inline-flex min-h-9 items-center gap-1.5 rounded-btn bg-bg px-3 type-xs font-semibold text-fg no-underline shadow-md hover:underline"
+    target="_blank"
+    rel="noopener"
+  >
+    {{- 'sections.map.open_in_maps' | t -}}
+    <span class="sr-only"> ({{ 'general.accessibility.new_window' | t }})</span>
+  </a>
+{%- endif -%}

@@ -1,0 +1,96 @@
+{% comment %}
+  @description App-style bar fixed to the bottom of the screen on phones (hidden from 750px up): up to six "Dock item" blocks — home, menu (opens the header's menu drawer), search (opens the search drawer), cart with live item count (opens the cart drawer), account, or any link with an icon. The current page is marked. Leaves space at the end of the page so it never covers the footer, and respects the iPhone home-indicator area.
+  Use when: footer group (or header group), when shoppers on phones need one-tap access to menu, search and cart while scrolling.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+-%}
+{%- if section.blocks.size > 0 -%}
+  <div class="h-[calc(3.75rem+env(safe-area-inset-bottom))] md:hidden" aria-hidden="true"></div>
+  <nav
+    class="fixed inset-x-0 bottom-0 z-30 surface-{{ s.color_scheme }} pb-[env(safe-area-inset-bottom)] md:hidden {% if s.show_border %}border-t border-border{% endif %}"
+    aria-label="{{ 'sections.mobile_dock.label' | t }}"
+  >
+    <ul class="grid h-15 auto-cols-fr grid-flow-col" role="list">
+      {% content_for 'blocks' %}
+    </ul>
+  </nav>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.mobile_dock.name",
+  "class": "section-mobile-dock",
+  "enabled_on": {
+    "groups": [
+      "footer",
+      "header"
+    ]
+  },
+  "max_blocks": 6,
+  "blocks": [
+    {
+      "type": "_dock-item"
+    }
+  ],
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:sections.mobile_dock.settings.hint"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_border",
+      "label": "t:sections.mobile_dock.settings.show_border.label",
+      "default": true
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.mobile_dock.name",
+      "blocks": {
+        "home": {
+          "type": "_dock-item",
+          "settings": {
+            "action": "home",
+            "label": "Home"
+          }
+        },
+        "menu": {
+          "type": "_dock-item",
+          "settings": {
+            "action": "menu",
+            "label": "Menu"
+          }
+        },
+        "search": {
+          "type": "_dock-item",
+          "settings": {
+            "action": "search",
+            "label": "Search"
+          }
+        },
+        "cart": {
+          "type": "_dock-item",
+          "settings": {
+            "action": "cart",
+            "label": "Cart"
+          }
+        }
+      },
+      "block_order": [
+        "home",
+        "menu",
+        "search",
+        "cart"
+      ]
+    }
+  ]
+}
+{% endschema %}

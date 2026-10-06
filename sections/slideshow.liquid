@@ -1,0 +1,375 @@
+{% comment %}
+  @description Slideshow of 1–6 slides, each with its own image (mobile image optional) or muted video, overlay and blocks (heading, text, buttons). Two layouts: "full" (one slide fills the width) or "peek" (the current slide is inset with rounded corners and a sliver of the previous and next slides shows at the sides; clicking a side slide moves to it). Swipe, arrows, dots and arrow keys; optional autoplay with a visible pause button that stops on hover and focus. Respects reduced motion (no autoplay until the shopper presses play). Can make the header transparent when it is the first section.
+  Use when: several campaigns or categories share the first screen of the home page; rotating promotional banners. For a single banner use "hero".
+{% endcomment %}
+{%- capture slides -%}{% content_for 'blocks' %}{%- endcapture -%}
+{%- liquid
+  assign s = section.settings
+  assign slide_count = section.blocks.size
+
+  assign slide_ratio = 'auto'
+  assign slide_ratio_mobile = 'auto'
+  case s.height
+    when 'small'
+      assign min_h = '480px'
+      assign min_h_mobile = '50svh'
+    when 'large'
+      assign min_h = '720px'
+      assign min_h_mobile = '85svh'
+    when 'full'
+      comment
+        --transparent-header-offset is the header height only when this is the first section and the header sits on top.
+      endcomment
+      assign min_h = 'calc(100svh - var(--header-h, 0px) + var(--transparent-header-offset, 0px))'
+      assign min_h_mobile = 'calc(100svh - var(--header-h, 0px) + var(--transparent-header-offset, 0px))'
+    when 'adapt'
+      comment
+        Fallback ratios; the first slide overrides them with its own image's ratio (see blocks/_slide.liquid).
+      endcomment
+      assign min_h = '0px'
+      assign min_h_mobile = '0px'
+      assign slide_ratio = 2
+      assign slide_ratio_mobile = 0.75
+    else
+      assign min_h = '600px'
+      assign min_h_mobile = '70svh'
+  endcase
+
+  if s.layout == 'peek'
+    assign wrapper_class = 'w-full'
+    assign track_radius = ''
+  elsif s.full_width
+    assign wrapper_class = 'w-full'
+    assign track_radius = ''
+  else
+    assign wrapper_class = 'page-width'
+    assign track_radius = 'rounded-media'
+  endif
+
+  comment
+    Theme block settings cannot be read from section.blocks: a video slide marks itself with data-ref="slide-video".
+  endcomment
+  assign has_video = false
+  if slides contains 'data-ref="slide-video"'
+    assign has_video = true
+  endif
+  assign show_toggle = false
+  if s.autoplay or has_video
+    assign show_toggle = true
+  endif
+
+  assign region_label = s.accessibility_label | escape
+  if region_label == blank
+    assign region_label = 'sections.slideshow.label' | t
+  endif
+-%}
+{%- if slide_count > 0 -%}
+  <aw-slideshow
+    class="block surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+    style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1)); --slide-min-h: {{ min_h }}; --slide-min-h-mobile: {{ min_h_mobile }}; --slide-ratio: {{ slide_ratio }}; --slide-ratio-mobile: {{ slide_ratio_mobile }};"
+    role="region"
+    data-layout="{{ s.layout }}"
+    {% if s.transparent_header %}
+      data-transparent-header
+    {% endif %}
+    aria-roledescription="{{ 'sections.slideshow.carousel' | t }}"
+    aria-label="{{ region_label }}"
+    {% if s.autoplay %}
+      data-autoplay
+    {% endif %}
+    data-interval="{{ s.autoplay_interval }}"
+    data-label-play="{{ 'sections.slideshow.play' | t }}"
+    data-label-pause="{{ 'sections.slideshow.pause' | t }}"
+    data-status="{{ 'sections.slideshow.slide_position' | t: index: '[index]', count: slide_count }}"
+  >
+    <div class="{{ wrapper_class }}">
+      <div class="relative">
+        <div
+          id="SlideshowTrack-{{ section.id }}"
+          class="slideshow__track flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden {{ track_radius }}"
+          data-ref="track"
+          data-layout="{{ s.layout }}"
+        >
+          {{ slides }}
+        </div>
+
+        {%- if slide_count > 1 or has_video -%}
+          <div class="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center px-4 md:bottom-6">
+            <div class="surface-{{ s.color_scheme }} pointer-events-auto flex items-center gap-1 rounded-full bg-bg/85 p-1 text-fg shadow-sm backdrop-blur-sm">
+              {%- if show_toggle -%}
+                <button
+                  type="button"
+                  class="flex size-10 items-center justify-center rounded-full hover:bg-fg/10"
+                  data-ref="toggle"
+                  aria-controls="SlideshowTrack-{{ section.id }}"
+                  aria-label="{{ 'sections.slideshow.play' | t }}"
+                >
+                  {%- render 'play-pause-icon', class: 'size-4' -%}
+                </button>
+              {%- endif -%}
+              {%- if slide_count > 1 -%}
+                <button
+                  type="button"
+                  class="flex size-10 items-center justify-center rounded-full hover:bg-fg/10"
+                  data-ref="prev"
+                  aria-controls="SlideshowTrack-{{ section.id }}"
+                  aria-label="{{ 'sections.slideshow.previous' | t }}"
+                >
+                  {%- render 'icon', name: 'chevron-left', class: 'size-5 rtl:rotate-180' -%}
+                </button>
+                <div class="flex items-center">
+                  {%- for slide in section.blocks -%}
+                    <button
+                      type="button"
+                      class="group/dot flex size-8 items-center justify-center"
+                      data-ref="dot"
+                      data-index="{{ forloop.index0 }}"
+                      aria-controls="Slide-{{ slide.id }}"
+                      aria-label="{{ 'sections.slideshow.go_to' | t: index: forloop.index }}"
+                      {% if forloop.first %}
+                        aria-current="true"
+                      {% endif %}
+                    >
+                      <span class="block size-2 rounded-full bg-fg/30 transition-all group-aria-[current=true]/dot:w-5 group-aria-[current=true]/dot:bg-fg"></span>
+                    </button>
+                  {%- endfor -%}
+                </div>
+                <button
+                  type="button"
+                  class="flex size-10 items-center justify-center rounded-full hover:bg-fg/10"
+                  data-ref="next"
+                  aria-controls="SlideshowTrack-{{ section.id }}"
+                  aria-label="{{ 'sections.slideshow.next' | t }}"
+                >
+                  {%- render 'icon', name: 'chevron-right', class: 'size-5 rtl:rotate-180' -%}
+                </button>
+              {%- endif -%}
+            </div>
+          </div>
+        {%- endif -%}
+      </div>
+      <p class="sr-only" aria-live="polite" aria-atomic="true" data-ref="status"></p>
+    </div>
+  </aw-slideshow>
+  <script src="{{ 'c-slideshow.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+
+{% stylesheet %}
+  /* Peek layout: the current slide is centred and inset; the padding shows a sliver of its neighbours
+     (about 5% of the width on desktop, a thin edge on mobile). Slide width = the track's content box. */
+  .slideshow__track[data-layout='peek'] {
+    --slideshow-peek: 0.75rem;
+    --slideshow-gap: 0.5rem;
+    gap: var(--slideshow-gap);
+    padding-inline: calc(var(--slideshow-peek) + var(--slideshow-gap));
+    scroll-padding-inline: calc(var(--slideshow-peek) + var(--slideshow-gap));
+  }
+  @media (min-width: 750px) {
+    .slideshow__track[data-layout='peek'] {
+      --slideshow-peek: 5%;
+      --slideshow-gap: 1rem;
+    }
+  }
+  .slideshow__track[data-layout='peek'] > [data-ref='slide'] {
+    width: 100%;
+    scroll-snap-align: center;
+    border-radius: var(--radius-media, 0px);
+  }
+  /* Side slides are inert (not focusable); a pointer on them shows they can be clicked to move there. */
+  .slideshow__track[data-layout='peek'] > [data-ref='slide'][inert] {
+    cursor: pointer;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.slideshow.name",
+  "tag": "section",
+  "class": "section-slideshow",
+  "blocks": [
+    {
+      "type": "_slide"
+    }
+  ],
+  "max_blocks": 6,
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "autoplay",
+      "label": "t:sections.slideshow.settings.autoplay.label",
+      "info": "t:sections.slideshow.settings.autoplay.info",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "autoplay_interval",
+      "label": "t:sections.slideshow.settings.autoplay_interval.label",
+      "min": 3,
+      "max": 10,
+      "step": 1,
+      "unit": "s",
+      "default": 6,
+      "visible_if": "{{ section.settings.autoplay }}"
+    },
+    {
+      "type": "text",
+      "id": "accessibility_label",
+      "label": "t:sections.slideshow.settings.accessibility_label.label",
+      "info": "t:sections.slideshow.settings.accessibility_label.info"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.layout"
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "t:sections.slideshow.settings.layout.label",
+      "info": "t:sections.slideshow.settings.layout.info",
+      "options": [
+        { "value": "full", "label": "t:sections.slideshow.settings.layout.options.full" },
+        { "value": "peek", "label": "t:sections.slideshow.settings.layout.options.peek" }
+      ],
+      "default": "full"
+    },
+    {
+      "type": "select",
+      "id": "height",
+      "label": "t:sections.hero.settings.height.label",
+      "info": "t:sections.slideshow.settings.height.info",
+      "options": [
+        { "value": "adapt", "label": "t:sections.hero.settings.height.options.adapt" },
+        { "value": "small", "label": "t:sections.hero.settings.height.options.small" },
+        { "value": "medium", "label": "t:sections.hero.settings.height.options.medium" },
+        { "value": "large", "label": "t:sections.hero.settings.height.options.large" },
+        { "value": "full", "label": "t:sections.hero.settings.height.options.full" }
+      ],
+      "default": "medium"
+    },
+    {
+      "type": "checkbox",
+      "id": "full_width",
+      "label": "t:shared.media.full_width",
+      "default": true,
+      "visible_if": "{{ section.settings.layout == 'full' }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "transparent_header",
+      "label": "t:sections.hero.settings.transparent_header.label",
+      "info": "t:sections.hero.settings.transparent_header.info",
+      "default": false
+    },
+    {
+      "type": "select",
+      "id": "heading_highlight",
+      "label": "t:shared.heading_highlight.label",
+      "info": "t:shared.heading_highlight.info",
+      "options": [
+        { "value": "none", "label": "t:shared.heading_highlight.options.none" },
+        { "value": "color", "label": "t:shared.heading_highlight.options.color" },
+        { "value": "marker", "label": "t:shared.heading_highlight.options.marker" },
+        { "value": "underline", "label": "t:shared.heading_highlight.options.underline" },
+        { "value": "outline", "label": "t:shared.heading_highlight.options.outline" },
+        { "value": "circle", "label": "t:shared.heading_highlight.options.circle" },
+        { "value": "squiggle", "label": "t:shared.heading_highlight.options.squiggle" }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "info": "t:sections.slideshow.settings.color_scheme.info",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.slideshow.name",
+      "blocks": [
+        {
+          "type": "_slide",
+          "blocks": [
+            {
+              "type": "heading",
+              "settings": {
+                "text": "First slide headline",
+                "size": "display",
+                "tag": "h2",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "text",
+              "settings": {
+                "text": "<p>Tell shoppers what this slide is about.</p>",
+                "size": "lg",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "button",
+              "settings": {
+                "label": "Shop now"
+              }
+            }
+          ]
+        },
+        {
+          "type": "_slide",
+          "blocks": [
+            {
+              "type": "heading",
+              "settings": {
+                "text": "Second slide headline",
+                "size": "display",
+                "tag": "h2",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "text",
+              "settings": {
+                "text": "<p>Add an image and a link for another campaign.</p>",
+                "size": "lg",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "button",
+              "settings": {
+                "label": "Learn more"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

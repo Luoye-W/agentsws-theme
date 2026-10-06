@@ -1,0 +1,176 @@
+{% comment %}
+  @description Slim vertical pill fixed to the left or right edge of the screen, vertically centered: the store's social links (Theme settings → Social media) and an optional vertical tab button, e.g. "Newsletter", that reopens the newsletter popup (or follows a link when the popup is not on the page). Frosted translucent surface with a thin border. Can fade away while shoppers scroll down and come back when they scroll up. Shown from desktop width (990px) up; on phones and tablets only when switched on, and then without the social links by default so it stays small. Keyboard reachable; nothing moves with reduced motion. Can be limited to the home page, where it usually sits over a full-screen banner instead of page content.
+  Use when: the "Overlays" section group only (rendered on every page by the layout) — a persistent "follow us" / "get 10% off" handle at the screen edge.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign tab_label = s.tab_label | escape
+
+  if s.position == 'start'
+    assign position_class = 'start-2'
+  else
+    assign position_class = 'end-2'
+  endif
+
+  if s.show_on_mobile
+    assign visibility_class = 'flex'
+  else
+    assign visibility_class = 'hidden lg:flex'
+  endif
+
+  if s.hide_social_on_mobile
+    assign social_class = 'hidden lg:flex'
+  else
+    assign social_class = 'flex'
+  endif
+
+  assign tab_class = 'group/tab flex items-center justify-center rounded-full px-2 py-4 type-eyebrow [writing-mode:vertical-rl] transition hover:bg-fg/5'
+-%}
+{%- capture social -%}
+  {%- if s.show_social -%}
+    {%- render 'social-icons',
+      class: 'flex flex-col items-center gap-0.5',
+      icon_class: 'size-5',
+      link_class: 'flex size-9 items-center justify-center rounded-full transition hover:bg-fg/5'
+    -%}
+  {%- endif -%}
+{%- endcapture -%}
+{%- liquid
+  assign show_bar = false
+  if social != blank or tab_label != blank or request.design_mode
+    assign show_bar = true
+  endif
+  if s.show_on == 'home' and template.name != 'index'
+    assign show_bar = false
+  endif
+-%}
+{%- if show_bar -%}
+  <aw-floating-bar
+    class="{{ visibility_class }} fixed top-1/2 {{ position_class }} z-30 -translate-y-1/2 transition-[opacity,translate] duration-300 data-hidden:pointer-events-none data-hidden:opacity-0 motion-reduce:transition-none"
+    {% if s.hide_on_scroll %}
+      data-hide-on-scroll
+    {% endif %}
+  >
+    <div class="surface-{{ s.color_scheme }} flex flex-col items-center gap-1 rounded-full border border-border bg-bg/75 p-1 shadow-sm backdrop-blur-md">
+      {%- if social != blank -%}
+        <div class="{{ social_class }} flex-col items-center">{{ social }}</div>
+      {%- endif -%}
+      {%- if social != blank and tab_label != blank -%}
+        <span class="{{ social_class }} h-px w-5 bg-border" aria-hidden="true"></span>
+      {%- endif -%}
+      {%- if tab_label != blank -%}
+        {%- if s.tab_link != blank -%}
+          <a href="{{ s.tab_link }}" class="{{ tab_class }} no-underline" data-ref="tab">
+            <span class="inline-block rotate-180 transition-transform group-hover/tab:-translate-y-0.5 motion-reduce:transition-none">{{ tab_label }}</span>
+          </a>
+        {%- else -%}
+          <button type="button" class="{{ tab_class }}" data-ref="tab" aria-haspopup="dialog" hidden>
+            <span class="inline-block rotate-180 transition-transform group-hover/tab:-translate-y-0.5 motion-reduce:transition-none">{{ tab_label }}</span>
+          </button>
+        {%- endif -%}
+      {%- endif -%}
+      {%- if request.design_mode and social == blank and tab_label == blank -%}
+        <p class="max-w-24 p-2 text-center type-xs text-muted">{{ 'sections.floating_bar.editor_empty' | t }}</p>
+      {%- endif -%}
+    </div>
+  </aw-floating-bar>
+  <script src="{{ 'c-floating-bar.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.floating_bar.name",
+  "class": "section-floating-bar",
+  "enabled_on": {
+    "groups": ["custom.overlay"]
+  },
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:sections.floating_bar.settings.intro"
+    },
+    {
+      "type": "select",
+      "id": "show_on",
+      "label": "t:sections.floating_bar.settings.show_on.label",
+      "info": "t:sections.floating_bar.settings.show_on.info",
+      "options": [
+        { "value": "all", "label": "t:sections.floating_bar.settings.show_on.options.all" },
+        { "value": "home", "label": "t:sections.floating_bar.settings.show_on.options.home" }
+      ],
+      "default": "all"
+    },
+    {
+      "type": "select",
+      "id": "position",
+      "label": "t:sections.floating_bar.settings.position.label",
+      "options": [
+        { "value": "start", "label": "t:sections.floating_bar.settings.position.options.start" },
+        { "value": "end", "label": "t:sections.floating_bar.settings.position.options.end" }
+      ],
+      "default": "end"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_social",
+      "label": "t:sections.floating_bar.settings.show_social.label",
+      "info": "t:sections.floating_bar.settings.show_social.info",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "tab_label",
+      "label": "t:sections.floating_bar.settings.tab_label.label",
+      "info": "t:sections.floating_bar.settings.tab_label.info",
+      "default": "Newsletter"
+    },
+    {
+      "type": "url",
+      "id": "tab_link",
+      "label": "t:sections.floating_bar.settings.tab_link.label",
+      "info": "t:sections.floating_bar.settings.tab_link.info",
+      "visible_if": "{{ section.settings.tab_label != blank }}"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.floating_bar.settings.behavior_header"
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_on_scroll",
+      "label": "t:sections.floating_bar.settings.hide_on_scroll.label",
+      "info": "t:sections.floating_bar.settings.hide_on_scroll.info",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_on_mobile",
+      "label": "t:sections.floating_bar.settings.show_on_mobile.label",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_social_on_mobile",
+      "label": "t:sections.floating_bar.settings.hide_social_on_mobile.label",
+      "info": "t:sections.floating_bar.settings.hide_social_on_mobile.info",
+      "default": true,
+      "visible_if": "{{ section.settings.show_on_mobile }}"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.floating_bar.name"
+    }
+  ]
+}
+{% endschema %}

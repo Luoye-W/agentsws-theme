@@ -1,0 +1,63 @@
+{% doc %}
+  @description Expandable row with a title that reveals any blocks inside it (text, product description, specifications, images). Rows stack into an accordion.
+  Use when: FAQs, product details such as specs / shipping / care, long content that should stay out of the way.
+
+  @example
+  {% content_for 'block', type: 'collapsible', id: 'shipping' %}
+{% enddoc %}
+{%- assign s = block.settings -%}
+{%- capture row_content -%}{% content_for 'blocks' %}{%- endcapture -%}
+{%- liquid
+  assign row_text = row_content | strip_html | strip
+  assign show_row = true
+  if row_text == blank
+    assign show_row = false
+    if row_content contains '<img' or row_content contains '<iframe'
+      assign show_row = true
+    endif
+  endif
+  if request.design_mode
+    assign show_row = true
+  endif
+-%}
+{%- unless show_row -%}
+  <div hidden {{ block.shopify_attributes }}></div>
+{%- else -%}
+<details class="group/row border-b border-border" {% if s.open %}open{% endif %} {{ block.shopify_attributes }}>
+  <summary class="flex cursor-pointer list-none items-center justify-between gap-4 py-4 font-semibold [&::-webkit-details-marker]:hidden">
+    {{- s.title | escape -}}
+    {%- render 'icon', name: 'chevron-down', class: 'size-5 transition group-open/row:rotate-180' -%}
+  </summary>
+  <div class="flex flex-col gap-4 pb-5">
+    {{ row_content }}
+  </div>
+</details>
+{%- endunless -%}
+
+{% schema %}
+{
+  "name": "t:blocks.collapsible.name",
+  "tag": null,
+  "blocks": [{ "type": "@theme" }, { "type": "@app" }],
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "t:blocks.collapsible.settings.title.label",
+      "default": "Details"
+    },
+    {
+      "type": "checkbox",
+      "id": "open",
+      "label": "t:blocks.collapsible.settings.open.label",
+      "default": false
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:blocks.collapsible.name",
+      "blocks": [{ "type": "text" }]
+    }
+  ]
+}
+{% endschema %}

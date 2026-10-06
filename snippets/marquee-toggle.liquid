@@ -1,0 +1,25 @@
+{% doc %}
+  @description Pause / play button for an aw-marquee (assets/c-marquee.js). Hidden until the marquee actually moves (never shown with reduced motion or without JavaScript); the script swaps its icon and label.
+  Use when: inside every aw-marquee element, so moving content can always be stopped (WCAG 2.2.2).
+
+  @param {string} [class] - Extra classes, e.g. 'self-center'
+
+  @example
+  {% render 'marquee-toggle', class: 'self-end' %}
+{% enddoc %}
+{%- liquid
+  assign pause_label = 'sections.marquee.pause' | t
+  assign play_label = 'sections.marquee.play' | t
+-%}
+<button
+  type="button"
+  class="inline-flex items-center gap-2 self-end rounded-btn px-2 py-1 type-xs text-muted hover:text-fg {{ class }}"
+  data-ref="toggle"
+  data-label-pause="{{ pause_label | escape }}"
+  data-label-play="{{ play_label | escape }}"
+  hidden
+>
+  <span data-ref="icon-pause">{%- render 'icon', name: 'pause', class: 'size-4' -%}</span>
+  <span data-ref="icon-play" hidden>{%- render 'icon', name: 'play', class: 'size-4' -%}</span>
+  <span data-ref="toggle-label">{{ pause_label }}</span>
+</button>

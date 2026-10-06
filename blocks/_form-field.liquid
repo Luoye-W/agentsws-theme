@@ -1,0 +1,211 @@
+{% doc %}
+  @description Extra question in a Contact form section: short text, long text, checkbox, radio buttons or dropdown, optionally required and full width. With the section's "labels inside fields" option the label is read by screen readers and shown as the placeholder. Radio buttons are grouped under a legend so screen readers read the question with each option. The answer arrives in the contact email under the "Name in email" (or the label when that is empty).
+  Use when: only inside the "contact-form" section, e.g. order number, topic dropdown, "I'm a business customer" checkbox.
+
+  @example
+  {% content_for 'block', type: '_form-field', id: 'order-number' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  assign field_id = 'ContactField-' | append: block.id
+  assign label = s.label | strip | escape
+  assign field_key = s.field_name | strip | default: s.label | strip | remove: '[' | remove: ']' | escape
+  assign options = s.options | split: ','
+  assign placeholder = s.placeholder | strip
+  assign labels_inside = false
+  if section.settings.field_labels == 'inside'
+    assign labels_inside = true
+    if placeholder == blank
+      assign placeholder = s.label | strip
+    endif
+  endif
+  assign select_prompt = placeholder
+  if select_prompt == blank
+    assign select_prompt = 'sections.contact_form.choose' | t
+  endif
+
+  if s.full_width or s.type == 'textarea' or s.type == 'radio'
+    assign span_class = 'md:col-span-2'
+  else
+    assign span_class = ''
+  endif
+-%}
+{%- if label == blank -%}
+  <div hidden {{ block.shopify_attributes }}></div>
+{%- else -%}
+  <div class="flex flex-col gap-1.5 {{ span_class }}" {{ block.shopify_attributes }}>
+    {%- case s.type -%}
+      {%- when 'checkbox' -%}
+        <label for="{{ field_id }}" class="flex cursor-pointer items-start gap-3 type-sm">
+          <input
+            type="checkbox"
+            id="{{ field_id }}"
+            name="contact[{{ field_key }}]"
+            value="{{ 'sections.contact_form.checkbox_yes' | t }}"
+            class="mt-0.5 size-4 shrink-0 accent-(--c-primary)"
+            {% if s.required %}
+              required
+            {% endif %}
+          >
+          <span>
+            {{- label -}}
+            {%- if s.required %} <span aria-hidden="true">*</span>{% endif -%}
+          </span>
+        </label>
+      {%- when 'radio' -%}
+        <fieldset class="flex flex-col gap-2">
+          <legend class="type-sm mb-1.5 font-semibold">
+            {{- label -}}
+            {%- if s.required %} <span aria-hidden="true">*</span>{% endif -%}
+          </legend>
+          {%- for option in options -%}
+            {%- assign option_value = option | strip | escape -%}
+            {%- if option_value != blank -%}
+              <label class="flex cursor-pointer items-center gap-3 type-sm">
+                <input
+                  type="radio"
+                  name="contact[{{ field_key }}]"
+                  value="{{ option_value }}"
+                  class="size-4 shrink-0 accent-(--c-primary)"
+                  {% if s.required %}
+                    required
+                  {% endif %}
+                >
+                {{ option_value }}
+              </label>
+            {%- endif -%}
+          {%- endfor -%}
+        </fieldset>
+      {%- else -%}
+        <label for="{{ field_id }}" class="type-sm font-semibold{% if labels_inside %} sr-only{% endif %}">
+          {{- label -}}
+          {%- if s.required %} <span aria-hidden="true">*</span>{% endif -%}
+        </label>
+        {%- case s.type -%}
+          {%- when 'textarea' -%}
+            <textarea
+              id="{{ field_id }}"
+              name="contact[{{ field_key }}]"
+              class="field min-h-28 py-3"
+              rows="4"
+              {% if placeholder != blank %}
+                placeholder="{{ placeholder | escape }}"
+              {% endif %}
+              {% if s.required %}
+                required
+              {% endif %}
+            ></textarea>
+          {%- when 'select' -%}
+            <select
+              id="{{ field_id }}"
+              name="contact[{{ field_key }}]"
+              class="field cursor-pointer"
+              {% if s.required %}
+                required
+              {% endif %}
+            >
+              <option value="">{{ select_prompt | escape }}</option>
+              {%- for option in options -%}
+                {%- assign option_value = option | strip | escape -%}
+                {%- if option_value != blank -%}
+                  <option value="{{ option_value }}">{{ option_value }}</option>
+                {%- endif -%}
+              {%- endfor -%}
+            </select>
+          {%- else -%}
+            <input
+              type="text"
+              id="{{ field_id }}"
+              name="contact[{{ field_key }}]"
+              class="field"
+              {% if placeholder != blank %}
+                placeholder="{{ placeholder | escape }}"
+              {% endif %}
+              {% if s.required %}
+                required
+              {% endif %}
+            >
+        {%- endcase -%}
+    {%- endcase -%}
+  </div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:blocks.form_field.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "select",
+      "id": "type",
+      "label": "t:blocks.form_field.settings.type.label",
+      "options": [
+        {
+          "value": "text",
+          "label": "t:blocks.form_field.settings.type.options.text"
+        },
+        {
+          "value": "textarea",
+          "label": "t:blocks.form_field.settings.type.options.textarea"
+        },
+        {
+          "value": "checkbox",
+          "label": "t:blocks.form_field.settings.type.options.checkbox"
+        },
+        {
+          "value": "radio",
+          "label": "t:blocks.form_field.settings.type.options.radio"
+        },
+        {
+          "value": "select",
+          "label": "t:blocks.form_field.settings.type.options.select"
+        }
+      ],
+      "default": "text"
+    },
+    {
+      "type": "text",
+      "id": "label",
+      "label": "t:blocks.form_field.settings.label.label",
+      "default": "Order number"
+    },
+    {
+      "type": "text",
+      "id": "field_name",
+      "label": "t:blocks.form_field.settings.field_name.label",
+      "info": "t:blocks.form_field.settings.field_name.info"
+    },
+    {
+      "type": "textarea",
+      "id": "options",
+      "label": "t:blocks.form_field.settings.options.label",
+      "info": "t:blocks.form_field.settings.options.info",
+      "visible_if": "{{ block.settings.type == 'radio' or block.settings.type == 'select' }}"
+    },
+    {
+      "type": "text",
+      "id": "placeholder",
+      "label": "t:blocks.form_field.settings.placeholder.label",
+      "visible_if": "{{ block.settings.type == 'text' or block.settings.type == 'textarea' or block.settings.type == 'select' }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "required",
+      "label": "t:blocks.form_field.settings.required.label",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "full_width",
+      "label": "t:blocks.form_field.settings.full_width.label",
+      "default": false,
+      "visible_if": "{{ block.settings.type == 'text' or block.settings.type == 'checkbox' or block.settings.type == 'select' }}"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:blocks.form_field.name"
+    }
+  ]
+}
+{% endschema %}

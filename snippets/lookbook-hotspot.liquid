@@ -1,0 +1,150 @@
+{% doc %}
+  @description One hotspot on a Lookbook image: a pulsing dot (a real button) at an x/y position (separate mobile position when the section has a mobile image). It opens a small card — for a product: image, title, price and Add to cart (single-variant products) or a link to choose options; otherwise a heading, text and link. The card appears on hover or keyboard focus, stays open on click, and becomes a bottom sheet on phones. Hotspots are section blocks of "lookbook" (not theme blocks) so the section can also read their settings for the numbered list.
+  Use when: only inside sections/lookbook.liquid.
+
+  @param {object} spot - A "hotspot" block of the lookbook section (from section.blocks)
+  @param {number} index - Position of the hotspot, 1-based (shown as its number)
+  @param {string} color_scheme - Color scheme id for the dot (section setting "hotspot_color_scheme")
+  @param {boolean} [has_mobile_image] - The section has a separate mobile image, so the mobile x/y apply
+
+  @example
+  {% render 'lookbook-hotspot', spot: block, index: forloop.index, color_scheme: s.hotspot_color_scheme, has_mobile_image: has_mobile_image %}
+{% enddoc %}
+{%- liquid
+  assign s = spot.settings
+  assign product = s.product
+  assign spot_index = index
+
+  assign x_mobile = s.x
+  assign y_mobile = s.y
+  if has_mobile_image
+    assign x_mobile = s.x_mobile
+    assign y_mobile = s.y_mobile
+  endif
+
+  assign card_id = 'HotspotCard-' | append: spot.id
+  assign title_id = 'HotspotTitle-' | append: spot.id
+  if product != blank
+    assign spot_title = product.title | escape
+    assign button_label = 'sections.lookbook.view_product' | t: title: spot_title
+  elsif s.heading != blank
+    assign spot_title = s.heading | escape
+    assign button_label = spot_title
+  else
+    assign spot_title = ''
+    assign button_label = 'sections.lookbook.hotspot' | t: index: spot_index
+  endif
+  assign has_card = false
+  if product != blank or s.heading != blank or s.text != blank or s.link != blank
+    assign has_card = true
+  endif
+-%}
+<div
+  class="lookbook-hotspot surface-{{ color_scheme }} absolute z-[2] bg-transparent left-(--spot-x-mobile) top-(--spot-y-mobile) -translate-x-1/2 -translate-y-1/2 md:left-(--spot-x) md:top-(--spot-y)"
+  style="--spot-x: {{ s.x }}%; --spot-y: {{ s.y }}%; --spot-x-mobile: {{ x_mobile }}%; --spot-y-mobile: {{ y_mobile }}%;"
+  data-ref="hotspot"
+  data-block-id="{{ spot.id }}"
+  {{ spot.shopify_attributes }}
+>
+  <button
+    type="button"
+    class="lookbook-hotspot__button group/spot relative flex size-11 items-center justify-center rounded-full"
+    data-ref="hotspot-button"
+    aria-label="{{ button_label }}"
+    {% if has_card %}
+      popovertarget="{{ card_id }}"
+      aria-controls="{{ card_id }}"
+      aria-expanded="false"
+    {% else %}
+      aria-disabled="true"
+    {% endif %}
+  >
+    <span class="lookbook-hotspot__pulse absolute inset-0 rounded-full bg-bg/40" aria-hidden="true"></span>
+    <span
+      class="relative flex size-6 items-center justify-center rounded-full bg-bg text-fg shadow-md ring-fg transition group-hover/spot:scale-110 group-aria-expanded/spot:ring-2 group-data-active/spot:ring-2 in-data-numbered:size-7"
+      aria-hidden="true"
+    >
+      <span class="type-xs hidden font-semibold in-data-numbered:inline">{{ spot_index }}</span>
+      <span class="block size-2 rounded-full bg-fg in-data-numbered:hidden"></span>
+    </span>
+  </button>
+
+  {%- if has_card -%}
+    <div
+      id="{{ card_id }}"
+      popover="manual"
+      role="dialog"
+      aria-labelledby="{{ title_id }}"
+      class="lookbook-card surface-{{ settings.drawer_color_scheme }} rounded-card text-fg shadow-lg"
+      data-ref="card"
+    >
+      <div class="flex items-start gap-4 p-4">
+        {%- if product != blank -%}
+          <a href="{{ product.url }}" class="block w-20 shrink-0 overflow-hidden rounded-media bg-placeholder" tabindex="-1" aria-hidden="true">
+            {%- if product.featured_image -%}
+              {{ product.featured_image | image_url: width: 240 | image_tag: widths: '120, 160, 240', sizes: '80px', loading: 'lazy', alt: '', class: 'aspect-square w-full object-cover' }}
+            {%- else -%}
+              {{ 'product-1' | placeholder_svg_tag: 'aspect-square w-full' }}
+            {%- endif -%}
+          </a>
+        {%- endif -%}
+        <div class="flex min-w-0 flex-1 flex-col gap-1">
+          {%- if product != blank -%}
+            <p id="{{ title_id }}" class="type-card">
+              <a href="{{ product.url }}" class="no-underline hover:underline">{{ spot_title }}</a>
+            </p>
+            <div class="type-sm">{% render 'price', product: product, size: 'sm' %}</div>
+          {%- else -%}
+            {%- if s.heading != blank -%}
+              <p id="{{ title_id }}" class="type-h6">{{ spot_title }}</p>
+            {%- else -%}
+              <p id="{{ title_id }}" class="sr-only">{{ button_label }}</p>
+            {%- endif -%}
+            {%- if s.text != blank -%}
+              <div class="rte type-sm text-muted">{{ s.text }}</div>
+            {%- endif -%}
+          {%- endif -%}
+        </div>
+        <button
+          type="button"
+          class="-me-2 -mt-2 flex size-9 shrink-0 items-center justify-center rounded-full hover:bg-fg/10"
+          data-ref="card-close"
+          popovertarget="{{ card_id }}"
+          popovertargetaction="hide"
+          aria-label="{{ 'general.accessibility.close' | t }}"
+        >
+          {%- render 'icon', name: 'close', class: 'size-4' -%}
+        </button>
+      </div>
+
+      {%- if product != blank -%}
+        {%- assign variant = product.selected_or_first_available_variant -%}
+        <div class="px-4 pb-4">
+          {%- if product.has_only_default_variant and variant.available -%}
+            {%- assign form_id = 'HotspotForm-' | append: spot.id -%}
+            {%- form 'product', product, id: form_id, class: 'flex flex-col gap-2', novalidate: 'novalidate' -%}
+              <input type="hidden" name="id" value="{{ variant.id }}">
+              <input type="hidden" name="quantity" value="1">
+              <button type="submit" name="add" class="btn btn-primary w-full aria-busy:opacity-70">
+                {{ 'products.product.add_to_cart' | t }}
+              </button>
+              <p class="type-sm text-error" role="alert" data-ref="card-error" hidden></p>
+            {%- endform -%}
+          {%- elsif product.available -%}
+            <a href="{{ product.url }}" class="btn btn-secondary w-full">{{ 'sections.lookbook.choose_options' | t }}</a>
+          {%- else -%}
+            <button type="button" class="btn btn-secondary w-full" disabled>{{ 'products.product.sold_out' | t }}</button>
+          {%- endif -%}
+        </div>
+      {%- elsif s.link != blank -%}
+        {%- assign link_text = s.link_label | escape -%}
+        {%- if link_text == blank -%}
+          {%- assign link_text = 'sections.lookbook.learn_more' | t -%}
+        {%- endif -%}
+        <div class="px-4 pb-4">
+          <a href="{{ s.link }}" class="btn btn-link">{{ link_text }}</a>
+        </div>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+</div>

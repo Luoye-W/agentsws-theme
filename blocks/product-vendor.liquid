@@ -1,0 +1,59 @@
+{% doc %}
+  @description The product's vendor (brand) as a small line, optionally linking to the list of all products from that vendor. Screen readers hear "Vendor:" before the name. Hidden when the product has no vendor.
+  Use when: brand line above the product title (product info column, featured product, quick view) when the title block's own vendor line is not wanted, or when the vendor must sit elsewhere in the column.
+
+  @example
+  {% content_for 'block', type: 'product-vendor', id: 'vendor' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  assign product = closest.product
+
+  case s.style
+    when 'eyebrow'
+      assign text_class = 'type-eyebrow text-muted'
+    when 'muted'
+      assign text_class = 'type-sm text-muted'
+    else
+      assign text_class = 'type-sm font-semibold'
+  endcase
+-%}
+{%- if product.vendor != blank -%}
+  <p class="{{ text_class }}" {{ block.shopify_attributes }}>
+    <span class="sr-only">{{ 'products.product.vendor' | t }}:</span>
+    {%- if s.link -%}
+      <a href="{{ product.vendor | url_for_vendor }}" class="no-underline hover:underline">{{ product.vendor | escape }}</a>
+    {%- else -%}
+      {{ product.vendor | escape }}
+    {%- endif -%}
+  </p>
+{%- elsif request.design_mode -%}
+  <p class="type-xs text-muted" {{ block.shopify_attributes }}>{{ 'blocks.product_vendor.empty' | t }}</p>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:blocks.product_vendor.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "select",
+      "id": "style",
+      "label": "t:blocks.product_vendor.settings.style.label",
+      "options": [
+        { "value": "eyebrow", "label": "t:blocks.product_vendor.settings.style.options.eyebrow" },
+        { "value": "muted", "label": "t:blocks.product_vendor.settings.style.options.muted" },
+        { "value": "bold", "label": "t:blocks.product_vendor.settings.style.options.bold" }
+      ],
+      "default": "eyebrow"
+    },
+    {
+      "type": "checkbox",
+      "id": "link",
+      "label": "t:blocks.product_vendor.settings.link.label",
+      "default": true
+    }
+  ],
+  "presets": [{ "name": "t:blocks.product_vendor.name" }]
+}
+{% endschema %}

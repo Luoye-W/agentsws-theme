@@ -1,0 +1,20 @@
+{% comment %}
+  @description Renders a Shopify page (title and content from Online Store → Pages), followed by optional theme blocks.
+  Use when: templates/page*.json only.
+{% endcomment %}
+<div class="page-width-narrow py-12 md:py-16 flex flex-col gap-6">
+  <h1 class="type-h1">{{ page.title | escape }}</h1>
+  <div class="rte type-body">{{ page.content }}</div>
+  {% content_for 'blocks' %}
+</div>
+
+{% schema %}
+{
+  "name": "t:sections.main_page.name",
+  "tag": "section",
+  "class": "section-main-page",
+  "enabled_on": { "templates": ["page"] },
+  "blocks": [{ "type": "@theme" }, { "type": "@app" }],
+  "settings": []
+}
+{% endschema %}

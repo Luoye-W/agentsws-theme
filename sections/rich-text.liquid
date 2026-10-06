@@ -1,0 +1,203 @@
+{% comment %}
+  @description Stack of text blocks — headings, paragraphs, buttons, icons, dividers or any other theme block — in a narrow, page-wide or full-width column, aligned start, center or end (separately on mobile).
+  Use when: page intros ("Contact us", "Frequently asked questions" titles), short brand statements, call-to-action strips, contact details. Text can be connected to page or shop metafields with dynamic sources instead of typing it into several templates.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+
+  case s.alignment
+    when 'center'
+      assign align_class = 'md:items-center md:text-center'
+    when 'end'
+      assign align_class = 'md:items-end md:text-end'
+    else
+      assign align_class = 'md:items-start md:text-start'
+  endcase
+
+  case s.alignment_mobile
+    when 'center'
+      assign align_mobile_class = 'items-center text-center'
+    when 'end'
+      assign align_mobile_class = 'items-end text-end'
+    else
+      assign align_mobile_class = 'items-start text-start'
+  endcase
+
+  case s.gap
+    when 'small'
+      assign gap_class = 'gap-3'
+    when 'large'
+      assign gap_class = 'gap-8'
+    else
+      assign gap_class = 'gap-5'
+  endcase
+-%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+>
+  <div class="{% render 'width-classes', width: s.width %}">
+    <div class="flex flex-col {{ gap_class }} {{ align_mobile_class }} {{ align_class }}">
+      {% content_for 'blocks' %}
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "t:sections.rich_text.name",
+  "tag": "section",
+  "class": "section-rich-text",
+  "blocks": [
+    {
+      "type": "@theme"
+    },
+    {
+      "type": "@app"
+    }
+  ],
+  "settings": [
+    {
+      "type": "select",
+      "id": "width",
+      "label": "t:shared.width.label",
+      "options": [
+        {
+          "value": "narrow",
+          "label": "t:shared.width.options.narrow"
+        },
+        {
+          "value": "page",
+          "label": "t:shared.width.options.page"
+        },
+        {
+          "value": "full",
+          "label": "t:shared.width.options.full"
+        }
+      ],
+      "default": "narrow"
+    },
+    {
+      "type": "select",
+      "id": "alignment",
+      "label": "t:sections.rich_text.settings.alignment.label",
+      "info": "t:sections.rich_text.settings.alignment.info",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        },
+        {
+          "value": "end",
+          "label": "t:shared.align.options.end"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "select",
+      "id": "alignment_mobile",
+      "label": "t:sections.rich_text.settings.alignment_mobile.label",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        },
+        {
+          "value": "end",
+          "label": "t:shared.align.options.end"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "select",
+      "id": "gap",
+      "label": "t:sections.rich_text.settings.gap.label",
+      "options": [
+        {
+          "value": "small",
+          "label": "t:sections.rich_text.settings.gap.options.small"
+        },
+        {
+          "value": "medium",
+          "label": "t:sections.rich_text.settings.gap.options.medium"
+        },
+        {
+          "value": "large",
+          "label": "t:sections.rich_text.settings.gap.options.large"
+        }
+      ],
+      "default": "medium"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.rich_text.name",
+      "blocks": [
+        {
+          "type": "heading",
+          "settings": {
+            "text": "Talk about your brand",
+            "size": "h2",
+            "tag": "h2",
+            "alignment": "center"
+          }
+        },
+        {
+          "type": "text",
+          "settings": {
+            "text": "<p>Use this space to introduce a page, share what your store stands for, or point customers to a collection.</p>",
+            "size": "lg",
+            "alignment": "center"
+          }
+        },
+        {
+          "type": "button",
+          "settings": {
+            "label": "Shop all"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

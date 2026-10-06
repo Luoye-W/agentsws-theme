@@ -1,0 +1,103 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-search",
+      "settings": {
+        "heading_size": "display",
+        "heading_alignment": "center",
+        "result_types": "product,article",
+        "show_type_tabs": true,
+        "products_per_page": 16,
+        "pagination": "numbers",
+        "enable_filters": true,
+        "filter_layout": "drawer",
+        "collapse_filters": false,
+        "card_quick_add": true,
+        "card_show_highlights": true,
+        "card_rating_chip": true,
+        "empty_collection": "demo-tech-all",
+        "empty_heading": "You might like",
+        "empty_products_count": 4,
+        "padding_top": 40,
+        "padding_bottom": 72
+      }
+    },
+    "recent": {
+      "type": "recently-viewed",
+      "settings": {
+        "heading": "Recently viewed",
+        "products_to_show": 4,
+        "columns_desktop": 4,
+        "mobile_layout": "slider",
+        "card_quick_add": true,
+        "card_show_highlights": true,
+        "card_rating_chip": true,
+        "padding_top": 24,
+        "padding_bottom": 72
+      }
+    },
+    "services": {
+      "type": "multicolumn",
+      "settings": {
+        "heading": "",
+        "columns": 4,
+        "columns_mobile": "2",
+        "mobile_layout": "stack",
+        "card_style": "plain",
+        "icon_position": "start",
+        "icon_size": 28,
+        "padding_top": 32,
+        "padding_bottom": 32
+      },
+      "blocks": {
+        "c1": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "chat",
+            "heading": "Customer service",
+            "text": "<p>Real people answer within one business day.</p>"
+          }
+        },
+        "c2": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "truck",
+            "heading": "Shipping",
+            "text": "<p>Describe your delivery promise here.</p>"
+          }
+        },
+        "c3": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "gift",
+            "heading": "Refer a friend",
+            "text": "<p>Explain your referral offer here.</p>"
+          }
+        },
+        "c4": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "lock",
+            "heading": "Secure payment",
+            "text": "<p>Payments are processed by Shopify.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "c1",
+        "c2",
+        "c3",
+        "c4"
+      ]
+    }
+  },
+  "order": [
+    "main",
+    "recent",
+    "services"
+  ]
+}

@@ -1,0 +1,82 @@
+{% doc %}
+  @description Colour chip for a product option value or a colour filter value. Where the colour or picture comes from, first match wins:
+  1. an image passed in (variant image swatches);
+  2. the swatch set in Shopify admin for the option value (Products → option value → swatch colour or image);
+  3. Theme settings → Color swatches → "Color names": lines "Name: #hex", "Name: file-name.png" (a picture uploaded in Content → Files) or "Name: https://…" (full image link);
+  4. the value's name as a CSS colour ("Black", "Navy Blue" → navyblue), else its last word ("Matte Black" → black).
+  Values none of these resolve show a neutral chip with the value's first letter. The shape follows Theme settings → Layout → Swatch shape. Decorative (aria-hidden): the caller names the value for screen readers.
+  Use when: colour options in the variant picker, colour previews on product cards and filters.
+
+  @param {object} value - A product_option_value or filter value (with .swatch)
+  @param {object} [image] - Picture to show instead of a colour (e.g. the value's variant image)
+  @param {string} [class] - Size classes, default "size-6"
+
+  @example
+  {% render 'swatch', value: value, class: 'size-8' %}
+{% enddoc %}
+{%- liquid
+  assign swatch_class = class | default: 'size-6'
+  assign swatch_name = value.name | default: value.label | default: value
+  assign swatch_color = nil
+  assign swatch_image = nil
+
+  if image
+    assign swatch_image = image | image_url: width: 160
+  elsif value.swatch.image
+    assign swatch_image = value.swatch.image | image_url: width: 160
+  endif
+  if value.swatch.color
+    assign swatch_color = value.swatch.color
+  endif
+
+  if swatch_image == nil and swatch_color == nil and settings.swatch_map != blank
+    assign wanted = swatch_name | downcase | strip
+    assign map_lines = settings.swatch_map | newline_to_br | split: '<br />'
+    for line in map_lines
+      assign map_name = line | split: ':' | first
+      assign map_key = map_name | downcase | strip
+      if map_key == wanted
+        assign map_value = line | remove_first: map_name | remove_first: ':' | strip
+        assign map_start = map_value | slice: 0
+        if map_value contains '//'
+          assign swatch_image = map_value
+        elsif map_start != '#' and map_value contains '.'
+          assign map_file = images[map_value]
+          if map_file
+            assign swatch_image = map_file | image_url: width: 160
+          else
+            assign swatch_image = map_value | file_url
+          endif
+        elsif map_value != blank
+          assign swatch_color = map_value
+        endif
+        break
+      endif
+    endfor
+  endif
+
+  assign swatch_letter = ''
+  if swatch_image == nil and swatch_color == nil
+    assign known = 'black,white,gray,grey,silver,red,blue,green,yellow,orange,purple,pink,beige,brown,navy,gold,ivory,khaki,tan,teal,olive,maroon,cyan,magenta,lime,coral,lavender,turquoise,violet,indigo,aqua,crimson,salmon,plum,orchid,chocolate,sienna,peru,wheat,linen,snow,mintcream,honeydew,azure,fuchsia,tomato,firebrick,darkred,darkgray,darkgrey,lightgray,lightgrey,darkblue,lightblue,darkgreen,lightgreen,skyblue,royalblue,navyblue,steelblue,slategray,slategrey,dimgray,dimgrey,whitesmoke,gainsboro,forestgreen,seagreen,olivedrab,rosybrown,hotpink,deeppink,midnightblue,cadetblue,chartreuse,goldenrod,burlywood' | split: ','
+    assign full_key = swatch_name | handle | remove: '-'
+    assign last_key = swatch_name | split: ' ' | last | handle | remove: '-'
+    if known contains full_key
+      assign swatch_color = full_key
+    elsif known contains last_key
+      assign swatch_color = last_key
+    else
+      assign swatch_letter = swatch_name | strip | slice: 0 | upcase
+    endif
+  endif
+-%}
+{%- if swatch_letter != '' -%}
+  <span class="{{ swatch_class }} inline-flex shrink-0 items-center justify-center overflow-hidden rounded-swatch border border-border bg-placeholder text-[0.6875rem] leading-none font-semibold text-muted" aria-hidden="true">
+    {{- swatch_letter | escape -}}
+  </span>
+{%- else -%}
+  <span
+    class="{{ swatch_class }} inline-block shrink-0 rounded-swatch border border-border bg-(--swatch) bg-cover bg-center shadow-[inset_0_0_0_1px_rgb(0_0_0/0.06)]"
+    style="{% if swatch_color %}--swatch: {{ swatch_color }};{% endif %}{% if swatch_image %} background-image: url('{{ swatch_image }}');{% endif %}"
+    aria-hidden="true"
+  ></span>
+{%- endif -%}

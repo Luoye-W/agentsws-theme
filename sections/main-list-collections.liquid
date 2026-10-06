@@ -1,0 +1,366 @@
+{% comment %}
+  @description "All collections" page: a grid of collection tiles with a page heading. Tile styles: plain (image, title and count below), tile (light panel with the image inside, title with the count as a superscript, subtitle, arrow) or overlay (text over the image); the first tile can be shown over its image to stand out. Optional subtitle from each collection's description. Shows every collection (paginated) or only the ones you pick, sorted alphabetically, by product count or by date.
+  Use when: templates/list-collections.json (the /collections page).
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+
+  case s.columns_desktop
+    when 2
+      assign desktop_cols = 'md:grid-cols-2'
+    when 3
+      assign desktop_cols = 'md:grid-cols-3'
+    when 5
+      assign desktop_cols = 'md:grid-cols-3 lg:grid-cols-5'
+    else
+      assign desktop_cols = 'md:grid-cols-3 lg:grid-cols-4'
+  endcase
+  if s.columns_mobile == '1'
+    assign mobile_cols = 'grid-cols-1'
+  else
+    assign mobile_cols = 'grid-cols-2'
+  endif
+
+  case s.image_ratio
+    when 'portrait'
+      assign ratio = '4 / 5'
+    when 'landscape'
+      assign ratio = '4 / 3'
+    else
+      assign ratio = '1 / 1'
+  endcase
+
+  case s.heading_alignment
+    when 'center'
+      assign heading_class = 'text-center'
+    else
+      assign heading_class = 'text-start'
+  endcase
+-%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1)); --tile-ratio: {{ ratio }}; --tile-overlay: {{ s.overlay_opacity | divided_by: 100.0 }};"
+>
+  <div class="page-width flex flex-col gap-8">
+    <h1 class="type-h1 {{ heading_class }}">{{ s.heading | default: page_title | escape }}</h1>
+
+    {%- liquid
+      assign use_selected = false
+      if s.collections.size > 0
+        assign use_selected = true
+      endif
+    -%}
+    {%- paginate collections by s.per_page -%}
+      {%- liquid
+        if use_selected
+          assign source = s.collections
+        else
+          assign source = collections
+        endif
+        case s.sort
+          when 'alphabetical'
+            assign sorted = source | sort_natural: 'title'
+          when 'alphabetical_reversed'
+            assign sorted = source | sort_natural: 'title' | reverse
+          when 'products_high'
+            assign sorted = source | sort: 'all_products_count' | reverse
+          when 'products_low'
+            assign sorted = source | sort: 'all_products_count'
+          when 'date'
+            assign sorted = source | sort: 'published_at'
+          when 'date_reversed'
+            assign sorted = source | sort: 'published_at' | reverse
+          else
+            assign sorted = source
+        endcase
+      -%}
+      {%- capture tiles -%}
+        {%- for collection in sorted -%}
+          {%- liquid
+            assign tile_style = s.card_style
+            if forloop.first and s.feature_first
+              assign tile_style = 'overlay'
+            endif
+            assign tile_subtitle = ''
+            if s.subtitle_source == 'description'
+              assign tile_subtitle = collection.description | strip_html | strip | truncatewords: 8
+            endif
+          -%}
+          {% render 'collection-tile',
+            collection: collection,
+            show_count: s.show_product_count,
+            eager: forloop.first,
+            style: tile_style,
+            image_fit: s.tile_image_fit,
+            subtitle: tile_subtitle,
+            text_scheme: s.text_color_scheme
+          %}
+        {%- endfor -%}
+      {%- endcapture -%}
+      {%- unless use_selected -%}
+        {%- capture pagination_html -%}{% render 'pagination', paginate: paginate %}{%- endcapture -%}
+      {%- endunless -%}
+    {%- endpaginate -%}
+
+    {%- if tiles != blank -%}
+      <ul class="grid {{ mobile_cols }} {{ desktop_cols }} grid-gap" role="list">{{ tiles }}</ul>
+      {{ pagination_html }}
+    {%- else -%}
+      <p class="py-12 text-center type-h5 text-muted">{{ 'collections.list.empty' | t }}</p>
+    {%- endif -%}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "t:sections.main_list_collections.name",
+  "tag": "section",
+  "class": "section-main-list-collections",
+  "enabled_on": {
+    "templates": [
+      "list-collections"
+    ]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "t:sections.main_list_collections.settings.heading.label",
+      "default": "Collections"
+    },
+    {
+      "type": "select",
+      "id": "heading_alignment",
+      "label": "t:shared.text_alignment",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        }
+      ],
+      "default": "start"
+    },
+    {
+      "type": "collection_list",
+      "id": "collections",
+      "label": "t:sections.main_list_collections.settings.collections.label",
+      "info": "t:sections.main_list_collections.settings.collections.info"
+    },
+    {
+      "type": "select",
+      "id": "sort",
+      "label": "t:sections.main_list_collections.settings.sort.label",
+      "info": "t:sections.main_list_collections.settings.sort.info",
+      "options": [
+        {
+          "value": "manual",
+          "label": "t:sections.main_list_collections.settings.sort.options.manual"
+        },
+        {
+          "value": "alphabetical",
+          "label": "t:sections.main_list_collections.settings.sort.options.alphabetical"
+        },
+        {
+          "value": "alphabetical_reversed",
+          "label": "t:sections.main_list_collections.settings.sort.options.alphabetical_reversed"
+        },
+        {
+          "value": "products_high",
+          "label": "t:sections.main_list_collections.settings.sort.options.products_high"
+        },
+        {
+          "value": "products_low",
+          "label": "t:sections.main_list_collections.settings.sort.options.products_low"
+        },
+        {
+          "value": "date_reversed",
+          "label": "t:sections.main_list_collections.settings.sort.options.date_reversed"
+        },
+        {
+          "value": "date",
+          "label": "t:sections.main_list_collections.settings.sort.options.date"
+        }
+      ],
+      "default": "alphabetical"
+    },
+    {
+      "type": "range",
+      "id": "per_page",
+      "label": "t:sections.main_list_collections.settings.per_page.label",
+      "min": 8,
+      "max": 48,
+      "step": 4,
+      "default": 24,
+      "visible_if": "{{ section.settings.collections == blank }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_product_count",
+      "label": "t:sections.main_list_collections.settings.show_product_count.label",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "card_style",
+      "label": "t:sections.collection_list.settings.card_style.label",
+      "options": [
+        {
+          "value": "plain",
+          "label": "t:sections.collection_list.settings.card_style.options.plain"
+        },
+        {
+          "value": "tile",
+          "label": "t:sections.collection_list.settings.card_style.options.tile"
+        },
+        {
+          "value": "overlay",
+          "label": "t:sections.main_list_collections.settings.card_style.options.overlay"
+        }
+      ],
+      "default": "plain"
+    },
+    {
+      "type": "select",
+      "id": "tile_image_fit",
+      "label": "t:shared.fit.label",
+      "options": [
+        {
+          "value": "contain",
+          "label": "t:shared.fit.options.contain"
+        },
+        {
+          "value": "cover",
+          "label": "t:shared.fit.options.cover"
+        }
+      ],
+      "default": "contain",
+      "visible_if": "{{ section.settings.card_style == 'tile' }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "feature_first",
+      "label": "t:sections.main_list_collections.settings.feature_first.label",
+      "info": "t:sections.main_list_collections.settings.feature_first.info",
+      "default": false
+    },
+    {
+      "type": "select",
+      "id": "subtitle_source",
+      "label": "t:sections.collection_list.settings.subtitle_source.label",
+      "options": [
+        {
+          "value": "none",
+          "label": "t:sections.collection_list.settings.subtitle_source.options.none"
+        },
+        {
+          "value": "description",
+          "label": "t:sections.collection_list.settings.subtitle_source.options.description"
+        }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "range",
+      "id": "overlay_opacity",
+      "label": "t:sections.hero.settings.overlay_opacity.label",
+      "min": 0,
+      "max": 90,
+      "step": 5,
+      "unit": "%",
+      "default": 30,
+      "visible_if": "{{ section.settings.card_style == 'overlay' or section.settings.feature_first }}"
+    },
+    {
+      "type": "color_scheme",
+      "id": "text_color_scheme",
+      "label": "t:sections.hero.settings.text_surface.label",
+      "info": "t:sections.hero.settings.text_surface.info",
+      "default": "scheme-3",
+      "visible_if": "{{ section.settings.card_style == 'overlay' or section.settings.feature_first }}"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.layout"
+    },
+    {
+      "type": "select",
+      "id": "image_ratio",
+      "label": "t:sections.main_list_collections.settings.image_ratio.label",
+      "options": [
+        {
+          "value": "square",
+          "label": "t:shared.ratio.options.square"
+        },
+        {
+          "value": "portrait",
+          "label": "t:shared.ratio.options.portrait"
+        },
+        {
+          "value": "landscape",
+          "label": "t:shared.ratio.options.landscape"
+        }
+      ],
+      "default": "square"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "label": "t:shared.columns_desktop",
+      "min": 2,
+      "max": 5,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "label": "t:shared.columns_mobile.label",
+      "options": [
+        {
+          "value": "1",
+          "label": "t:shared.columns_mobile.options.one"
+        },
+        {
+          "value": "2",
+          "label": "t:shared.columns_mobile.options.two"
+        }
+      ],
+      "default": "2"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 80
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,23 @@
+{% doc %}
+  @description Compact review score chip ("★ 4.5") for the corner of a product image. Screen readers hear "4.5 out of 5 stars". Reads the standard Shopify reviews metafield that review apps fill; outputs nothing without a rating — never an invented score. Not clickable (pointer events pass through to the card link).
+  Use when: product cards and bundle cards that show the rating on the image instead of a star row.
+
+  @param {object} rating - The rating value (product.metafields.reviews.rating.value)
+  @param {string} [class] - Position classes, default 'absolute top-3 end-3'
+
+  @example
+  {% render 'rating-chip', rating: product.metafields.reviews.rating.value %}
+{% enddoc %}
+{%- if rating -%}
+  {%- liquid
+    assign position_class = class | default: 'absolute top-3 end-3'
+    assign score = rating.rating | default: rating | plus: 0
+    assign scale_max = rating.scale_max | default: 5 | plus: 0
+    assign score_text = score | times: 1.0 | round: 1
+  -%}
+  <p class="pointer-events-none {{ position_class }} inline-flex items-center gap-1 rounded-full bg-bg px-2.5 py-1 type-xs font-semibold text-fg shadow-sm" data-card-rating-chip>
+    {%- render 'icon', name: 'star', class: 'size-3.5 fill-current text-rating' -%}
+    <span aria-hidden="true">{{ score_text }}</span>
+    <span class="sr-only">{{ 'products.rating.stars' | t: rating: score_text, max: scale_max }}</span>
+  </p>
+{%- endif -%}

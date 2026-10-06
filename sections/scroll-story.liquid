@@ -1,0 +1,271 @@
+{% comment %}
+  @description Sticky scroll story: on large screens a media panel (image or Shopify-hosted video) stays in view beside a column of text steps; as each step reaches the middle of the screen its own image wipes in over the panel and a progress bar marks the step. Steps without an image keep the current picture. Each step is a local block: eyebrow, heading, text, button and optional image. Phones, tablets, shoppers who prefer reduced motion and browsers without JavaScript get a plain stacked layout (each step with its image above the text).
+  Use when: telling a product or brand story in 2–5 steps (how it's made, key features one by one, setup), usually on product or landing pages.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign heading_id = 'ScrollStoryHeading-' | append: section.id
+  assign step_count = 0
+  for block in section.blocks
+    assign step_count = step_count | plus: 1
+  endfor
+  assign image_sizes = '(min-width: 990px) 50vw, 100vw'
+-%}
+<aw-scroll-story
+  class="group/story block surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1)); --story-h: {{ s.media_height }}px;"
+>
+  <div class="page-width flex flex-col gap-8 md:gap-12">
+    {%- render 'section-heading', eyebrow: s.eyebrow, heading: s.heading, text: s.description, heading_id: heading_id -%}
+    <div class="grid gap-10 lg:grid-cols-2 lg:gap-16">
+      <div class="hidden min-w-0{% if s.media_position == 'end' %} lg:order-last{% endif %} group-data-[animate]/story:lg:block">
+        <div
+          class="sticky top-[calc(var(--header-h,0px)+var(--anchor-nav-offset,0px)+1.5rem)] h-[min(var(--story-h),calc(100vh-var(--header-h,0px)-var(--anchor-nav-offset,0px)-3rem))] overflow-hidden rounded-media bg-placeholder"
+          data-ref="stage"
+        >
+          <div class="absolute inset-0">
+            {%- if s.video != blank -%}
+              {%- assign video_label = s.video.alt | default: s.heading | strip_html -%}
+              {% render 'video-player', video: s.video, cover: s.image, autoplay: true, loop: true, description: video_label, sizes: image_sizes, class: 'size-full' %}
+            {%- elsif s.image != blank -%}
+              {{ s.image | image_url: width: 1800 | image_tag: widths: '600, 900, 1200, 1500, 1800', sizes: image_sizes, loading: 'lazy', class: 'size-full object-cover', alt: '' }}
+            {%- else -%}
+              {{ 'lifestyle-1' | placeholder_svg_tag: 'size-full' }}
+            {%- endif -%}
+          </div>
+          {%- for block in section.blocks -%}
+            {%- if block.settings.image != blank -%}
+              <div
+                class="scroll-story__layer absolute inset-0"
+                data-ref="layer"
+                data-step="{{ forloop.index0 }}"
+              >
+                {{ block.settings.image | image_url: width: 1800 | image_tag: widths: '600, 900, 1200, 1500, 1800', sizes: image_sizes, loading: 'lazy', class: 'size-full object-cover', alt: '' }}
+              </div>
+            {%- endif -%}
+          {%- endfor -%}
+          {%- if s.show_progress and step_count > 1 -%}
+            <div class="absolute inset-x-4 bottom-4 flex gap-1.5 rounded-full bg-bg/80 p-1.5">
+              {%- for block in section.blocks -%}
+                <span class="h-1 flex-1 rounded-full bg-fg/20 transition-colors duration-300 data-active:bg-fg" data-ref="segment"></span>
+              {%- endfor -%}
+            </div>
+          {%- endif -%}
+        </div>
+      </div>
+
+      {%- if s.image != blank -%}
+        <div class="overflow-hidden rounded-media bg-placeholder group-data-[animate]/story:lg:hidden">
+          {%- assign base_alt = s.image.alt | escape -%}
+          {{ s.image | image_url: width: 1500 | image_tag: widths: '500, 750, 1000, 1500', sizes: image_sizes, loading: 'lazy', class: 'aspect-[4/3] w-full object-cover', alt: base_alt }}
+        </div>
+      {%- endif -%}
+      <ol class="flex min-w-0 flex-col gap-12 group-data-[animate]/story:lg:gap-0 group-data-[animate]/story:lg:pb-[30vh]" role="list" {% if s.heading != blank %}aria-labelledby="{{ heading_id }}"{% endif %}>
+        {%- for block in section.blocks -%}
+          {%- liquid
+            assign b = block.settings
+            assign step_image = b.image
+          -%}
+          <li
+            class="flex flex-col gap-6 transition-opacity duration-500 group-data-[animate]/story:lg:min-h-[70vh] group-data-[animate]/story:lg:justify-center group-data-[animate]/story:lg:opacity-40 group-data-[animate]/story:lg:data-active:opacity-100"
+            data-ref="step"
+            {{ block.shopify_attributes }}
+          >
+            {%- if step_image != blank -%}
+              <div class="overflow-hidden rounded-media bg-placeholder group-data-[animate]/story:lg:hidden">
+                {%- assign step_alt = step_image.alt | escape -%}
+                {{ step_image | image_url: width: 1500 | image_tag: widths: '500, 750, 1000, 1500', sizes: image_sizes, loading: 'lazy', class: 'aspect-[4/3] w-full object-cover', alt: step_alt }}
+              </div>
+            {%- endif -%}
+            <div class="flex max-w-xl flex-col items-start gap-4">
+              {%- if b.eyebrow != blank -%}
+                <p class="type-eyebrow text-muted">{{ b.eyebrow | escape }}</p>
+              {%- endif -%}
+              {%- if b.heading != blank -%}
+                <h3 class="type-h2">{{ b.heading }}</h3>
+              {%- endif -%}
+              {%- if b.text != blank -%}
+                <div class="rte text-muted">{{ b.text }}</div>
+              {%- endif -%}
+              {%- if b.button_label != blank and b.button_link != blank -%}
+                <a href="{{ b.button_link }}" class="btn btn-secondary">{{ b.button_label | escape }}</a>
+              {%- endif -%}
+            </div>
+          </li>
+        {%- endfor -%}
+      </ol>
+    </div>
+  </div>
+</aw-scroll-story>
+<script src="{{ 'c-scroll-story.js' | asset_url }}" type="module"></script>
+
+{%- comment -%} The padding under the last step keeps the grid (and so the sticky panel) running until that step reaches the middle of the screen. {%- endcomment -%}
+{% stylesheet %}
+  /* Step images wipe in from the bottom over the panel; the layer of the current (or an earlier) step is shown. */
+  .scroll-story__layer {
+    clip-path: inset(100% 0 0 0);
+    transition: clip-path 0.7s cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  .scroll-story__layer[data-shown] {
+    clip-path: inset(0);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .scroll-story__layer {
+      transition: none;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.scroll_story.name",
+  "tag": "section",
+  "class": "section-scroll-story",
+  "disabled_on": {
+    "groups": ["header", "footer", "custom.overlay"]
+  },
+  "max_blocks": 8,
+  "blocks": [
+    {
+      "type": "step",
+      "name": "t:sections.scroll_story.blocks.step.name",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "t:sections.scroll_story.blocks.step.settings.image.label",
+          "info": "t:sections.scroll_story.blocks.step.settings.image.info"
+        },
+        {
+          "type": "text",
+          "id": "eyebrow",
+          "label": "t:shared.section_heading.eyebrow"
+        },
+        {
+          "type": "inline_richtext",
+          "id": "heading",
+          "label": "t:shared.section_heading.heading",
+          "default": "Step heading"
+        },
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "t:blocks.text.settings.text.label",
+          "default": "<p>Describe this step in one or two sentences.</p>"
+        },
+        {
+          "type": "text",
+          "id": "button_label",
+          "label": "t:shared.section_heading.link_label"
+        },
+        {
+          "type": "url",
+          "id": "button_link",
+          "label": "t:shared.section_heading.link",
+          "visible_if": "{{ block.settings.button_label != blank }}"
+        }
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:shared.section_heading.eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:shared.section_heading.heading"
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "t:shared.section_heading.description"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.scroll_story.settings.media_header"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:sections.scroll_story.settings.image.label",
+      "info": "t:sections.scroll_story.settings.image.info"
+    },
+    {
+      "type": "video",
+      "id": "video",
+      "label": "t:sections.scroll_story.settings.video.label",
+      "info": "t:sections.scroll_story.settings.video.info"
+    },
+    {
+      "type": "select",
+      "id": "media_position",
+      "label": "t:sections.scroll_story.settings.media_position.label",
+      "options": [
+        { "value": "start", "label": "t:sections.scroll_story.settings.media_position.options.start" },
+        { "value": "end", "label": "t:sections.scroll_story.settings.media_position.options.end" }
+      ],
+      "default": "start"
+    },
+    {
+      "type": "range",
+      "id": "media_height",
+      "label": "t:sections.scroll_story.settings.media_height.label",
+      "info": "t:sections.scroll_story.settings.media_height.info",
+      "min": 400,
+      "max": 900,
+      "step": 50,
+      "unit": "px",
+      "default": 650
+    },
+    {
+      "type": "checkbox",
+      "id": "show_progress",
+      "label": "t:sections.scroll_story.settings.show_progress.label",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.scroll_story.name",
+      "blocks": [
+        { "type": "step", "settings": { "heading": "Step heading", "text": "<p>Describe this step in one or two sentences.</p>" } },
+        { "type": "step", "settings": { "heading": "Step heading", "text": "<p>Describe this step in one or two sentences.</p>" } },
+        { "type": "step", "settings": { "heading": "Step heading", "text": "<p>Describe this step in one or two sentences.</p>" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,262 @@
+{% comment %}
+  @description Order details (classic accounts): heading with the order number, order date, cancellation notice, line items (product link, variant, selling plan, custom properties, line discounts, fulfillment with tracking link, SKU, price, quantity, total), totals with one row per order discount, shipping method and tax line, duties, refunds and the grand total; billing and shipping addresses with payment and fulfillment status.
+  Use when: templates/customers/order.json only.
+{% endcomment %}
+{%- assign s = section.settings -%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+>
+  <div class="page-width flex flex-col gap-10">
+    <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <div class="flex flex-col gap-2">
+        <h1 class="type-h1">{{ 'customer.order.title' | t: name: order.name }}</h1>
+        {%- assign placed_date = order.created_at | date: format: 'date_at_time' -%}
+        <p class="text-muted">{{ 'customer.order.placed_on' | t: date: placed_date }}</p>
+      </div>
+      <a href="{{ routes.account_url }}" class="btn btn-secondary self-start md:self-auto">{{ 'customer.account.return' | t }}</a>
+    </div>
+
+    {%- if order.cancelled -%}
+      {%- capture cancelled_message -%}
+        {%- assign cancelled_date = order.cancelled_at | date: format: 'date_at_time' -%}
+        <p><strong>{{ 'customer.order.cancelled' | t: date: cancelled_date }}</strong></p>
+        {%- if order.cancel_reason_label != blank -%}
+          <p>{{ 'customer.order.cancelled_reason' | t: reason: order.cancel_reason_label }}</p>
+        {%- endif -%}
+      {%- endcapture -%}
+      {% render 'form-alert', tone: 'error', message: cancelled_message %}
+    {%- endif -%}
+
+    <div class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+      <div class="min-w-0">
+        <table class="w-full border-collapse type-sm">
+          <caption class="sr-only">{{ 'customer.order.items' | t }}</caption>
+          <thead class="max-md:sr-only">
+            <tr class="border-b border-border text-muted">
+              <th scope="col" class="py-3 pe-4 text-start font-medium">{{ 'customer.order.product' | t }}</th>
+              <th scope="col" class="py-3 pe-4 text-start font-medium">{{ 'customer.order.sku' | t }}</th>
+              <th scope="col" class="py-3 pe-4 text-end font-medium">{{ 'customer.order.price' | t }}</th>
+              <th scope="col" class="py-3 pe-4 text-end font-medium">{{ 'customer.order.quantity' | t }}</th>
+              <th scope="col" class="py-3 text-end font-medium">{{ 'customer.order.total' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {%- for line_item in order.line_items -%}
+              <tr class="border-b border-border align-top max-md:grid max-md:grid-cols-2 max-md:gap-3 max-md:py-4">
+                <th scope="row" class="py-4 pe-4 text-start font-normal max-md:col-span-2 max-md:py-0">
+                  <div class="flex gap-4">
+                    {%- if line_item.image -%}
+                      {{
+                        line_item.image
+                        | image_url: width: 160
+                        | image_tag: widths: '80, 160', sizes: '80px', loading: 'lazy', alt: '', class: 'size-16 shrink-0 rounded-media bg-placeholder object-cover'
+                      }}
+                    {%- endif -%}
+                    <div class="flex min-w-0 flex-col gap-1">
+                      {%- if line_item.url != blank -%}
+                        <a href="{{ line_item.url }}" class="font-semibold underline">{{ line_item.product.title | default: line_item.title | escape }}</a>
+                      {%- else -%}
+                        <span class="font-semibold">{{ line_item.title | escape }}</span>
+                      {%- endif -%}
+                      {%- unless line_item.product.has_only_default_variant or line_item.variant_title == blank -%}
+                        <span class="text-muted">{{ line_item.variant_title | escape }}</span>
+                      {%- endunless -%}
+                      {%- if line_item.selling_plan_allocation -%}
+                        <span class="text-muted">{{ line_item.selling_plan_allocation.selling_plan.name | escape }}</span>
+                      {%- endif -%}
+                      {%- for property in line_item.properties -%}
+                        {%- assign property_first_char = property.first | slice: 0 -%}
+                        {%- if property.last != blank and property_first_char != '_' -%}
+                          <span class="text-muted">
+                            {{ property.first | escape }}:
+                            {% if property.last contains '/uploads/' -%}
+                              <a href="{{ property.last }}" class="underline" target="_blank" rel="noopener">{{ property.last | split: '/' | last | escape }}<span class="sr-only"> ({{ 'general.accessibility.new_window' | t }})</span></a>
+                            {%- else -%}
+                              {{ property.last | escape }}
+                            {%- endif -%}
+                          </span>
+                        {%- endif -%}
+                      {%- endfor -%}
+                      {%- if line_item.line_level_discount_allocations.size > 0 -%}
+                        <ul class="flex flex-wrap gap-1.5" role="list">
+                          {%- for allocation in line_item.line_level_discount_allocations -%}
+                            <li class="rounded-full bg-fg/[0.06] px-2.5 py-0.5 type-xs">
+                              {{ allocation.discount_application.title | escape }} (−{{ allocation.amount | money }})
+                            </li>
+                          {%- endfor -%}
+                        </ul>
+                      {%- endif -%}
+                      {%- if line_item.fulfillment -%}
+                        <div class="mt-1 flex flex-col gap-0.5 rounded-card border border-success/40 p-3 type-xs text-success">
+                          {%- assign fulfilled_date = line_item.fulfillment.created_at | date: format: 'date' -%}
+                          <span>{{ 'customer.order.fulfilled_on' | t: date: fulfilled_date }}</span>
+                          {%- if line_item.fulfillment.tracking_company != blank -%}
+                            <span>{{ line_item.fulfillment.tracking_company | escape }}{% if line_item.fulfillment.tracking_number != blank %} · {{ line_item.fulfillment.tracking_number | escape }}{% endif %}</span>
+                          {%- endif -%}
+                          {%- if line_item.fulfillment.tracking_url != blank -%}
+                            <a href="{{ line_item.fulfillment.tracking_url }}" class="font-semibold underline" target="_blank" rel="noopener">
+                              {{- 'customer.order.track_shipment' | t -}}
+                              <span class="sr-only"> ({{ 'general.accessibility.new_window' | t }})</span>
+                            </a>
+                          {%- endif -%}
+                        </div>
+                      {%- endif -%}
+                    </div>
+                  </div>
+                </th>
+                <td class="py-4 pe-4 max-md:py-0">
+                  <span class="block type-xs text-muted md:hidden" aria-hidden="true">{{ 'customer.order.sku' | t }}</span>
+                  {{ line_item.sku | default: '–' | escape }}
+                </td>
+                <td class="py-4 pe-4 text-end max-md:py-0 max-md:text-start">
+                  <span class="block type-xs text-muted md:hidden" aria-hidden="true">{{ 'customer.order.price' | t }}</span>
+                  {%- if line_item.original_price != line_item.final_price -%}
+                    <s class="text-muted">
+                      <span class="sr-only">{{ 'products.price.regular_price' | t }}</span>
+                      {{ line_item.original_price | money }}
+                    </s>
+                    <span class="sr-only">{{ 'products.price.sale_price' | t }}</span>
+                  {%- endif %}
+                  {{ line_item.final_price | money }}
+                  {%- if line_item.unit_price_measurement -%}
+                    <span class="block type-xs text-muted">
+                      {{- line_item.unit_price | money -}}/
+                      {%- if line_item.unit_price_measurement.reference_value != 1 -%}{{ line_item.unit_price_measurement.reference_value }}{%- endif -%}
+                      {{- line_item.unit_price_measurement.reference_unit -}}
+                    </span>
+                  {%- endif -%}
+                </td>
+                <td class="py-4 pe-4 text-end max-md:py-0 max-md:text-start">
+                  <span class="block type-xs text-muted md:hidden" aria-hidden="true">{{ 'customer.order.quantity' | t }}</span>
+                  {{ line_item.quantity }}
+                </td>
+                <td class="py-4 text-end max-md:py-0 max-md:text-start">
+                  <span class="block type-xs text-muted md:hidden" aria-hidden="true">{{ 'customer.order.total' | t }}</span>
+                  {%- if line_item.original_line_price != line_item.final_line_price -%}
+                    <s class="block text-muted">
+                      <span class="sr-only">{{ 'products.price.regular_price' | t }}</span>
+                      {{ line_item.original_line_price | money }}
+                    </s>
+                  {%- endif -%}
+                  {{ line_item.final_line_price | money }}
+                </td>
+              </tr>
+            {%- endfor -%}
+          </tbody>
+          <tfoot>
+            <tr class="max-md:flex max-md:justify-between">
+              <th scope="row" colspan="4" class="pt-4 pe-4 text-start font-normal md:text-end">{{ 'customer.order.subtotal' | t }}</th>
+              <td class="pt-4 text-end">{{ order.line_items_subtotal_price | money }}</td>
+            </tr>
+            {%- for discount_application in order.cart_level_discount_applications -%}
+              <tr class="max-md:flex max-md:justify-between">
+                <th scope="row" colspan="4" class="pt-2 pe-4 text-start font-normal md:text-end">
+                  {{ 'customer.order.discount' | t }}
+                  <span class="text-muted">({{ discount_application.title | escape }})</span>
+                </th>
+                <td class="pt-2 text-end">−{{ discount_application.total_allocated_amount | money }}</td>
+              </tr>
+            {%- endfor -%}
+            {%- for shipping_method in order.shipping_methods -%}
+              <tr class="max-md:flex max-md:justify-between">
+                <th scope="row" colspan="4" class="pt-2 pe-4 text-start font-normal md:text-end">
+                  {{ 'customer.order.shipping' | t }}
+                  <span class="text-muted">({{ shipping_method.title | escape }})</span>
+                </th>
+                <td class="pt-2 text-end">{{ shipping_method.price | money }}</td>
+              </tr>
+            {%- endfor -%}
+            {%- for tax_line in order.tax_lines -%}
+              <tr class="max-md:flex max-md:justify-between">
+                <th scope="row" colspan="4" class="pt-2 pe-4 text-start font-normal md:text-end">
+                  {{ 'customer.order.tax' | t }}
+                  <span class="text-muted">({{ tax_line.title | escape }} {{ tax_line.rate_percentage }}%)</span>
+                </th>
+                <td class="pt-2 text-end">{{ tax_line.price | money }}</td>
+              </tr>
+            {%- endfor -%}
+            {%- if order.total_duties -%}
+              <tr class="max-md:flex max-md:justify-between">
+                <th scope="row" colspan="4" class="pt-2 pe-4 text-start font-normal md:text-end">{{ 'customer.order.duties' | t }}</th>
+                <td class="pt-2 text-end">{{ order.total_duties | money }}</td>
+              </tr>
+            {%- endif -%}
+            {%- if order.total_refunded_amount > 0 -%}
+              <tr class="max-md:flex max-md:justify-between">
+                <th scope="row" colspan="4" class="pt-2 pe-4 text-start font-normal md:text-end">{{ 'customer.order.refunded' | t }}</th>
+                <td class="pt-2 text-end">−{{ order.total_refunded_amount | money }}</td>
+              </tr>
+            {%- endif -%}
+            <tr class="max-md:flex max-md:justify-between">
+              <th scope="row" colspan="4" class="pt-4 pe-4 text-start type-h5 md:text-end">{{ 'customer.order.total' | t }}</th>
+              <td class="pt-4 text-end type-h5">{{ order.total_net_amount | money_with_currency }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="flex flex-col gap-4">
+        <section class="flex flex-col gap-3 rounded-card bg-fg/[0.04] p-6" aria-labelledby="BillingAddress-{{ section.id }}">
+          <h2 id="BillingAddress-{{ section.id }}" class="type-h6">{{ 'customer.order.billing_address' | t }}</h2>
+          <p class="type-sm">
+            <span class="text-muted">{{ 'customer.orders.payment_status' | t }}:</span>
+            {{ order.financial_status_label }}
+          </p>
+          {%- if order.billing_address -%}
+            <div class="type-sm">{{ order.billing_address | format_address }}</div>
+          {%- endif -%}
+        </section>
+        <section class="flex flex-col gap-3 rounded-card bg-fg/[0.04] p-6" aria-labelledby="ShippingAddress-{{ section.id }}">
+          <h2 id="ShippingAddress-{{ section.id }}" class="type-h6">{{ 'customer.order.shipping_address' | t }}</h2>
+          <p class="type-sm">
+            <span class="text-muted">{{ 'customer.orders.fulfillment_status' | t }}:</span>
+            {{ order.fulfillment_status_label }}
+          </p>
+          {%- if order.shipping_address -%}
+            <div class="type-sm">{{ order.shipping_address | format_address }}</div>
+          {%- endif -%}
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "t:sections.main_order.name",
+  "tag": "section",
+  "class": "section-main-order",
+  "enabled_on": {
+    "templates": ["customers/order"]
+  },
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 80
+    }
+  ]
+}
+{% endschema %}

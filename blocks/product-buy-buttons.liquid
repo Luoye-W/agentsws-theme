@@ -1,0 +1,110 @@
+{% doc %}
+  @description Quantity selector, Add to cart button and accelerated checkout buttons (Shop Pay, Apple Pay…) for the selected variant. Adds without leaving the page and opens the cart drawer when Theme settings → Cart uses the drawer. Optionally shows the selected variant's price inside the button ("Add to cart · $99.00"), updated when the variant changes.
+  Use when: product info column; any section that has a product.
+
+  @example
+  {% content_for 'block', type: 'product-buy-buttons', id: 'buy' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  assign product = closest.product
+  assign variant = product.selected_or_first_available_variant
+  assign form_id = 'ProductForm-' | append: block.id
+-%}
+<aw-product-form
+  class="block"
+  data-cart-add-url="{{ routes.cart_add_url }}"
+  data-cart-url="{{ routes.cart_url }}"
+  data-cart-type="{{ settings.cart_type }}"
+  data-error-text="{{ 'general.cart.error' | t | escape }}"
+  data-swap="buy-{{ block.id }}"
+  {{ block.shopify_attributes }}
+>
+  {%- if product -%}
+    {%- form 'product', product, id: form_id, class: 'flex flex-col gap-3', novalidate: 'novalidate' -%}
+      <input type="hidden" name="id" value="{{ variant.id }}">
+      <div class="flex gap-3">
+        {%- if s.show_quantity -%}
+          <aw-quantity class="inline-flex h-12 shrink-0 items-center rounded-input border border-border">
+            <button type="button" class="flex h-full w-11 items-center justify-center" data-ref="minus" aria-label="{{ 'products.product.quantity.decrease' | t: product: product.title }}">
+              {%- render 'icon', name: 'minus', class: 'size-4' -%}
+            </button>
+            <input
+              type="number"
+              name="quantity"
+              data-ref="input"
+              id="Quantity-{{ block.id }}"
+              value="{{ variant.quantity_rule.min | default: 1 }}"
+              min="{{ variant.quantity_rule.min | default: 1 }}"
+              {% if variant.quantity_rule.max %}
+                max="{{ variant.quantity_rule.max }}"
+              {% endif %}
+              step="{{ variant.quantity_rule.increment | default: 1 }}"
+              class="h-full w-12 border-0 bg-transparent text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+              aria-label="{{ 'products.product.quantity.label' | t }}"
+            >
+            <button type="button" class="flex h-full w-11 items-center justify-center" data-ref="plus" aria-label="{{ 'products.product.quantity.increase' | t: product: product.title }}">
+              {%- render 'icon', name: 'plus', class: 'size-4' -%}
+            </button>
+          </aw-quantity>
+        {%- endif -%}
+        <button
+          type="submit"
+          name="add"
+          class="btn btn-primary h-12 flex-1 aria-busy:opacity-70{% if s.show_price %} flex-wrap gap-x-2 gap-y-0 px-4{% endif %}"
+          {% unless variant.available %}
+            disabled
+          {% endunless %}
+        >
+          {%- if variant == nil -%}
+            {{ 'products.product.unavailable' | t }}
+          {%- elsif variant.available and s.show_price -%}
+            <span class="whitespace-nowrap">{{ 'products.product.add_to_cart' | t }}</span>
+            <span class="max-md:hidden" aria-hidden="true">·</span>
+            <span class="whitespace-nowrap">{{ variant.price | money }}</span>
+          {%- elsif variant.available -%}
+            {{ 'products.product.add_to_cart' | t }}
+          {%- else -%}
+            {{ 'products.product.sold_out' | t }}
+          {%- endif -%}
+        </button>
+      </div>
+      {%- if s.show_dynamic_checkout -%}
+        {{ form | payment_button }}
+      {%- endif -%}
+      <p class="type-sm text-error" role="alert" data-ref="error" hidden></p>
+    {%- endform -%}
+  {%- endif -%}
+</aw-product-form>
+<script src="{{ 'c-product-form.js' | asset_url }}" type="module"></script>
+<script src="{{ 'c-quantity.js' | asset_url }}" type="module"></script>
+
+{% schema %}
+{
+  "name": "t:blocks.product_buy_buttons.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_quantity",
+      "label": "t:blocks.product_buy_buttons.settings.show_quantity.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_price",
+      "label": "t:blocks.product_buy_buttons.settings.show_price.label",
+      "info": "t:blocks.product_buy_buttons.settings.show_price.info",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_dynamic_checkout",
+      "label": "t:blocks.product_buy_buttons.settings.show_dynamic_checkout.label",
+      "info": "t:blocks.product_buy_buttons.settings.show_dynamic_checkout.info",
+      "default": true
+    }
+  ],
+  "presets": [{ "name": "t:blocks.product_buy_buttons.name" }]
+}
+{% endschema %}

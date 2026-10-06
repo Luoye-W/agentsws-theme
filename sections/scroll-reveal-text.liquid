@@ -1,0 +1,244 @@
+{% comment %}
+  @description Big statement text whose words (or, for Chinese and other text without spaces, characters) fill from a faint color to full color one after another as the section scrolls up the screen. Pure CSS scroll-driven animation on spans generated in Liquid; screen readers get the sentence once, as plain text. Browsers without scroll-driven animations and shoppers who prefer reduced motion see the text in full color at once.
+  Use when: a brand statement or manifesto between sections ("We believe…"), an about-page intro, a slow reading moment before a product story.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+
+  case s.size
+    when 'display'
+      assign size_class = 'type-display'
+    when 'h1'
+      assign size_class = 'type-h1'
+    when 'h3'
+      assign size_class = 'type-h3'
+    else
+      assign size_class = 'type-h2'
+  endcase
+
+  case s.alignment
+    when 'center'
+      assign align_class = 'text-center mx-auto'
+    when 'right'
+      assign align_class = 'text-end ms-auto'
+    else
+      assign align_class = 'text-start'
+  endcase
+
+  case s.text_width
+    when 'narrow'
+      assign width_class = 'max-w-3xl'
+    when 'wide'
+      assign width_class = 'max-w-none'
+    else
+      assign width_class = 'max-w-5xl'
+  endcase
+
+  assign text = s.text | strip
+  assign split_mode = s.split
+  if split_mode == 'auto'
+    if text contains ' '
+      assign split_mode = 'words'
+    else
+      assign split_mode = 'characters'
+    endif
+  endif
+
+  assign tag = s.tag | default: 'h2'
+  assign unit_count = 0
+  assign lines = text | newline_to_br | split: '<br />'
+-%}
+{%- capture units -%}
+  {%- for raw_line in lines -%}
+    {%- assign line = raw_line | strip -%}
+    {%- unless forloop.first -%}<br>{%- endunless -%}
+    {%- if split_mode == 'characters' -%}
+      {%- assign chars = line | split: '' -%}
+      {%- for char in chars -%}
+        {%- if char == ' ' -%}
+          {{ ' ' }}
+        {%- else -%}
+          <span class="scroll-reveal-text__unit" style="--i: {{ unit_count }};">{{ char | escape }}</span>
+          {%- assign unit_count = unit_count | plus: 1 -%}
+        {%- endif -%}
+      {%- endfor -%}
+    {%- else -%}
+      {%- assign words = line | split: ' ' -%}
+      {%- for word in words -%}
+        {%- comment -%} Output the space as a value: Shopify's whitespace control strips literal spaces between tags. {%- endcomment -%}
+        {%- unless forloop.first -%}{{ ' ' }}{%- endunless -%}
+        <span class="scroll-reveal-text__unit" style="--i: {{ unit_count }};">{{ word | escape }}</span>
+        {%- assign unit_count = unit_count | plus: 1 -%}
+      {%- endfor -%}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+>
+  <div class="page-width">
+    {%- if text != blank -%}
+      <{{ tag }}
+        class="scroll-reveal-text {{ size_class }} {{ align_class }} {{ width_class }} text-balance"
+        style="--scroll-reveal-text-from: {{ s.start_opacity | divided_by: 100.0 }}; --scroll-reveal-text-n: {{ unit_count | at_least: 1 }};"
+        data-split="{{ split_mode }}"
+      >
+        <span class="sr-only">{{ text | escape | newline_to_br }}</span>
+        <span aria-hidden="true">{{ units }}</span>
+      </{{ tag }}>
+    {%- elsif request.design_mode -%}
+      <p class="type-body text-muted">{{ 'sections.scroll_reveal_text.editor_empty' | t }}</p>
+    {%- endif -%}
+  </div>
+</div>
+
+{% stylesheet %}
+  /* The heading is the timeline: while it travels from 20% to 60% of its way through the screen (its middle passes
+     the middle of the screen at 50%), unit i of n goes from the start opacity to full color in its own slice. */
+  .scroll-reveal-text {
+    view-timeline-name: --scroll-reveal-text;
+    view-timeline-axis: block;
+    --scroll-reveal-text-start: 20%;
+    --scroll-reveal-text-span: 40%;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .scroll-reveal-text__unit {
+        animation: scroll-reveal-text-fill linear both;
+        animation-timeline: --scroll-reveal-text;
+        animation-range:
+          cover calc(var(--scroll-reveal-text-start) + var(--scroll-reveal-text-span) * var(--i) / var(--scroll-reveal-text-n))
+          cover calc(var(--scroll-reveal-text-start) + var(--scroll-reveal-text-span) * (var(--i) + 1) / var(--scroll-reveal-text-n));
+      }
+    }
+  }
+  @keyframes scroll-reveal-text-fill {
+    from {
+      opacity: var(--scroll-reveal-text-from, 0.2);
+    }
+    to {
+      opacity: 1;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.scroll_reveal_text.name",
+  "tag": "section",
+  "class": "section-scroll-reveal-text",
+  "settings": [
+    {
+      "type": "textarea",
+      "id": "text",
+      "label": "t:sections.scroll_reveal_text.settings.text.label",
+      "info": "t:sections.scroll_reveal_text.settings.text.info",
+      "default": "Every piece we make starts with a sketch, a question and a lot of patience. We keep going until it feels right in your hands."
+    },
+    {
+      "type": "select",
+      "id": "split",
+      "label": "t:sections.scroll_reveal_text.settings.split.label",
+      "info": "t:sections.scroll_reveal_text.settings.split.info",
+      "options": [
+        { "value": "auto", "label": "t:sections.scroll_reveal_text.settings.split.options.auto" },
+        { "value": "words", "label": "t:sections.scroll_reveal_text.settings.split.options.words" },
+        { "value": "characters", "label": "t:sections.scroll_reveal_text.settings.split.options.characters" }
+      ],
+      "default": "auto"
+    },
+    {
+      "type": "range",
+      "id": "start_opacity",
+      "label": "t:sections.scroll_reveal_text.settings.start_opacity.label",
+      "info": "t:sections.scroll_reveal_text.settings.start_opacity.info",
+      "min": 5,
+      "max": 60,
+      "step": 5,
+      "unit": "%",
+      "default": 20
+    },
+    {
+      "type": "header",
+      "content": "t:shared.layout"
+    },
+    {
+      "type": "select",
+      "id": "size",
+      "label": "t:blocks.heading.settings.size.label",
+      "options": [
+        { "value": "display", "label": "t:blocks.heading.settings.size.options.display" },
+        { "value": "h1", "label": "t:blocks.heading.settings.size.options.h1" },
+        { "value": "h2", "label": "t:blocks.heading.settings.size.options.h2" },
+        { "value": "h3", "label": "t:blocks.heading.settings.size.options.h3" }
+      ],
+      "default": "h1"
+    },
+    {
+      "type": "select",
+      "id": "tag",
+      "label": "t:blocks.heading.settings.tag.label",
+      "info": "t:blocks.heading.settings.tag.info",
+      "options": [
+        { "value": "h2", "label": "H2" },
+        { "value": "h3", "label": "H3" },
+        { "value": "p", "label": "t:blocks.heading.settings.tag.options.p" }
+      ],
+      "default": "h2"
+    },
+    {
+      "type": "text_alignment",
+      "id": "alignment",
+      "label": "t:shared.text_alignment",
+      "default": "left"
+    },
+    {
+      "type": "select",
+      "id": "text_width",
+      "label": "t:sections.scroll_reveal_text.settings.text_width.label",
+      "options": [
+        { "value": "narrow", "label": "t:sections.scroll_reveal_text.settings.text_width.options.narrow" },
+        { "value": "medium", "label": "t:sections.scroll_reveal_text.settings.text_width.options.medium" },
+        { "value": "wide", "label": "t:sections.scroll_reveal_text.settings.text_width.options.wide" }
+      ],
+      "default": "medium"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 80
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 80
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.scroll_reveal_text.name"
+    }
+  ]
+}
+{% endschema %}

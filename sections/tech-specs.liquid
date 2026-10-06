@@ -1,0 +1,343 @@
+{% comment %}
+  @description Tech specs: a heading and an accordion of spec groups (Sound, Design, Battery, Connectivity…); inside an open group the specs sit in two columns ("Label: value" per line; lines starting with "-" add more values under the item above). Each group reads its lines from a product metafield (multi-line text or list of single line texts, e.g. custom.specs_sound) when the product has one, else from the group's own text — so one template serves every product. Only one group open at a time or several; the first can start open. Optional "In the box" card beside the accordion (sticky on desktop, below on phones) with round pictures and labels, in its own color scheme. Groups without content are hidden.
+  Use when: product templates (below the main product) for technical products; also usable on landing pages with typed-in specs.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign heading_id = 'TechSpecsHeading-' | append: section.id
+
+  assign box_count = 0
+  for block in section.blocks
+    if block.type == 'box_item'
+      if block.settings.label != blank or block.settings.image != blank
+        assign box_count = box_count | plus: 1
+      endif
+    endif
+  endfor
+
+  if box_count > 0
+    assign layout_class = 'grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] lg:gap-16'
+  else
+    assign layout_class = 'grid'
+  endif
+  assign opened_first = false
+-%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+>
+  <div class="{% render 'width-classes', width: s.width %} {{ layout_class }}">
+    <div class="flex min-w-0 flex-col gap-8">
+      {%- render 'section-heading', heading: s.heading, text: s.description, heading_id: heading_id -%}
+      <div class="flex flex-col{% if s.style == 'cards' %} gap-3{% else %} border-t border-border{% endif %}">
+        {%- for block in section.blocks -%}
+          {%- if block.type != 'group' -%}{%- continue -%}{%- endif -%}
+          {%- liquid
+            assign g = block.settings
+            assign spec_lines = nil
+            assign field_path = g.metafield | strip
+            if field_path != blank and product
+              assign namespace = field_path | split: '.' | first
+              assign key = field_path | split: '.' | last
+              assign field = product.metafields[namespace][key]
+              if field.type contains 'list'
+                assign spec_lines = field.value
+              elsif field.value != blank
+                assign spec_lines = field.value | newline_to_br | split: '<br />'
+              endif
+            endif
+            if spec_lines == nil and g.specs != blank
+              assign spec_lines = g.specs | newline_to_br | split: '<br />'
+            endif
+            capture grid_html
+              render 'spec-grid', lines: spec_lines, columns: s.columns
+            endcapture
+            assign has_content = false
+            if grid_html != blank or g.text != blank
+              assign has_content = true
+            endif
+          -%}
+          {%- if g.title != blank and has_content -%}
+            {%- liquid
+              assign start_open = false
+              if s.open_first and opened_first == false
+                assign start_open = true
+                assign opened_first = true
+              endif
+            -%}
+            <details
+              class="group/spec {% if s.style == 'cards' %}rounded-card bg-fg/5 px-5 md:px-6{% else %}border-b border-border{% endif %}"
+              {% if s.single_open %}
+                name="specs-{{ section.id }}"
+              {% endif %}
+              {% if start_open %}
+                open
+              {% endif %}
+              {{ block.shopify_attributes }}
+            >
+              <summary class="flex min-h-16 cursor-pointer list-none items-center gap-3 py-4 type-h6 [&::-webkit-details-marker]:hidden">
+                {%- if g.icon != 'none' -%}
+                  {%- render 'icon', name: g.icon, class: 'size-6' -%}
+                {%- endif -%}
+                <span class="flex-1">{{ g.title | escape }}</span>
+                <span class="transition group-open/spec:rotate-45" aria-hidden="true">
+                  {%- render 'icon', name: 'plus', class: 'size-5' -%}
+                </span>
+              </summary>
+              <div class="flex flex-col gap-6 pt-2 pb-8">
+                {%- if g.text != blank -%}
+                  <div class="rte max-w-prose text-muted">{{ g.text }}</div>
+                {%- endif -%}
+                {{ grid_html }}
+              </div>
+            </details>
+          {%- elsif request.design_mode -%}
+            <p class="py-4 type-sm text-muted" {{ block.shopify_attributes }}>{{ 'sections.tech_specs.empty_group' | t }}</p>
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+    </div>
+
+    {%- if box_count > 0 -%}
+      <aside
+        class="surface-{{ s.box_color_scheme }} flex flex-col gap-8 rounded-card bg-bg px-6 py-8 md:px-8 md:py-10{% if s.box_sticky %} lg:sticky lg:top-[calc(var(--header-h,0px)+1.5rem)]{% endif %}"
+        aria-labelledby="{{ heading_id }}-box"
+      >
+        <h3 class="text-center type-h3" id="{{ heading_id }}-box">{{ s.box_heading | escape }}</h3>
+        <ul class="flex flex-wrap justify-center gap-y-8" role="list">
+          {%- for block in section.blocks -%}
+            {%- if block.type != 'box_item' -%}{%- continue -%}{%- endif -%}
+            {%- if block.settings.label == blank and block.settings.image == blank -%}{%- continue -%}{%- endif -%}
+            <li class="flex w-1/2 flex-col items-center gap-3 px-2 text-center" {{ block.shopify_attributes }}>
+              <div class="size-24 overflow-hidden {% if s.box_image_shape == 'square' %}rounded-media{% else %}rounded-full{% endif %} bg-fg/5">
+                {%- if block.settings.image != blank -%}
+                  {%- assign box_alt = block.settings.image.alt | default: block.settings.label | escape -%}
+                  {{ block.settings.image | image_url: width: 240 | image_tag: widths: '96, 192, 240', sizes: '96px', loading: 'lazy', class: 'size-full object-contain', alt: box_alt }}
+                {%- endif -%}
+              </div>
+              {%- if block.settings.label != blank -%}
+                <p class="type-sm">{{ block.settings.label | escape }}</p>
+              {%- endif -%}
+            </li>
+          {%- endfor -%}
+        </ul>
+      </aside>
+    {%- endif -%}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "t:sections.tech_specs.name",
+  "tag": "section",
+  "class": "section-tech-specs",
+  "disabled_on": {
+    "groups": ["header", "footer", "custom.overlay"]
+  },
+  "blocks": [
+    {
+      "type": "group",
+      "name": "t:sections.tech_specs.blocks.group.name",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "t:sections.tech_specs.blocks.group.settings.title.label",
+          "default": "Spec group"
+        },
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "t:blocks.feature.settings.icon.label",
+          "options": [
+            { "value": "none", "label": "t:blocks.product_icon_item.settings.icon.options.none" },
+            { "value": "info", "label": "t:blocks.product_icon_item.settings.icon.options.info" },
+            { "value": "headphones", "label": "t:blocks.feature.settings.icon.options.headphones" },
+            { "value": "speaker", "label": "t:blocks.feature.settings.icon.options.speaker" },
+            { "value": "battery", "label": "t:blocks.feature.settings.icon.options.battery" },
+            { "value": "bluetooth", "label": "t:blocks.feature.settings.icon.options.bluetooth" },
+            { "value": "ruler", "label": "t:blocks.product_icon_item.settings.icon.options.ruler" },
+            { "value": "box", "label": "t:shared.icon_choice.options.box" },
+            { "value": "leaf", "label": "t:blocks.product_icon_item.settings.icon.options.leaf" },
+            { "value": "water", "label": "t:blocks.feature.settings.icon.options.water" },
+            { "value": "shield", "label": "t:blocks.feature.settings.icon.options.shield" },
+            { "value": "award", "label": "t:sections.tech_specs.blocks.group.settings.icon.options.award" }
+          ],
+          "default": "none"
+        },
+        {
+          "type": "textarea",
+          "id": "specs",
+          "label": "t:sections.tech_specs.blocks.group.settings.specs.label",
+          "info": "t:sections.tech_specs.blocks.group.settings.specs.info",
+          "default": "Label: Value\nAnother label: Value"
+        },
+        {
+          "type": "text",
+          "id": "metafield",
+          "label": "t:sections.tech_specs.blocks.group.settings.metafield.label",
+          "info": "t:sections.tech_specs.blocks.group.settings.metafield.info"
+        },
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "t:sections.tech_specs.blocks.group.settings.text.label"
+        }
+      ]
+    },
+    {
+      "type": "box_item",
+      "name": "t:sections.tech_specs.blocks.box_item.name",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "t:sections.tech_specs.blocks.box_item.settings.image.label"
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "t:sections.tech_specs.blocks.box_item.settings.label.label",
+          "default": "Item"
+        }
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:shared.section_heading.heading",
+      "default": "Tech specs"
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "t:shared.section_heading.description"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.tech_specs.settings.accordion_header"
+    },
+    {
+      "type": "checkbox",
+      "id": "single_open",
+      "label": "t:sections.tech_specs.settings.single_open.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "open_first",
+      "label": "t:sections.faq.settings.open_first.label",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "style",
+      "label": "t:sections.faq.settings.style.label",
+      "options": [
+        { "value": "lines", "label": "t:sections.faq.settings.style.options.lines" },
+        { "value": "cards", "label": "t:sections.faq.settings.style.options.cards" }
+      ],
+      "default": "lines"
+    },
+    {
+      "type": "select",
+      "id": "columns",
+      "label": "t:sections.tech_specs.settings.columns.label",
+      "options": [
+        { "value": "1", "label": "t:shared.columns_mobile.options.one" },
+        { "value": "2", "label": "t:shared.columns_mobile.options.two" }
+      ],
+      "default": "2"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.tech_specs.settings.box_header"
+    },
+    {
+      "type": "paragraph",
+      "content": "t:sections.tech_specs.settings.box_info"
+    },
+    {
+      "type": "text",
+      "id": "box_heading",
+      "label": "t:sections.tech_specs.settings.box_heading.label",
+      "default": "In the box"
+    },
+    {
+      "type": "select",
+      "id": "box_image_shape",
+      "label": "t:sections.tech_specs.settings.box_image_shape.label",
+      "options": [
+        { "value": "circle", "label": "t:sections.tech_specs.settings.box_image_shape.options.circle" },
+        { "value": "square", "label": "t:sections.tech_specs.settings.box_image_shape.options.square" }
+      ],
+      "default": "circle"
+    },
+    {
+      "type": "checkbox",
+      "id": "box_sticky",
+      "label": "t:sections.tech_specs.settings.box_sticky.label",
+      "default": true
+    },
+    {
+      "type": "color_scheme",
+      "id": "box_color_scheme",
+      "label": "t:sections.tech_specs.settings.box_color_scheme.label",
+      "default": "scheme-2"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "select",
+      "id": "width",
+      "label": "t:shared.width.label",
+      "options": [
+        { "value": "narrow", "label": "t:shared.width.options.narrow" },
+        { "value": "page", "label": "t:shared.width.options.page" }
+      ],
+      "default": "page"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.tech_specs.name",
+      "blocks": [
+        { "type": "group", "settings": { "title": "Spec group", "specs": "Label: Value\nAnother label: Value" } },
+        { "type": "group", "settings": { "title": "Spec group", "specs": "Label: Value\nAnother label: Value" } },
+        { "type": "box_item", "settings": { "label": "Item" } },
+        { "type": "box_item", "settings": { "label": "Item" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

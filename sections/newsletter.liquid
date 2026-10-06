@@ -1,0 +1,111 @@
+{% comment %}
+  @description Email sign-up: heading, short text and an email field that adds the shopper to Shopify customers with marketing consent. Shows a thank-you message after signing up.
+  Use when: collecting newsletter subscribers on the home page, above the footer, or on landing pages.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign form_id = 'Newsletter-' | append: section.id
+-%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+>
+  <div class="page-width-narrow flex flex-col items-center gap-4 text-center">
+    {%- if s.heading != blank -%}<h2 class="type-h2">{{ s.heading }}</h2>{%- endif -%}
+    {%- if s.text != blank -%}<div class="rte text-muted">{{ s.text }}</div>{%- endif -%}
+    {%- form 'customer', id: form_id, class: 'mt-2 w-full max-w-md' -%}
+      <input type="hidden" name="contact[tags]" value="newsletter">
+      {%- if form.posted_successfully? -%}
+        <p class="flex items-center justify-center gap-2 font-semibold text-success" role="status" tabindex="-1" autofocus>
+          {%- render 'icon', name: 'check', class: 'size-5' -%}
+          {{- 'sections.newsletter.success' | t -}}
+        </p>
+      {%- else -%}
+        <div class="flex flex-col gap-2 md:flex-row">
+          <label for="{{ form_id }}-email" class="sr-only">{{ 'sections.newsletter.label' | t }}</label>
+          <input
+            type="email"
+            id="{{ form_id }}-email"
+            name="contact[email]"
+            required
+            autocomplete="email"
+            placeholder="{{ 'sections.newsletter.label' | t }}"
+            value="{{ form.email }}"
+            class="field h-12 min-w-0 flex-1"
+            {% if form.errors %}
+              aria-invalid="true" aria-describedby="{{ form_id }}-error"
+            {% endif %}
+          >
+          <button type="submit" class="btn btn-primary h-12">{{ 'sections.newsletter.submit' | t }}</button>
+        </div>
+        {%- if form.errors -%}
+          <p id="{{ form_id }}-error" class="mt-2 type-sm text-error" role="alert">{{ form.errors.translated_fields.email | capitalize }} {{ form.errors.messages.email }}</p>
+        {%- endif -%}
+      {%- endif -%}
+    {%- endform -%}
+    {%- if s.note != blank -%}<p class="type-xs text-muted">{{ s.note }}</p>{%- endif -%}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "t:sections.newsletter.name",
+  "tag": "section",
+  "class": "section-newsletter",
+  "settings": [
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:sections.featured_collection.settings.heading.label",
+      "default": "Join the list"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:sections.featured_collection.settings.text.label",
+      "default": "<p>New releases and restocks, straight to your inbox.</p>"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "note",
+      "label": "t:sections.newsletter.settings.note.label",
+      "info": "t:sections.newsletter.settings.note.info"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-2"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.newsletter.name"
+    }
+  ]
+}
+{% endschema %}

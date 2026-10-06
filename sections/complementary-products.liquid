@@ -1,0 +1,23 @@
+{% comment %}
+  @description Compact list of Shopify "complementary" product recommendations with quick add buttons. Never shown on its own: the product-complementary block fetches it through the recommendations endpoint (?section_id=complementary-products&intent=complementary) and inserts the list.
+  Use when: never add to templates — the product-complementary block loads it.
+{% endcomment %}
+<aw-recommendations>
+  {%- if recommendations.performed and recommendations.products_count > 0 -%}
+    <ul class="flex flex-col divide-y divide-border" role="list">
+      {%- for recommendation in recommendations.products -%}
+        <li class="py-3 first:pt-0 last:pb-0">
+          {% render 'product-card-mini', product: recommendation, quick_add: true, show_vendor: settings.card_show_vendor %}
+        </li>
+      {%- endfor -%}
+    </ul>
+  {%- endif -%}
+</aw-recommendations>
+
+{% schema %}
+{
+  "name": "t:sections.complementary_products.name",
+  "class": "section-complementary-products",
+  "settings": []
+}
+{% endschema %}

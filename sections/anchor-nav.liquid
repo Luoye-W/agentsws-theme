@@ -1,0 +1,247 @@
+{% comment %}
+  @description Sticky in-page navigation ("scroll spy"): a rounded pill bar that stays just below the header (or the top of the screen when the header is hidden) with an optional back-to-top button and one link per target section. Clicking a link scrolls smoothly to its section (instantly with reduced motion) and moves keyboard focus there; while scrolling, the link of the section in view is highlighted (aria-current). Many links scroll sideways with faded edges; the highlighted link is kept visible. Each link is a local block: label + target — the id of an element on the page or the section's key from the template JSON (e.g. "faq"); several targets separated by commas count as one link.
+  Use when: long product pages or landing pages (Highlights · Features · Specs · FAQs), brand stories, guides.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  case s.align_desktop
+    when 'center'
+      assign desktop_align = 'md:justify-center'
+    when 'end'
+      assign desktop_align = 'md:justify-end'
+    else
+      assign desktop_align = 'md:justify-start'
+  endcase
+  case s.align_mobile
+    when 'center'
+      assign mobile_align = 'justify-center'
+    when 'end'
+      assign mobile_align = 'justify-end'
+    else
+      assign mobile_align = 'justify-start'
+  endcase
+  assign nav_label = 'sections.anchor_nav.label' | t
+  if s.nav_label != blank
+    assign nav_label = s.nav_label
+  endif
+  assign link_count = 0
+  for block in section.blocks
+    if block.settings.label != blank and block.settings.target != blank
+      assign link_count = link_count | plus: 1
+    endif
+  endfor
+-%}
+{%- if link_count > 0 or s.show_back_to_top or request.design_mode -%}
+  <aw-anchor-nav
+    class="block pt-(--nav-pt) pb-(--nav-pb)"
+    style="--nav-pt: {{ s.padding_top }}px; --nav-pb: {{ s.padding_bottom }}px;"
+    {% if s.sticky %}
+      data-sticky
+    {% endif %}
+    {% if s.highlight_active %}
+      data-highlight
+    {% endif %}
+  >
+    <div class="page-width flex {{ mobile_align }} {{ desktop_align }}">
+      <nav
+        class="surface-{{ s.color_scheme }} flex max-w-full min-w-0 items-center gap-1 rounded-full bg-bg p-1 shadow-sm"
+        aria-label="{{ nav_label | escape }}"
+        data-ref="bar"
+      >
+        {%- if s.show_back_to_top -%}
+          <a
+            href="#MainContent"
+            class="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-fg/10"
+            data-ref="top"
+          >
+            {%- render 'icon', name: 'arrow-up', class: 'size-5' -%}
+            <span class="sr-only">{{ 'sections.anchor_nav.back_to_top' | t }}</span>
+          </a>
+        {%- endif -%}
+        <ul class="anchor-nav__list flex min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="list" data-ref="list">
+          {%- for block in section.blocks -%}
+            {%- liquid
+              assign label = block.settings.label | strip
+              assign targets = block.settings.target | remove: '#' | remove: ' ' | strip
+              assign first_target = targets | split: ',' | first
+            -%}
+            {%- if label != blank and first_target != blank -%}
+              <li class="shrink-0" {{ block.shopify_attributes }}>
+                <a
+                  href="#{{ first_target | escape }}"
+                  class="flex h-10 items-center rounded-full px-4 type-sm whitespace-nowrap transition-colors hover:bg-fg/10 aria-[current=location]:bg-fg aria-[current=location]:text-bg"
+                  data-ref="link"
+                  data-targets="{{ targets | escape }}"
+                >
+                  {{- label | escape -}}
+                </a>
+              </li>
+            {%- elsif request.design_mode -%}
+              <li class="flex h-10 shrink-0 items-center px-4 type-xs text-muted" {{ block.shopify_attributes }}>{{ 'sections.anchor_nav.empty_link' | t }}</li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ul>
+      </nav>
+    </div>
+  </aw-anchor-nav>
+  <script src="{{ 'c-anchor-nav.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+
+{% stylesheet %}
+  /* Other sticky elements (scroll story panel, …) add --anchor-nav-offset to their top so they sit below the bar. */
+  body:has(aw-anchor-nav[data-sticky]) {
+    --anchor-nav-offset: 3.75rem;
+  }
+  /* The Shopify section wrapper is what sticks (a sticky child could not leave its own section). */
+  .section-anchor-nav:has(aw-anchor-nav[data-sticky]) {
+    position: sticky;
+    top: 0.5rem;
+    z-index: 20;
+    pointer-events: none;
+    transition: top 0.3s ease;
+  }
+  body:has(aw-header[data-sticky]) .section-anchor-nav:has(aw-anchor-nav[data-sticky]) {
+    top: calc(var(--header-h, 0px) + 0.5rem);
+  }
+  body:has(aw-header[data-hidden]) .section-anchor-nav:has(aw-anchor-nav[data-sticky]) {
+    top: 0.5rem;
+  }
+  .section-anchor-nav:has(aw-anchor-nav[data-sticky]) [data-ref='bar'] {
+    pointer-events: auto;
+  }
+  .anchor-nav__list[data-fade='start'] {
+    mask-image: linear-gradient(to right, transparent, #000 2rem);
+  }
+  .anchor-nav__list[data-fade='end'] {
+    mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent);
+  }
+  .anchor-nav__list[data-fade='both'] {
+    mask-image: linear-gradient(to right, transparent, #000 2rem, #000 calc(100% - 2rem), transparent);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .section-anchor-nav:has(aw-anchor-nav[data-sticky]) {
+      transition: none;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.anchor_nav.name",
+  "tag": "section",
+  "class": "section-anchor-nav",
+  "disabled_on": {
+    "groups": ["header", "footer", "custom.overlay"]
+  },
+  "max_blocks": 12,
+  "blocks": [
+    {
+      "type": "link",
+      "name": "t:sections.anchor_nav.blocks.link.name",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "t:sections.anchor_nav.blocks.link.settings.label.label",
+          "default": "Section"
+        },
+        {
+          "type": "text",
+          "id": "target",
+          "label": "t:sections.anchor_nav.blocks.link.settings.target.label",
+          "info": "t:sections.anchor_nav.blocks.link.settings.target.info"
+        }
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "type": "text",
+      "id": "nav_label",
+      "label": "t:sections.anchor_nav.settings.nav_label.label",
+      "info": "t:sections.anchor_nav.settings.nav_label.info"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_back_to_top",
+      "label": "t:sections.anchor_nav.settings.show_back_to_top.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "highlight_active",
+      "label": "t:sections.anchor_nav.settings.highlight_active.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "sticky",
+      "label": "t:sections.anchor_nav.settings.sticky.label",
+      "info": "t:sections.anchor_nav.settings.sticky.info",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "align_desktop",
+      "label": "t:sections.anchor_nav.settings.align_desktop.label",
+      "options": [
+        { "value": "start", "label": "t:shared.align.options.start" },
+        { "value": "center", "label": "t:shared.align.options.center" },
+        { "value": "end", "label": "t:shared.align.options.end" }
+      ],
+      "default": "start"
+    },
+    {
+      "type": "select",
+      "id": "align_mobile",
+      "label": "t:sections.anchor_nav.settings.align_mobile.label",
+      "options": [
+        { "value": "start", "label": "t:shared.align.options.start" },
+        { "value": "center", "label": "t:shared.align.options.center" },
+        { "value": "end", "label": "t:shared.align.options.end" }
+      ],
+      "default": "start"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:sections.anchor_nav.settings.color_scheme.label",
+      "default": "scheme-2"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 64,
+      "step": 4,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 64,
+      "step": 4,
+      "unit": "px",
+      "default": 16
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.anchor_nav.name",
+      "blocks": [
+        { "type": "link", "settings": { "label": "Highlights", "target": "" } },
+        { "type": "link", "settings": { "label": "Features", "target": "" } },
+        { "type": "link", "settings": { "label": "FAQs", "target": "" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

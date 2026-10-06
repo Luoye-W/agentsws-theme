@@ -1,0 +1,24 @@
+{% doc %}
+  @description "I agree to the terms and conditions" checkbox that must be ticked before the checkout button submits (native required field, so the browser explains what is missing). The link goes to the page chosen in Theme settings → Cart → Terms page. Outputs nothing unless Theme settings → Cart → "Require agreement to terms" is on. Place it inside the cart form, before the checkout button.
+  Use when: cart drawer and cart page checkout area.
+
+  @param {string} id_suffix - Keeps the checkbox id unique (e.g. the section id)
+
+  @example
+  {% render 'cart-terms', id_suffix: section.id %}
+{% enddoc %}
+{%- if settings.cart_show_terms -%}
+  {%- liquid
+    assign terms_id = 'CartTerms-' | append: id_suffix
+    assign link_text = 'general.cart.terms_link' | t
+    if settings.cart_terms_page != blank
+      assign terms_link = '<a href="' | append: settings.cart_terms_page.url | append: '" class="underline" target="_blank">' | append: link_text | append: '</a>'
+    else
+      assign terms_link = link_text
+    endif
+  -%}
+  <div class="flex items-start gap-2.5 type-sm">
+    <input type="checkbox" id="{{ terms_id }}" class="mt-0.5 size-4 shrink-0 accent-primary" required data-terms>
+    <label for="{{ terms_id }}">{{ 'general.cart.terms_html' | t: link: terms_link }}</label>
+  </div>
+{%- endif -%}

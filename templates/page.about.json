@@ -1,0 +1,154 @@
+{
+  "sections": {
+    "hero": {
+      "type": "hero",
+      "blocks": {
+        "heading": {
+          "type": "heading",
+          "settings": {
+            "text": "About us",
+            "size": "display",
+            "tag": "h1"
+          }
+        },
+        "text": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Introduce your brand in one or two sentences: who you are and why you started.</p>",
+            "size": "lg"
+          }
+        }
+      },
+      "block_order": ["heading", "text"],
+      "settings": {
+        "height": "small",
+        "position": "bottom_left",
+        "overlay_opacity": 35
+      }
+    },
+    "story": {
+      "type": "image-with-text",
+      "blocks": {
+        "heading": {
+          "type": "heading",
+          "settings": {
+            "text": "Our story",
+            "size": "h2",
+            "tag": "h2"
+          }
+        },
+        "text": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Tell customers how the business began, what problem you set out to solve and what has changed since.</p>",
+            "muted": true
+          }
+        }
+      },
+      "block_order": ["heading", "text"],
+      "settings": {
+        "image_position": "start"
+      }
+    },
+    "values": {
+      "type": "features",
+      "blocks": {
+        "value_1": {
+          "type": "_feature",
+          "settings": {
+            "icon": "star",
+            "title": "First value",
+            "text": "Describe something you care about."
+          }
+        },
+        "value_2": {
+          "type": "_feature",
+          "settings": {
+            "icon": "shield",
+            "title": "Second value",
+            "text": "Describe how you keep that promise."
+          }
+        },
+        "value_3": {
+          "type": "_feature",
+          "settings": {
+            "icon": "globe",
+            "title": "Third value",
+            "text": "Describe who you work with."
+          }
+        }
+      },
+      "block_order": ["value_1", "value_2", "value_3"],
+      "settings": {
+        "heading": "What we stand for",
+        "columns": 3
+      }
+    },
+    "process": {
+      "type": "image-with-text",
+      "blocks": {
+        "heading": {
+          "type": "heading",
+          "settings": {
+            "text": "How we work",
+            "size": "h2",
+            "tag": "h2"
+          }
+        },
+        "text": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Explain how your products are designed, made or chosen. Add a photo of your team or workspace.</p>",
+            "muted": true
+          }
+        },
+        "button": {
+          "type": "button",
+          "settings": {
+            "label": "Shop now",
+            "style": "secondary"
+          }
+        }
+      },
+      "block_order": ["heading", "text", "button"],
+      "settings": {
+        "image_position": "end"
+      }
+    },
+    "explore": {
+      "type": "image-cards",
+      "blocks": {
+        "card_1": {
+          "type": "_image-card",
+          "settings": {
+            "title": "Collection one"
+          }
+        },
+        "card_2": {
+          "type": "_image-card",
+          "settings": {
+            "title": "Collection two"
+          }
+        },
+        "card_3": {
+          "type": "_image-card",
+          "settings": {
+            "title": "Collection three"
+          }
+        }
+      },
+      "block_order": ["card_1", "card_2", "card_3"],
+      "settings": {
+        "heading": "Explore the range"
+      }
+    },
+    "newsletter": {
+      "type": "newsletter",
+      "settings": {
+        "heading": "Stay in touch",
+        "text": "<p>Hear about new products and stories first.</p>"
+      }
+    }
+  },
+  "order": ["hero", "story", "values", "process", "explore", "newsletter"]
+}

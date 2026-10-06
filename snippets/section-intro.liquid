@@ -1,0 +1,32 @@
+{% doc %}
+  @description Optional heading group above a section's content: small eyebrow text, heading (with highlight style for italic words) and a short rich-text description. Renders nothing when all three are empty.
+  Use when: media sections (collage, lookbook, image comparison, scrolling images) that have eyebrow / heading / heading_highlight / text / heading_alignment settings.
+
+  @param {string} [eyebrow] - Small text above the heading
+  @param {string} [heading] - Inline rich text heading
+  @param {string} [highlight] - Highlight style for italic words (see snippets/highlight-text)
+  @param {string} [text] - Rich text description
+  @param {string} [align] - 'start' (default) or 'center'
+  @param {string} [id] - id for the heading element (e.g. to label the section)
+
+  @example
+  {% render 'section-intro', eyebrow: s.eyebrow, heading: s.heading, highlight: s.heading_highlight, text: s.text, align: s.heading_alignment, id: heading_id %}
+{% enddoc %}
+{%- liquid
+  if align == 'center'
+    assign intro_class = 'items-center text-center mx-auto'
+  else
+    assign intro_class = 'items-start text-start'
+  endif
+-%}
+{%- if eyebrow != blank or heading != blank or text != blank -%}
+  <div class="flex max-w-3xl flex-col gap-3 {{ intro_class }}">
+    {%- if eyebrow != blank -%}
+      <p class="type-eyebrow text-muted">{{ eyebrow | escape }}</p>
+    {%- endif -%}
+    {%- render 'highlight-text', text: heading, style: highlight, tag: 'h2', class: 'type-h2', id: id -%}
+    {%- if text != blank -%}
+      <div class="rte type-body text-muted">{{ text }}</div>
+    {%- endif -%}
+  </div>
+{%- endif -%}

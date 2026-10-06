@@ -1,0 +1,165 @@
+{% doc %}
+  @description Countdown to a real deadline typed by the merchant as a date (YYYY-MM-DD) and a 24-hour time (HH:MM) in the store's time zone (Settings → General). Validates both: an impossible or missing date renders nothing (plus a hint in the theme editor). A deadline already in the past renders only the "ended" message (or nothing). Otherwise renders aw-countdown (assets/c-countdown.js, loaded here) with a static screen-reader sentence instead of a ticking announcement.
+  With mode 'state' it outputs only one word — invalid, ended or running — so a section can decide whether to show itself.
+  Use when: countdown section, countdown block, or any place that needs a real-deadline timer. Never use it for fake urgency.
+
+  @param {string} end_date - Deadline date, YYYY-MM-DD
+  @param {string} [end_time] - Deadline time, HH:MM (24-hour), default 00:00
+  @param {string} [ended_message] - Rich text shown after the deadline
+  @param {string} [when_ended] - 'message' (default), 'hide' (hide the timer element) or 'hide-section' (hide the whole section in the browser)
+  @param {string} [style] - 'standard' (numbers above unit labels, default) or 'compact' (one line: 2d 04h 05m 09s)
+  @param {string} [size] - Number size for the standard style: 'sm', 'md' (default), 'lg'
+  @param {string} [align] - 'start' (default), 'center' or 'end'
+  @param {string} [mode] - 'state' to output only invalid / ended / running
+
+  @example
+  {% render 'countdown-timer', end_date: s.end_date, end_time: s.end_time, ended_message: s.ended_message, style: 'standard' %}
+{% enddoc %}
+{%- liquid
+  assign state = 'invalid'
+  assign raw_date = end_date | strip
+  assign raw_time = end_time | strip
+  if raw_time == blank
+    assign raw_time = '00:00'
+  endif
+
+  assign date_parts = raw_date | split: '-'
+  assign time_parts = raw_time | split: ':'
+  if date_parts.size == 3 and time_parts.size == 2
+    assign year_text = date_parts[0]
+    assign month_text = date_parts[1]
+    assign day_text = date_parts[2]
+    assign hour_text = time_parts[0]
+    assign minute_text = time_parts[1]
+    assign year = year_text | plus: 0
+    assign month = month_text | plus: 0
+    assign day = day_text | plus: 0
+    assign hour = hour_text | plus: 0
+    assign minute = minute_text | plus: 0
+
+    comment
+      Every part must be digits only: "7a" | plus: 0 gives 7, so compare the number back to the text.
+    endcomment
+    assign year_check = year | append: ''
+    assign month_check = month | prepend: '0' | slice: -2, 2
+    assign day_check = day | prepend: '0' | slice: -2, 2
+    assign hour_check = hour | prepend: '0' | slice: -2, 2
+    assign minute_check = minute | prepend: '0' | slice: -2, 2
+    assign hour_padded = hour_text | prepend: '0' | slice: -2, 2
+
+    assign days_in_month = 31
+    case month
+      when 4, 6, 9, 11
+        assign days_in_month = 30
+      when 2
+        assign days_in_month = 28
+        assign mod4 = year | modulo: 4
+        assign mod100 = year | modulo: 100
+        assign mod400 = year | modulo: 400
+        if mod4 == 0
+          assign days_in_month = 29
+          if mod100 == 0 and mod400 != 0
+            assign days_in_month = 28
+          endif
+        endif
+    endcase
+
+    if year_check == year_text and month_check == month_text and day_check == day_text and hour_check == hour_padded and minute_check == minute_text
+      if year >= 2000 and month >= 1 and month <= 12 and day >= 1 and day <= days_in_month and hour <= 23 and minute <= 59
+        assign state = 'valid'
+      endif
+    endif
+  endif
+
+  if state == 'valid'
+    comment
+      Treat the typed time as store-local. Parse once with today's store offset, read the offset in effect on
+      that date (daylight saving), then parse again with it, so the result does not depend on how the platform
+      parses strings without a zone.
+    endcomment
+    assign stamp = raw_date | append: ' ' | append: hour_padded | append: ':' | append: minute_text | append: ':00'
+    assign now_offset = 'now' | date: '%z'
+    assign first_pass = stamp | append: ' ' | append: now_offset
+    assign end_offset = first_pass | date: '%z'
+    assign end_stamp = stamp | append: ' ' | append: end_offset
+    assign end_epoch = end_stamp | date: '%s' | plus: 0
+    assign now_epoch = 'now' | date: '%s' | plus: 0
+    if end_epoch > now_epoch
+      assign state = 'running'
+    else
+      assign state = 'ended'
+    endif
+  endif
+-%}
+{%- if mode == 'state' -%}
+  {{- state -}}
+{%- elsif state == 'running' -%}
+  {%- liquid
+    assign ended_mode = when_ended | default: 'message'
+    assign end_label = end_stamp | date: '%B %-d, %Y %H:%M %Z'
+
+    case size
+      when 'sm'
+        assign number_class = 'type-h4'
+      when 'lg'
+        assign number_class = 'type-display'
+      else
+        assign number_class = 'type-h2'
+    endcase
+
+    case align
+      when 'center'
+        assign justify_class = 'justify-center text-center'
+      when 'end'
+        assign justify_class = 'justify-end text-end'
+      else
+        assign justify_class = 'justify-start text-start'
+    endcase
+  -%}
+  <aw-countdown class="block" data-end="{{ end_epoch }}" data-when-ended="{{ ended_mode }}">
+    {%- if style == 'compact' -%}
+      <p class="flex items-center gap-2 font-semibold tabular-nums {{ justify_class }}" data-ref="timer" aria-hidden="true">
+        {%- render 'icon', name: 'clock', class: 'size-4' -%}
+        <span data-ref="days-unit"><span data-ref="days">--</span>{{ 'sections.countdown.days_short' | t }}</span>
+        <span><span data-ref="hours">--</span>{{ 'sections.countdown.hours_short' | t }}</span>
+        <span><span data-ref="minutes">--</span>{{ 'sections.countdown.minutes_short' | t }}</span>
+        <span><span data-ref="seconds">--</span>{{ 'sections.countdown.seconds_short' | t }}</span>
+      </p>
+    {%- else -%}
+      <div class="flex flex-wrap gap-x-3 gap-y-2 md:gap-x-5 {{ justify_class }}" data-ref="timer" aria-hidden="true">
+        <div class="flex items-start gap-3 md:gap-5" data-ref="days-unit">
+          <div class="flex min-w-[2.5ch] flex-col items-center gap-1">
+            <span class="{{ number_class }} tabular-nums" data-ref="days">--</span>
+            <span class="type-eyebrow text-muted">{{ 'sections.countdown.days' | t }}</span>
+          </div>
+          <span class="{{ number_class }} text-muted">:</span>
+        </div>
+        <div class="flex min-w-[2.5ch] flex-col items-center gap-1">
+          <span class="{{ number_class }} tabular-nums" data-ref="hours">--</span>
+          <span class="type-eyebrow text-muted">{{ 'sections.countdown.hours' | t }}</span>
+        </div>
+        <span class="{{ number_class }} text-muted">:</span>
+        <div class="flex min-w-[2.5ch] flex-col items-center gap-1">
+          <span class="{{ number_class }} tabular-nums" data-ref="minutes">--</span>
+          <span class="type-eyebrow text-muted">{{ 'sections.countdown.minutes' | t }}</span>
+        </div>
+        <span class="{{ number_class }} text-muted">:</span>
+        <div class="flex min-w-[2.5ch] flex-col items-center gap-1">
+          <span class="{{ number_class }} tabular-nums" data-ref="seconds">--</span>
+          <span class="type-eyebrow text-muted">{{ 'sections.countdown.seconds' | t }}</span>
+        </div>
+      </div>
+    {%- endif -%}
+    <p class="sr-only" data-ref="label">{{ 'sections.countdown.ends_at' | t: date: end_label }}</p>
+    {%- if ended_message != blank -%}
+      <div class="rte {{ justify_class }}" data-ref="ended" hidden>{{ ended_message }}</div>
+    {%- endif -%}
+  </aw-countdown>
+  <script src="{{ 'c-countdown.js' | asset_url }}" type="module"></script>
+{%- elsif state == 'ended' -%}
+  {%- if ended_message != blank and when_ended != 'hide' and when_ended != 'hide-section' -%}
+    <div class="rte">{{ ended_message }}</div>
+  {%- endif -%}
+{%- elsif request.design_mode -%}
+  <p class="type-sm rounded-card border border-border p-3 text-muted">{{ 'sections.countdown.editor_invalid' | t }}</p>
+{%- endif -%}

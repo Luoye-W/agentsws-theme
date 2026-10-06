@@ -1,0 +1,51 @@
+{
+  "type": "header",
+  "name": "t:sections.groups.header",
+  "sections": {
+    "announcement": {
+      "type": "announcement-bar",
+      "settings": {
+        "mode": "rotate",
+        "show_arrows": true,
+        "show_social": true,
+        "show_country_selector": true,
+        "show_language_selector": true,
+        "color_scheme": "scheme-2"
+      },
+      "blocks": {
+        "a1": {
+          "type": "_announcement",
+          "settings": {
+            "text": "Demo store \u2014 sample products from Shopify's mock catalogs",
+            "icon": "tag"
+          }
+        },
+        "a2": {
+          "type": "_announcement",
+          "settings": {
+            "text": "Free shipping message goes here",
+            "icon": "truck"
+          }
+        }
+      },
+      "block_order": [
+        "a1",
+        "a2"
+      ]
+    },
+    "header": {
+      "type": "header",
+      "settings": {
+        "menu": "demo-tech-main",
+        "layout": "logo_left_menu_center",
+        "sticky_mode": "scroll_up",
+        "open_on": "hover",
+        "border": false
+      }
+    }
+  },
+  "order": [
+    "announcement",
+    "header"
+  ]
+}

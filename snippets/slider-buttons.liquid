@@ -1,0 +1,27 @@
+{% doc %}
+  @description Previous / next buttons for an aw-slider (assets/c-slider.js). Hidden until the slider script runs and finds more content than fits; each button is disabled at its end of the track.
+  Use when: inside an aw-slider element, next to its track. Not needed for layouts that never scroll.
+
+  @param {string} [class] - Extra wrapper classes, e.g. 'md:hidden' or 'justify-end'
+
+  @example
+  {% render 'slider-buttons', class: 'justify-end' %}
+{% enddoc %}
+<div class="flex items-center gap-2 {{ class }}" data-ref="controls" hidden>
+  <button
+    type="button"
+    class="inline-flex size-11 items-center justify-center rounded-full border border-border bg-bg text-fg transition hover:border-fg disabled:cursor-not-allowed disabled:opacity-40"
+    data-ref="prev"
+    aria-label="{{ 'sections.slider.previous' | t }}"
+  >
+    {%- render 'icon', name: 'chevron-left', class: 'size-5 rtl:rotate-180' -%}
+  </button>
+  <button
+    type="button"
+    class="inline-flex size-11 items-center justify-center rounded-full border border-border bg-bg text-fg transition hover:border-fg disabled:cursor-not-allowed disabled:opacity-40"
+    data-ref="next"
+    aria-label="{{ 'sections.slider.next' | t }}"
+  >
+    {%- render 'icon', name: 'chevron-right', class: 'size-5 rtl:rotate-180' -%}
+  </button>
+</div>

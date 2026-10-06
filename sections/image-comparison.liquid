@@ -1,0 +1,350 @@
+{% comment %}
+  @description Before/after image comparison: two images stacked with a draggable divider (left/right or up/down). The divider is a real range input, so it works with arrow keys, Home/End and screen readers; drag or tap anywhere on the image with mouse or touch. Optional labels on each side, start position, optional heading above. Shows an editor warning when both sides use the same image.
+  Use when: showing a transformation or difference — before/after installation, cleaning, repair, two materials or finishes side by side.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign before = s.image_before
+  assign after = s.image_after
+
+  case s.ratio
+    when 'square'
+      assign ratio = '1 / 1'
+    when 'portrait'
+      assign ratio = '4 / 5'
+    when 'landscape'
+      assign ratio = '4 / 3'
+    when 'wide'
+      assign ratio = '16 / 9'
+    else
+      assign ratio = before.aspect_ratio | default: after.aspect_ratio | default: 1.5
+  endcase
+
+  if s.full_width
+    assign wrapper_class = 'w-full'
+    assign frame_radius = ''
+  else
+    assign wrapper_class = 'page-width'
+    assign frame_radius = 'rounded-media'
+  endif
+
+  assign same_image = false
+  if before != blank and after != blank and before.src == after.src
+    assign same_image = true
+  endif
+
+  assign before_label = s.label_before | escape
+  assign after_label = s.label_after | escape
+  assign before_name = before_label | default: 'sections.image_comparison.before' | t
+  assign after_name = after_label | default: 'sections.image_comparison.after' | t
+  assign value_text = 'sections.image_comparison.value_text' | t: before: before_name, after: after_name
+  assign heading_id = 'ComparisonHeading-' | append: section.id
+  assign sizes = '(min-width: 1200px) 1200px, 100vw'
+  if s.full_width
+    assign sizes = '100vw'
+  endif
+  assign before_alt = before.alt | default: before_name | escape
+  assign after_alt = after.alt | default: after_name | escape
+-%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+>
+  <div class="flex flex-col gap-8">
+    {%- if s.eyebrow != blank or s.heading != blank or s.text != blank -%}
+      <div class="page-width">
+        {%- render 'section-intro', eyebrow: s.eyebrow, heading: s.heading, highlight: s.heading_highlight, text: s.text, align: s.heading_alignment, id: heading_id -%}
+      </div>
+    {%- endif -%}
+
+    <div class="{{ wrapper_class }}">
+      {%- if same_image and request.design_mode -%}
+        <p class="type-sm mb-3 rounded-card border border-error p-3 text-error" role="note">
+          {{ 'sections.image_comparison.same_image_warning' | t }}
+        </p>
+      {%- endif -%}
+      <aw-image-comparison
+        class="image-comparison group/compare relative isolate block select-none overflow-hidden {{ frame_radius }} bg-placeholder"
+        style="--pos: {{ s.start_position }}%; aspect-ratio: {{ ratio }};"
+        data-direction="{{ s.direction }}"
+        data-value-text="{{ value_text | escape }}"
+      >
+        <div class="absolute inset-0">
+          {%- if before != blank -%}
+            {{ before | image_url: width: 2400 | image_tag: widths: '600, 900, 1200, 1600, 2000, 2400', sizes: sizes, loading: 'lazy', alt: before_alt, class: 'size-full object-cover', draggable: 'false' }}
+          {%- else -%}
+            {{ 'lifestyle-1' | placeholder_svg_tag: 'size-full object-cover' }}
+          {%- endif -%}
+        </div>
+        <div class="image-comparison__after absolute inset-0">
+          {%- if after != blank -%}
+            {{ after | image_url: width: 2400 | image_tag: widths: '600, 900, 1200, 1600, 2000, 2400', sizes: sizes, loading: 'lazy', alt: after_alt, class: 'size-full object-cover', draggable: 'false' }}
+          {%- else -%}
+            {{ 'lifestyle-2' | placeholder_svg_tag: 'size-full object-cover bg-fg/60' }}
+          {%- endif -%}
+        </div>
+
+        {%- if before_label != blank -%}
+          <span class="image-comparison__label image-comparison__label--before type-sm surface-{{ s.label_color_scheme }} absolute z-[2] rounded-full bg-bg/85 px-3 py-1 font-semibold transition-opacity" aria-hidden="true">{{ before_label }}</span>
+        {%- endif -%}
+        {%- if after_label != blank -%}
+          <span class="image-comparison__label image-comparison__label--after type-sm surface-{{ s.label_color_scheme }} absolute z-[2] rounded-full bg-bg/85 px-3 py-1 font-semibold transition-opacity" aria-hidden="true">{{ after_label }}</span>
+        {%- endif -%}
+
+        <div class="image-comparison__divider surface-{{ s.label_color_scheme }} pointer-events-none absolute z-[3] bg-bg" aria-hidden="true">
+          <span class="image-comparison__knob absolute flex size-11 items-center justify-center rounded-full bg-bg text-fg shadow-md group-has-[input:focus-visible]/compare:outline-2 group-has-[input:focus-visible]/compare:outline-offset-2 group-has-[input:focus-visible]/compare:outline-fg">
+            {%- render 'icon', name: 'chevron-left', class: 'size-4 -me-1' -%}
+            {%- render 'icon', name: 'chevron-right', class: 'size-4 -ms-1' -%}
+          </span>
+        </div>
+
+        <input
+          type="range"
+          class="sr-only"
+          data-ref="input"
+          min="0"
+          max="100"
+          step="1"
+          value="{{ s.start_position }}"
+          aria-label="{{ 'sections.image_comparison.slider_label' | t }}"
+          {% if s.heading != blank %}
+            aria-describedby="{{ heading_id }}"
+          {% endif %}
+          {% if s.direction == 'vertical' %}
+            aria-orientation="vertical"
+          {% endif %}
+        >
+      </aw-image-comparison>
+    </div>
+  </div>
+</div>
+<script src="{{ 'c-image-comparison.js' | asset_url }}" type="module"></script>
+
+{% stylesheet %}
+  .image-comparison {
+    touch-action: pan-y;
+    cursor: ew-resize;
+  }
+  .image-comparison[data-direction='vertical'] {
+    touch-action: pan-x;
+    cursor: ns-resize;
+  }
+  /* Horizontal: "before" on the reading-start side, "after" beyond the divider. --pos is measured from the left edge. */
+  .image-comparison__after {
+    clip-path: inset(0 0 0 var(--pos));
+  }
+  [dir='rtl'] .image-comparison__after {
+    clip-path: inset(0 calc(100% - var(--pos)) 0 0);
+  }
+  .image-comparison__divider {
+    top: 0;
+    bottom: 0;
+    left: var(--pos);
+    width: 3px;
+    transform: translateX(-50%);
+  }
+  .image-comparison__knob {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .image-comparison__label {
+    top: 1rem;
+  }
+  .image-comparison__label--before {
+    inset-inline-start: 1rem;
+  }
+  .image-comparison__label--after {
+    inset-inline-end: 1rem;
+  }
+  /* Vertical: "before" on top, "after" below the divider. --pos is measured from the top edge. */
+  .image-comparison[data-direction='vertical'] .image-comparison__after {
+    clip-path: inset(var(--pos) 0 0 0);
+  }
+  .image-comparison[data-direction='vertical'] .image-comparison__divider {
+    top: var(--pos);
+    bottom: auto;
+    left: 0;
+    right: 0;
+    width: auto;
+    height: 3px;
+    transform: translateY(-50%);
+  }
+  .image-comparison[data-direction='vertical'] .image-comparison__knob {
+    transform: translate(-50%, -50%) rotate(90deg);
+  }
+  .image-comparison[data-direction='vertical'] .image-comparison__label--after {
+    top: auto;
+    bottom: 1rem;
+    inset-inline-end: auto;
+    inset-inline-start: 1rem;
+  }
+  /* Labels step aside while dragging so they are never cut in half. */
+  .image-comparison[data-dragging] .image-comparison__label {
+    opacity: 0;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.image_comparison.name",
+  "tag": "section",
+  "class": "section-image-comparison",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:sections.featured_collection.settings.eyebrow.label"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:sections.featured_collection.settings.heading.label",
+      "default": "See the difference"
+    },
+    {
+      "type": "select",
+      "id": "heading_highlight",
+      "label": "t:shared.heading_highlight.label",
+      "info": "t:shared.heading_highlight.info",
+      "options": [
+        { "value": "none", "label": "t:shared.heading_highlight.options.none" },
+        { "value": "color", "label": "t:shared.heading_highlight.options.color" },
+        { "value": "marker", "label": "t:shared.heading_highlight.options.marker" },
+        { "value": "underline", "label": "t:shared.heading_highlight.options.underline" },
+        { "value": "outline", "label": "t:shared.heading_highlight.options.outline" },
+        { "value": "circle", "label": "t:shared.heading_highlight.options.circle" },
+        { "value": "squiggle", "label": "t:shared.heading_highlight.options.squiggle" }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:sections.featured_collection.settings.text.label"
+    },
+    {
+      "type": "select",
+      "id": "heading_alignment",
+      "label": "t:shared.media.heading_alignment",
+      "options": [
+        { "value": "start", "label": "t:shared.align.options.start" },
+        { "value": "center", "label": "t:shared.align.options.center" }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.image_comparison.settings.images_header"
+    },
+    {
+      "type": "image_picker",
+      "id": "image_before",
+      "label": "t:sections.image_comparison.settings.image_before.label"
+    },
+    {
+      "type": "text",
+      "id": "label_before",
+      "label": "t:sections.image_comparison.settings.label_before.label",
+      "default": "Before"
+    },
+    {
+      "type": "image_picker",
+      "id": "image_after",
+      "label": "t:sections.image_comparison.settings.image_after.label",
+      "info": "t:sections.image_comparison.settings.image_after.info"
+    },
+    {
+      "type": "text",
+      "id": "label_after",
+      "label": "t:sections.image_comparison.settings.label_after.label",
+      "default": "After"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.layout"
+    },
+    {
+      "type": "select",
+      "id": "direction",
+      "label": "t:sections.image_comparison.settings.direction.label",
+      "options": [
+        { "value": "horizontal", "label": "t:sections.image_comparison.settings.direction.options.horizontal" },
+        { "value": "vertical", "label": "t:sections.image_comparison.settings.direction.options.vertical" }
+      ],
+      "default": "horizontal"
+    },
+    {
+      "type": "range",
+      "id": "start_position",
+      "label": "t:sections.image_comparison.settings.start_position.label",
+      "min": 5,
+      "max": 95,
+      "step": 5,
+      "unit": "%",
+      "default": 50
+    },
+    {
+      "type": "select",
+      "id": "ratio",
+      "label": "t:sections.main_product.settings.media_ratio.label",
+      "options": [
+        { "value": "adapt", "label": "t:sections.hero.settings.height.options.adapt" },
+        { "value": "square", "label": "t:shared.ratio.options.square" },
+        { "value": "portrait", "label": "t:shared.ratio.options.portrait" },
+        { "value": "landscape", "label": "t:shared.ratio.options.landscape" },
+        { "value": "wide", "label": "t:blocks.image.settings.aspect.options.wide" }
+      ],
+      "default": "adapt"
+    },
+    {
+      "type": "checkbox",
+      "id": "full_width",
+      "label": "t:shared.media.full_width",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "color_scheme",
+      "id": "label_color_scheme",
+      "label": "t:sections.image_comparison.settings.label_color_scheme.label",
+      "info": "t:sections.image_comparison.settings.label_color_scheme.info",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.image_comparison.name"
+    }
+  ]
+}
+{% endschema %}

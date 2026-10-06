@@ -1,0 +1,40 @@
+{% doc %}
+  @description Previous / page numbers / next navigation for a paginated list.
+  Use when: inside a {% paginate %} tag on collection, search or blog pages.
+
+  @param {object} paginate - The paginate object
+
+  @example
+  {% render 'pagination', paginate: paginate %}
+{% enddoc %}
+{%- if paginate.pages > 1 -%}
+  <nav class="flex justify-center" aria-label="{{ 'general.pagination.label' | t }}">
+    <ul class="flex flex-wrap items-center gap-1">
+      {%- if paginate.previous -%}
+        <li>
+          <a href="{{ paginate.previous.url }}" class="flex size-10 items-center justify-center rounded-btn hover:bg-fg/5" aria-label="{{ 'general.pagination.previous' | t }}">
+            {%- render 'icon', name: 'chevron-left', class: 'size-5 rtl:rotate-180' -%}
+          </a>
+        </li>
+      {%- endif -%}
+      {%- for part in paginate.parts -%}
+        <li>
+          {%- if part.is_link -%}
+            <a href="{{ part.url }}" class="flex size-10 items-center justify-center rounded-btn no-underline hover:bg-fg/5" aria-label="{{ 'general.pagination.page' | t: page: part.title }}">{{ part.title }}</a>
+          {%- elsif part.title == paginate.current_page -%}
+            <span class="flex size-10 items-center justify-center rounded-btn border border-fg font-semibold" aria-current="page">{{ part.title }}</span>
+          {%- else -%}
+            <span class="flex size-10 items-center justify-center text-muted">{{ part.title }}</span>
+          {%- endif -%}
+        </li>
+      {%- endfor -%}
+      {%- if paginate.next -%}
+        <li>
+          <a href="{{ paginate.next.url }}" class="flex size-10 items-center justify-center rounded-btn hover:bg-fg/5" aria-label="{{ 'general.pagination.next' | t }}">
+            {%- render 'icon', name: 'chevron-right', class: 'size-5 rtl:rotate-180' -%}
+          </a>
+        </li>
+      {%- endif -%}
+    </ul>
+  </nav>
+{%- endif -%}

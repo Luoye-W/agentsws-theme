@@ -1,0 +1,74 @@
+{% doc %}
+  @description Product or variant price with compare-at price, "From" prefix for products whose variants differ in price, and unit price. Screen readers hear "Regular price" / "Sale price" labels.
+  Use when: product cards, product page price block, cart lines — anywhere a price is shown.
+
+  @param {object} product - The product
+  @param {object} [variant] - Show this variant's price instead of the product's lowest price
+  @param {string} [size] - 'sm', 'md' (default) or 'lg'
+
+  @example
+  {% render 'price', product: product, variant: product.selected_or_first_available_variant, size: 'lg' %}
+{% enddoc %}
+{%- liquid
+  if variant
+    assign price = variant.price
+    assign compare_at = variant.compare_at_price
+    assign show_from = false
+    assign unit_source = variant
+  else
+    assign price = product.price_min
+    assign compare_at = product.compare_at_price_min
+    assign show_from = product.price_varies
+    assign unit_source = product.selected_or_first_available_variant
+  endif
+
+  assign on_sale = false
+  if compare_at > price
+    assign on_sale = true
+  endif
+
+  case size
+    when 'lg'
+      assign size_class = 'type-h4'
+    when 'sm'
+      assign size_class = 'type-sm'
+    else
+      assign size_class = 'type-body'
+  endcase
+
+  if settings.currency_code
+    assign money_price = price | money_with_currency
+    assign money_compare = compare_at | money_with_currency
+  else
+    assign money_price = price | money
+    assign money_compare = compare_at | money
+  endif
+-%}
+<div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+  {%- if on_sale -%}
+    <span class="sr-only">{{ 'products.price.sale_price' | t }}</span>
+  {%- else -%}
+    <span class="sr-only">{{ 'products.price.regular_price' | t }}</span>
+  {%- endif -%}
+  <span class="{{ size_class }} font-semibold {% if on_sale %}text-sale{% endif %}">
+    {%- if show_from -%}
+      {{- 'products.price.from' | t: price: money_price -}}
+    {%- else -%}
+      {{- money_price -}}
+    {%- endif -%}
+  </span>
+  {%- if on_sale -%}
+    <span class="sr-only">{{ 'products.price.regular_price' | t }}</span>
+    <s class="type-sm text-muted">{{ money_compare }}</s>
+  {%- endif -%}
+  {%- if unit_source.unit_price_measurement -%}
+    <span class="type-xs text-muted w-full">
+      {{- unit_source.unit_price | money -}}
+      /
+      {%- if unit_source.unit_price_measurement.reference_value != 1 -%}
+        {{- unit_source.unit_price_measurement.reference_value -}}
+      {%- endif -%}
+      {{- unit_source.unit_price_measurement.reference_unit -}}
+    </span>
+  {%- endif -%}
+</div>

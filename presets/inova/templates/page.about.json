@@ -1,0 +1,540 @@
+{
+  "sections": {
+    "hero": {
+      "type": "hero",
+      "settings": {
+        "image": "shopify://shop_images/1b556fa9-ef2b-4489-ac37-bd96f923be1a.png",
+        "height": "medium",
+        "position": "middle_center",
+        "mobile_position": "middle",
+        "content_align": "center",
+        "text_color_scheme": "scheme-3",
+        "overlay_opacity": 30,
+        "full_width": false,
+        "inset_padding_top": 16,
+        "inset_padding_bottom": 16
+      },
+      "blocks": {
+        "e": {
+          "type": "heading",
+          "settings": {
+            "text": "About us",
+            "size": "eyebrow",
+            "tag": "p",
+            "alignment": "center"
+          }
+        },
+        "h": {
+          "type": "heading",
+          "settings": {
+            "text": "A space that feels just right",
+            "size": "display",
+            "tag": "h1",
+            "alignment": "center"
+          }
+        }
+      },
+      "block_order": [
+        "e",
+        "h"
+      ]
+    },
+    "intro": {
+      "type": "container",
+      "settings": {
+        "direction": "row",
+        "align": "start",
+        "justify": "between",
+        "gap": 48,
+        "width": "page",
+        "padding_top": 72,
+        "padding_bottom": 56
+      },
+      "blocks": {
+        "left": {
+          "type": "group",
+          "settings": {
+            "width": "half",
+            "gap": 16
+          },
+          "blocks": {
+            "h": {
+              "type": "heading",
+              "settings": {
+                "text": "A new look at <em>Scandinavian</em> design",
+                "size": "h1",
+                "tag": "h2",
+                "alignment": "left"
+              }
+            }
+          },
+          "block_order": [
+            "h"
+          ]
+        },
+        "right": {
+          "type": "group",
+          "settings": {
+            "width": "half",
+            "gap": 16
+          },
+          "blocks": {
+            "t": {
+              "type": "text",
+              "settings": {
+                "text": "<p>Demo copy \u2014 describe where your design ideas come from and the qualities you look for in every piece: function, durability and a calm, honest look.</p><p>Add a second paragraph about how you work with makers and choose materials.</p>",
+                "size": "body",
+                "muted": true,
+                "alignment": "left"
+              }
+            }
+          },
+          "block_order": [
+            "t"
+          ]
+        }
+      },
+      "block_order": [
+        "left",
+        "right"
+      ]
+    },
+    "chapters": {
+      "type": "image-cards",
+      "settings": {
+        "columns": 3,
+        "ratio": "portrait",
+        "mobile_layout": "slider",
+        "overlay_opacity": 35,
+        "text_color_scheme": "scheme-3",
+        "padding_top": 0,
+        "padding_bottom": 72
+      },
+      "blocks": {
+        "c1": {
+          "type": "_image-card",
+          "settings": {
+            "image": "shopify://shop_images/4abef0c7-ac75-481b-afbd-41096b7f0f0f.png",
+            "title": "It begins with lasting strength",
+            "link": "shopify://collections/quiet-living-spaces",
+            "link_label": ""
+          }
+        },
+        "c2": {
+          "type": "_image-card",
+          "settings": {
+            "image": "shopify://shop_images/209ec08f-ac98-4591-b94c-3c164a07a1eb.png",
+            "title": "A closer look at materials",
+            "link": "shopify://collections/the-communal-hearth",
+            "link_label": ""
+          }
+        },
+        "c3": {
+          "type": "_image-card",
+          "settings": {
+            "image": "shopify://shop_images/8e52ef4d-cd33-4abc-85bb-8040ae3c3f15.png",
+            "title": "The makers behind our pieces",
+            "link": "shopify://pages/designers",
+            "link_label": ""
+          }
+        }
+      },
+      "block_order": [
+        "c1",
+        "c2",
+        "c3"
+      ]
+    },
+    "mission": {
+      "type": "container",
+      "settings": {
+        "direction": "row",
+        "align": "start",
+        "justify": "between",
+        "gap": 48,
+        "width": "page",
+        "padding_top": 56,
+        "padding_bottom": 56
+      },
+      "blocks": {
+        "left": {
+          "type": "group",
+          "settings": {
+            "width": "half",
+            "gap": 16
+          },
+          "blocks": {
+            "h": {
+              "type": "heading",
+              "settings": {
+                "text": "Shaping calm, lasting spaces by pairing tradition with new ideas",
+                "size": "h3",
+                "tag": "h2",
+                "alignment": "left"
+              }
+            },
+            "t": {
+              "type": "text",
+              "settings": {
+                "text": "<p>Demo copy \u2014 one or two sentences about your mission.</p>",
+                "size": "sm",
+                "muted": true,
+                "alignment": "left"
+              }
+            }
+          },
+          "block_order": [
+            "h",
+            "t"
+          ]
+        },
+        "right": {
+          "type": "group",
+          "settings": {
+            "width": "half",
+            "gap": 16
+          },
+          "blocks": {
+            "t": {
+              "type": "text",
+              "settings": {
+                "text": "<p>Demo copy \u2014 expand on how the brand began, who is behind it and what you hope people feel in their homes.</p><p>Keep it short and specific; link to your designers page for more.</p>",
+                "size": "body",
+                "muted": true,
+                "alignment": "left"
+              }
+            }
+          },
+          "block_order": [
+            "t"
+          ]
+        }
+      },
+      "block_order": [
+        "left",
+        "right"
+      ]
+    },
+    "stats": {
+      "type": "stats",
+      "settings": {
+        "columns": 4,
+        "columns_mobile": "2",
+        "card_style": "plain",
+        "text_alignment": "center",
+        "number_size": "display",
+        "animate": true,
+        "duration": 2,
+        "padding_top": 56,
+        "padding_bottom": 72
+      },
+      "blocks": {
+        "s1": {
+          "type": "_stat",
+          "settings": {
+            "number": "4",
+            "label": "Collections"
+          }
+        },
+        "s2": {
+          "type": "_stat",
+          "settings": {
+            "number": "2",
+            "label": "Sample catalogs"
+          }
+        },
+        "s3": {
+          "type": "_stat",
+          "settings": {
+            "number": "30",
+            "label": "Days of new arrivals"
+          }
+        },
+        "s4": {
+          "type": "_stat",
+          "settings": {
+            "number": "100%",
+            "label": "Checkout by Shopify"
+          }
+        }
+      },
+      "block_order": [
+        "s1",
+        "s2",
+        "s3",
+        "s4"
+      ]
+    },
+    "quote": {
+      "type": "image-with-text",
+      "settings": {
+        "image": "shopify://shop_images/a2fbe9e4-851b-4354-bd1d-cd6008fc8936.png",
+        "image_style": "single",
+        "image_position": "end",
+        "image_width": "half",
+        "image_ratio": "portrait",
+        "align": "end",
+        "layout": "card",
+        "card_color_scheme": "scheme-2",
+        "padding_top": 56,
+        "padding_bottom": 72
+      },
+      "blocks": {
+        "i": {
+          "type": "icon",
+          "settings": {
+            "icon": "quote",
+            "size": 36,
+            "alignment": "start"
+          }
+        },
+        "h": {
+          "type": "heading",
+          "settings": {
+            "text": "Demo quote \u2014 a sentence about what good design means to you and how it should feel to live with it every day.",
+            "size": "h4",
+            "tag": "p",
+            "alignment": "left"
+          }
+        },
+        "t": {
+          "type": "text",
+          "settings": {
+            "text": "<p><em>\u2014 Your name, founder</em></p>",
+            "size": "sm",
+            "muted": true,
+            "alignment": "left"
+          }
+        }
+      },
+      "block_order": [
+        "i",
+        "h",
+        "t"
+      ]
+    },
+    "history": {
+      "type": "timeline",
+      "settings": {
+        "heading": "Our history",
+        "heading_alignment": "start",
+        "items_desktop": 1,
+        "show_nav": true,
+        "nav_position": "bottom",
+        "card_style": "split",
+        "peek": true,
+        "image_ratio": "square",
+        "padding_top": 72,
+        "padding_bottom": 72
+      },
+      "blocks": {
+        "y1": {
+          "type": "item",
+          "settings": {
+            "label": "Chapter 1",
+            "heading": "The vision takes shape",
+            "text": "<p>Demo copy \u2014 the idea behind the brand and the first sketches.</p>",
+            "image": "shopify://shop_images/4bf3aed8-d59c-46db-bb85-efb8d8c65015.png"
+          }
+        },
+        "y2": {
+          "type": "item",
+          "settings": {
+            "label": "Chapter 2",
+            "heading": "The first collection",
+            "text": "<p>Demo copy \u2014 the pieces that launched the brand.</p>",
+            "image": "shopify://shop_images/30d322ab-e210-49be-aad8-f3e38377d2a8.png"
+          }
+        },
+        "y3": {
+          "type": "item",
+          "settings": {
+            "label": "Chapter 3",
+            "heading": "Working with new makers",
+            "text": "<p>Demo copy \u2014 partnerships that shaped the range.</p>",
+            "image": "shopify://shop_images/65e5906f-483f-4621-9c17-d599148e57c0.png"
+          }
+        },
+        "y4": {
+          "type": "item",
+          "settings": {
+            "label": "Chapter 4",
+            "heading": "Looking ahead",
+            "text": "<p>Demo copy \u2014 what you are building next.</p>",
+            "image": "shopify://shop_images/ce02b08f-22b1-4170-a4c6-199f9aae9022.png"
+          }
+        }
+      },
+      "block_order": [
+        "y1",
+        "y2",
+        "y3",
+        "y4"
+      ]
+    },
+    "designers": {
+      "type": "people-cards",
+      "settings": {
+        "heading": "Meet our <em>designers</em>",
+        "heading_highlight": "color",
+        "text": "<p>Demo copy \u2014 introduce the people behind your products. Cards link to a profile page.</p>",
+        "heading_position": "side",
+        "view_all_label": "View all designers",
+        "view_all_link": "shopify://pages/designers",
+        "card_style": "overlay",
+        "image_ratio": "portrait",
+        "show_role": false,
+        "card_action": "link",
+        "layout": "stagger",
+        "columns_mobile": "1",
+        "padding_top": 72,
+        "padding_bottom": 96
+      },
+      "blocks": {
+        "d0": {
+          "type": "person",
+          "settings": {
+            "image": "shopify://shop_images/2b29ca26-96c3-4683-b7c0-abd1d544bdc0.png",
+            "name": "Designer name",
+            "role": "Ceramics",
+            "bio": "<p>Demo biography \u2014 background, favourite materials and signature pieces. Replace the name, photo and text with a real designer you work with.</p>",
+            "link": "shopify://pages/designer-profile",
+            "link_label": "View profile"
+          }
+        },
+        "d1": {
+          "type": "person",
+          "settings": {
+            "image": "shopify://shop_images/0cf2af3d-3aea-467a-98e9-b5edcadf71c8.png",
+            "name": "Designer name",
+            "role": "Lighting",
+            "bio": "<p>Demo biography \u2014 background, favourite materials and signature pieces. Replace the name, photo and text with a real designer you work with.</p>",
+            "link": "shopify://pages/designer-profile",
+            "link_label": "View profile"
+          }
+        },
+        "d2": {
+          "type": "person",
+          "settings": {
+            "image": "shopify://shop_images/ce02b08f-22b1-4170-a4c6-199f9aae9022.png",
+            "name": "Designer name",
+            "role": "Furniture",
+            "bio": "<p>Demo biography \u2014 background, favourite materials and signature pieces. Replace the name, photo and text with a real designer you work with.</p>",
+            "link": "shopify://pages/designer-profile",
+            "link_label": "View profile"
+          }
+        },
+        "d3": {
+          "type": "person",
+          "settings": {
+            "image": "shopify://shop_images/2dc8737d-8e6b-4cc0-877a-10565fd5438c.png",
+            "name": "Designer name",
+            "role": "Textiles",
+            "bio": "<p>Demo biography \u2014 background, favourite materials and signature pieces. Replace the name, photo and text with a real designer you work with.</p>",
+            "link": "shopify://pages/designer-profile",
+            "link_label": "View profile"
+          }
+        },
+        "d4": {
+          "type": "person",
+          "settings": {
+            "image": "shopify://shop_images/65e5906f-483f-4621-9c17-d599148e57c0.png",
+            "name": "Designer name",
+            "role": "Lighting",
+            "bio": "<p>Demo biography \u2014 background, favourite materials and signature pieces. Replace the name, photo and text with a real designer you work with.</p>",
+            "link": "shopify://pages/designer-profile",
+            "link_label": "View profile"
+          }
+        },
+        "d5": {
+          "type": "person",
+          "settings": {
+            "image": "shopify://shop_images/4bf3aed8-d59c-46db-bb85-efb8d8c65015.png",
+            "name": "Designer name",
+            "role": "Objects",
+            "bio": "<p>Demo biography \u2014 background, favourite materials and signature pieces. Replace the name, photo and text with a real designer you work with.</p>",
+            "link": "shopify://pages/designer-profile",
+            "link_label": "View profile"
+          }
+        }
+      },
+      "block_order": [
+        "d0",
+        "d1",
+        "d2",
+        "d3",
+        "d4",
+        "d5"
+      ]
+    },
+    "services": {
+      "type": "multicolumn",
+      "settings": {
+        "heading": "",
+        "columns": 4,
+        "columns_mobile": "2",
+        "mobile_layout": "stack",
+        "card_style": "filled",
+        "icon_position": "start",
+        "icon_size": 28,
+        "padding_top": 56,
+        "padding_bottom": 56
+      },
+      "blocks": {
+        "c1": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "chat",
+            "heading": "Customer service",
+            "text": "<p>Real people answer within one business day.</p>"
+          }
+        },
+        "c2": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "truck",
+            "heading": "Delivery",
+            "text": "<p>Describe your delivery promise here.</p>"
+          }
+        },
+        "c3": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "gift",
+            "heading": "Refer a friend",
+            "text": "<p>Explain your referral offer here.</p>"
+          }
+        },
+        "c4": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "lock",
+            "heading": "Secure payment",
+            "text": "<p>Payments are processed by Shopify.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "c1",
+        "c2",
+        "c3",
+        "c4"
+      ]
+    }
+  },
+  "order": [
+    "hero",
+    "intro",
+    "chapters",
+    "mission",
+    "stats",
+    "quote",
+    "history",
+    "designers",
+    "services"
+  ]
+}

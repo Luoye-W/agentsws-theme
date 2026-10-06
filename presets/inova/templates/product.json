@@ -1,0 +1,461 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-product",
+      "blocks": {
+        "vendor": {
+          "type": "product-vendor",
+          "settings": {
+            "style": "eyebrow",
+            "link": true
+          }
+        },
+        "title": {
+          "type": "product-title",
+          "settings": {
+            "size": "h2",
+            "show_vendor": false,
+            "inline_price": true
+          }
+        },
+        "description": {
+          "type": "product-description",
+          "settings": {}
+        },
+        "picker": {
+          "type": "product-variant-picker",
+          "settings": {
+            "style": "buttons",
+            "swatches": true,
+            "image_swatches": true,
+            "image_swatch_options": "Color, Colour"
+          }
+        },
+        "inventory": {
+          "type": "product-inventory",
+          "settings": {
+            "low_stock_threshold": 10,
+            "show_bar": true,
+            "show_count": "low",
+            "show_incoming": true
+          }
+        },
+        "buy": {
+          "type": "product-buy-buttons",
+          "settings": {
+            "show_quantity": true,
+            "show_price": true,
+            "show_dynamic_checkout": true
+          }
+        },
+        "pickup": {
+          "type": "product-pickup",
+          "settings": {}
+        },
+        "share": {
+          "type": "product-share",
+          "settings": {
+            "label": "Share:",
+            "show_copy": true,
+            "native_share": false,
+            "help_label": "Need help?",
+            "help_link": "shopify://pages/contact"
+          }
+        },
+        "complementary": {
+          "type": "product-complementary",
+          "settings": {
+            "heading": "Pairs well with",
+            "products_to_show": 3,
+            "card_quick_add": true
+          }
+        },
+        "trust": {
+          "type": "product-trust",
+          "settings": {
+            "style": "card",
+            "icon_size": 20,
+            "text_size": "sm"
+          },
+          "blocks": {
+            "shipping": {
+              "type": "_product-icon-item",
+              "settings": {
+                "icon": "truck",
+                "text": "Add your delivery promise"
+              }
+            },
+            "returns": {
+              "type": "_product-icon-item",
+              "settings": {
+                "icon": "return",
+                "text": "Add your returns policy"
+              }
+            },
+            "warranty": {
+              "type": "_product-icon-item",
+              "settings": {
+                "icon": "shield",
+                "text": "Add your warranty terms"
+              }
+            },
+            "checkout": {
+              "type": "_product-icon-item",
+              "settings": {
+                "icon": "lock",
+                "text": "Secure checkout"
+              }
+            }
+          },
+          "block_order": [
+            "shipping",
+            "returns",
+            "warranty",
+            "checkout"
+          ]
+        }
+      },
+      "block_order": [
+        "vendor",
+        "title",
+        "description",
+        "picker",
+        "inventory",
+        "buy",
+        "pickup",
+        "share",
+        "complementary",
+        "trust"
+      ],
+      "settings": {
+        "gallery_layout": "grid",
+        "thumbnail_position": "below",
+        "media_width": "large",
+        "media_ratio": "square",
+        "media_fit": "cover",
+        "enable_zoom": true,
+        "variant_media_only": false,
+        "video_autoplay": false,
+        "video_loop": false,
+        "sticky_cart": "all",
+        "color_scheme": "scheme-1",
+        "padding_top": 32,
+        "padding_bottom": 48
+      }
+    },
+    "anchors": {
+      "type": "anchor-nav",
+      "blocks": {
+        "description": {
+          "type": "link",
+          "settings": {
+            "label": "Description",
+            "target": "tech_specs"
+          }
+        },
+        "highlights": {
+          "type": "link",
+          "settings": {
+            "label": "Highlights",
+            "target": "story"
+          }
+        },
+        "faqs": {
+          "type": "link",
+          "settings": {
+            "label": "FAQs",
+            "target": "faq"
+          }
+        }
+      },
+      "block_order": [
+        "description",
+        "highlights",
+        "faqs"
+      ],
+      "settings": {
+        "nav_label": "",
+        "show_back_to_top": true,
+        "highlight_active": true,
+        "sticky": true,
+        "align_desktop": "end",
+        "align_mobile": "start",
+        "color_scheme": "scheme-2",
+        "padding_top": 16,
+        "padding_bottom": 16
+      }
+    },
+    "story": {
+      "type": "scroll-story",
+      "blocks": {
+        "step-1": {
+          "type": "step",
+          "settings": {
+            "eyebrow": "Step 1",
+            "heading": "Tell the first part of your story",
+            "text": "<p>Use each step for one idea: how the product is made, one key feature, or how to set it up. Add an image to swap the picture as shoppers scroll.</p>",
+            "image": "shopify://shop_images/a2fbe9e4-851b-4354-bd1d-cd6008fc8936.png"
+          }
+        },
+        "step-2": {
+          "type": "step",
+          "settings": {
+            "eyebrow": "Step 2",
+            "heading": "Show the next detail",
+            "text": "<p>Keep it short \u2014 two or three sentences read best beside a large image.</p>",
+            "image": "shopify://shop_images/30d322ab-e210-49be-aad8-f3e38377d2a8.png"
+          }
+        },
+        "step-3": {
+          "type": "step",
+          "settings": {
+            "eyebrow": "Step 3",
+            "heading": "Finish with the result",
+            "text": "<p>End with what the shopper gets, and link to the specs or the buy button.</p>",
+            "image": "shopify://shop_images/8e52ef4d-cd33-4abc-85bb-8040ae3c3f15.png"
+          }
+        }
+      },
+      "block_order": [
+        "step-1",
+        "step-2",
+        "step-3"
+      ],
+      "settings": {
+        "eyebrow": "",
+        "heading": "Perfect materials for your sofa",
+        "description": "",
+        "media_position": "start",
+        "media_height": 600,
+        "show_progress": true,
+        "color_scheme": "scheme-1",
+        "padding_top": 64,
+        "padding_bottom": 64,
+        "image": "shopify://shop_images/4abef0c7-ac75-481b-afbd-41096b7f0f0f.png"
+      }
+    },
+    "tech_specs": {
+      "type": "tech-specs",
+      "blocks": {
+        "info": {
+          "type": "group",
+          "settings": {
+            "title": "Product information",
+            "icon": "info",
+            "specs": "Frame: Add a value\nUpholstery: Add a value\nWidth: Add a value\nDepth: Add a value\nSeat height: Add a value\nArmrest height: Add a value",
+            "metafield": "custom.specs_info"
+          }
+        },
+        "material": {
+          "type": "group",
+          "settings": {
+            "title": "Material",
+            "icon": "leaf",
+            "specs": "Cover: Add a value\nFilling: Add a value",
+            "metafield": "custom.specs_material"
+          }
+        },
+        "care": {
+          "type": "group",
+          "settings": {
+            "title": "Care instructions",
+            "icon": "water",
+            "specs": "Cleaning: Add a value",
+            "metafield": "custom.specs_care"
+          }
+        },
+        "certs": {
+          "type": "group",
+          "settings": {
+            "title": "Certificates and tests",
+            "icon": "shield",
+            "specs": "Certificate: Add a value",
+            "metafield": "custom.specs_certificates"
+          }
+        }
+      },
+      "block_order": [
+        "info",
+        "material",
+        "care",
+        "certs"
+      ],
+      "settings": {
+        "heading": "Embracing softness",
+        "description": "<p>Demo copy \u2014 introduce the product in a few sentences here, or leave it empty and let the specifications speak.</p>",
+        "single_open": true,
+        "open_first": true,
+        "style": "lines",
+        "columns": "2",
+        "box_heading": "In the box",
+        "box_image_shape": "circle",
+        "box_sticky": true,
+        "box_color_scheme": "scheme-2",
+        "width": "page",
+        "color_scheme": "scheme-1",
+        "padding_top": 64,
+        "padding_bottom": 64
+      }
+    },
+    "faq": {
+      "type": "faq",
+      "blocks": {
+        "q1": {
+          "type": "item",
+          "settings": {
+            "question": "How long does delivery take?",
+            "answer": "<p>Add your delivery times here, and link to your shipping policy for the details.</p>"
+          }
+        },
+        "q2": {
+          "type": "item",
+          "settings": {
+            "question": "What is your return policy?",
+            "answer": "<p>Summarize your return window and conditions, and link to the full policy.</p>"
+          }
+        },
+        "q3": {
+          "type": "item",
+          "settings": {
+            "question": "Is this product covered by a warranty?",
+            "answer": "<p>Describe your warranty terms, or remove this question if you do not offer one.</p>"
+          }
+        },
+        "q4": {
+          "type": "item",
+          "settings": {
+            "question": "How do I care for this product?",
+            "answer": "<p>Add short care instructions.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "q1",
+        "q2",
+        "q3",
+        "q4"
+      ],
+      "settings": {
+        "eyebrow": "",
+        "heading": "FAQs",
+        "description": "<p>Please read our <a href=\"/pages/contact\">help page</a> to find out more.</p>",
+        "heading_alignment": "start",
+        "link_label": "",
+        "open_mode": "single",
+        "open_first": false,
+        "style": "lines",
+        "layout": "card",
+        "width": "page",
+        "structured_data": false,
+        "contact_heading": "Didn't find your answer?",
+        "contact_text": "<p>Don't hesitate to contact us.</p>",
+        "contact_link_label": "",
+        "contact_form": true,
+        "contact_show_phone": false,
+        "contact_button_label": "Send message",
+        "contact_style": "tinted",
+        "contact_color_scheme": "scheme-3",
+        "color_scheme": "scheme-4",
+        "padding_top": 48,
+        "padding_bottom": 64
+      }
+    },
+    "related": {
+      "type": "product-recommendations",
+      "settings": {
+        "heading": "You may also like",
+        "products_to_show": 4,
+        "card_quick_add": true
+      }
+    },
+    "recently_viewed": {
+      "type": "recently-viewed",
+      "settings": {
+        "heading": "Recently viewed",
+        "products_to_show": 4,
+        "columns_desktop": 4,
+        "mobile_layout": "slider",
+        "card_quick_add": true,
+        "color_scheme": "scheme-1",
+        "padding_top": 48,
+        "padding_bottom": 64
+      }
+    },
+    "look": {
+      "type": "lookbook",
+      "settings": {
+        "eyebrow": "Shop the look",
+        "heading": "Elegance and <em>comfort</em>",
+        "heading_highlight": "underline",
+        "image": "shopify://shop_images/ce02b08f-22b1-4170-a4c6-199f9aae9022.png",
+        "layout": "list",
+        "list_position": "end",
+        "padding_top": 72,
+        "padding_bottom": 48
+      },
+      "blocks": {
+        "h1": {
+          "type": "hotspot",
+          "settings": {
+            "product": "belgian-linen-sectional-sofa",
+            "x": 30,
+            "y": 60
+          }
+        },
+        "h2": {
+          "type": "hotspot",
+          "settings": {
+            "product": "artistic-table-lamp",
+            "x": 65,
+            "y": 35
+          }
+        }
+      },
+      "block_order": [
+        "h1",
+        "h2"
+      ]
+    },
+    "marquee": {
+      "type": "marquee",
+      "settings": {
+        "separator": "dot",
+        "text_size": "xlarge",
+        "font": "heading",
+        "outline": false,
+        "speed": "slow",
+        "padding_top": 24,
+        "padding_bottom": 24
+      },
+      "blocks": {
+        "m1": {
+          "type": "_marquee-item",
+          "settings": {
+            "text": "Dive into the deep comfort"
+          }
+        },
+        "m2": {
+          "type": "_marquee-item",
+          "settings": {
+            "text": "Made to be lived in"
+          }
+        }
+      },
+      "block_order": [
+        "m1",
+        "m2"
+      ]
+    }
+  },
+  "order": [
+    "main",
+    "anchors",
+    "tech_specs",
+    "story",
+    "look",
+    "marquee",
+    "faq",
+    "related",
+    "recently_viewed"
+  ]
+}

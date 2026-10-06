@@ -1,0 +1,589 @@
+{% comment %}
+  @description Social-style wall of posts ("shop the feed"): a grid or swipe row of image or Shopify-hosted video tiles, each with up to 3 tagged products shown as small thumbnails. Clicking a tile opens a window with the large media, the caption, the tagged products (with quick add) and a link to the original post; previous / next buttons and the arrow keys move between posts. Header with heading, account avatar, handle and a "Follow" button. Everything is uploaded by the merchant — no connection to Instagram or TikTok, no external requests. Media load lazily; the windows are real dialogs (focus trap, Escape, focus return).
+  Use when: bringing social content (Instagram, TikTok, UGC photos) onto the home page or a landing page and making it shoppable. For one large image with hotspots use "lookbook".
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign heading_id = 'FeedHeading-' | append: section.id
+  assign post_count = section.blocks.size
+
+  case s.columns
+    when 2
+      assign grid_cols = 'md:grid-cols-2'
+    when 3
+      assign grid_cols = 'md:grid-cols-3'
+    when 5
+      assign grid_cols = 'md:grid-cols-3 lg:grid-cols-5'
+    else
+      assign grid_cols = 'md:grid-cols-3 lg:grid-cols-4'
+  endcase
+
+  if s.columns_mobile == '2'
+    assign mobile_cols = 'grid-cols-2'
+    assign slide_width = '46%'
+  else
+    assign mobile_cols = 'grid-cols-1'
+    assign slide_width = '74%'
+  endif
+
+  assign scroll_classes = 'snap-x snap-mandatory overflow-x-auto [scrollbar-width:none]'
+  if s.mobile_layout == 'slider' and s.layout == 'slider'
+    assign list_class = 'flex gap-3 md:gap-5 -mx-(--s-gutter) px-(--s-gutter) scroll-px-(--s-gutter) md:mx-0 md:px-0 md:scroll-px-0 ' | append: scroll_classes
+  elsif s.mobile_layout == 'slider'
+    assign list_class = 'flex gap-3 -mx-(--s-gutter) px-(--s-gutter) scroll-px-(--s-gutter) md:mx-0 md:grid md:gap-5 md:overflow-visible md:px-0 ' | append: scroll_classes | append: ' ' | append: grid_cols
+  elsif s.layout == 'slider'
+    assign list_class = 'grid gap-3 md:flex md:gap-5 md:snap-x md:snap-mandatory md:overflow-x-auto md:[scrollbar-width:none] ' | append: mobile_cols
+  else
+    assign list_class = 'grid gap-3 md:gap-5 ' | append: mobile_cols | append: ' ' | append: grid_cols
+  endif
+
+  case s.image_ratio
+    when 'square'
+      assign ratio = '1'
+    when 'landscape'
+      assign ratio = '1.333'
+    else
+      assign ratio = '0.8'
+  endcase
+
+  assign handle = s.account_handle | escape
+  assign has_follow = false
+  if s.follow_label != blank and s.follow_link != blank
+    assign has_follow = true
+  endif
+-%}
+{%- capture platform_icon -%}
+  {%- case s.platform_icon -%}
+    {%- when 'instagram' -%}
+      <svg class="size-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="0.6" fill="currentColor"/></svg>
+    {%- when 'tiktok' -%}
+      <svg class="size-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13.5 3.5v11.3a3.7 3.7 0 1 1-3.7-3.7"/><path d="M13.5 3.5c.4 2.6 2.4 4.6 5 4.8"/></svg>
+    {%- when 'pinterest' -%}
+      <svg class="size-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M11.2 11l-2 9"/><path d="M9.6 14.2c-1.4-3.6.8-6.7 3.5-6.7 2.4 0 3.9 1.8 3.4 4.3-.4 2.2-1.9 3.6-3.9 3.2"/></svg>
+  {%- endcase -%}
+{%- endcapture -%}
+{%- capture account_bar -%}
+  {%- if s.account_avatar != blank or handle != blank -%}
+    <span class="flex min-w-0 items-center gap-3">
+      {%- if s.account_avatar != blank -%}
+        {{ s.account_avatar | image_url: width: 160 | image_tag: widths: '80, 160', sizes: '56px', loading: 'lazy', alt: '', class: 'size-12 shrink-0 rounded-full object-cover ring-2 ring-primary ring-offset-2 ring-offset-bg md:size-14' }}
+      {%- endif -%}
+      {%- if handle != blank -%}
+        <span class="truncate font-semibold">{{ handle }}</span>
+      {%- endif -%}
+    </span>
+  {%- endif -%}
+{%- endcapture -%}
+
+{%- if post_count > 0 or request.design_mode -%}
+<aw-feed
+  class="block surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1)); --feed-ratio: {{ ratio }}; --per-view: {{ s.columns }}; --slide-w: {{ slide_width }};"
+  data-layout="{{ s.layout }}"
+  data-mobile="{{ s.mobile_layout }}"
+>
+  <div class="page-width flex flex-col gap-8 md:gap-10">
+    <div class="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+      {%- render 'section-intro', eyebrow: s.eyebrow, heading: s.heading, highlight: s.heading_highlight, text: s.text, align: 'start', id: heading_id -%}
+      {%- if account_bar != blank or has_follow -%}
+        <div class="flex shrink-0 flex-wrap items-center gap-4">
+          {{ account_bar }}
+          {%- if has_follow -%}
+            <a href="{{ s.follow_link }}" class="btn btn-secondary" target="_blank" rel="noopener">
+              {%- if platform_icon != blank -%}<span class="size-5 shrink-0">{{ platform_icon }}</span>{%- endif -%}
+              {{- s.follow_label | escape -}}
+              <span class="sr-only">{{ 'general.accessibility.new_window' | t }}</span>
+            </a>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+    </div>
+
+    {%- if post_count == 0 -%}
+      <p class="rounded-card border border-dashed border-border p-6 text-center type-sm text-muted">
+        {{- 'sections.shop_the_feed.editor_empty' | t -}}
+      </p>
+    {%- else -%}
+      <aw-slider class="flex flex-col gap-4">
+        <ul
+          class="{{ list_class }}"
+          role="list"
+          data-ref="track"
+          {% if s.heading != blank %}
+            aria-labelledby="{{ heading_id }}"
+          {% endif %}
+        >
+          {%- for post in section.blocks -%}
+            {%- liquid
+              assign p = post.settings
+              assign modal_id = 'FeedPost-' | append: section.id | append: '-' | append: post.id
+              assign tile_image = p.image
+              if tile_image == blank and p.video != blank
+                assign tile_image = p.video.preview_image
+              endif
+              assign caption_text = p.caption | strip_html | strip | truncatewords: 14
+              assign placeholder_index = forloop.index | modulo: 2 | plus: 1
+              assign placeholder_name = 'lifestyle-' | append: placeholder_index
+
+              assign tagged = ''
+              if p.product_1 != blank
+                assign tagged = tagged | append: p.product_1.handle | append: ','
+              endif
+              if p.product_2 != blank
+                assign tagged = tagged | append: p.product_2.handle | append: ','
+              endif
+              if p.product_3 != blank
+                assign tagged = tagged | append: p.product_3.handle | append: ','
+              endif
+              assign tagged_count = tagged | split: ',' | size
+
+              assign open_label = 'sections.shop_the_feed.open_post' | t: number: forloop.index, count: post_count
+              if caption_text != blank
+                assign open_label = open_label | append: ': ' | append: caption_text
+              endif
+              if tagged_count > 0
+                assign tagged_label = 'sections.shop_the_feed.tagged_count' | t: count: tagged_count
+                assign open_label = open_label | append: ' (' | append: tagged_label | append: ')'
+              endif
+            -%}
+            <li
+              class="shrink-0 snap-start max-md:in-data-[mobile=slider]:w-(--slide-w) md:in-data-[layout=slider]:w-[calc((100%-1.25rem*(min(var(--per-view),3)-1))/min(var(--per-view),3))] lg:in-data-[layout=slider]:w-[calc((100%-1.25rem*(var(--per-view)-1))/var(--per-view))]"
+              {{ post.shopify_attributes }}
+            >
+              <div class="group relative isolate overflow-hidden rounded-media bg-placeholder aspect-(--feed-ratio)">
+                {%- if tile_image != blank -%}
+                  {{ tile_image | image_url: width: 900 | image_tag: widths: '300, 450, 600, 750, 900', sizes: '(min-width: 990px) 25vw, (min-width: 750px) 33vw, 74vw', loading: 'lazy', alt: '', class: 'absolute inset-0 -z-10 size-full object-cover transition duration-500 group-hover:scale-[1.04] motion-reduce:transition-none' }}
+                {%- else -%}
+                  {{ placeholder_name | placeholder_svg_tag: 'absolute inset-0 -z-10 size-full' }}
+                {%- endif -%}
+                <div class="surface-{{ s.tile_text_scheme }} pointer-events-none absolute inset-0 flex flex-col justify-between bg-transparent p-3 md:p-4">
+                  <div class="flex items-start justify-end gap-2">
+                    {%- if p.video != blank -%}
+                      <span class="flex size-8 items-center justify-center rounded-full bg-bg/30 backdrop-blur-sm">{%- render 'icon', name: 'play', class: 'size-4' -%}</span>
+                    {%- endif -%}
+                    {%- if platform_icon != blank -%}<span class="size-6 drop-shadow">{{ platform_icon }}</span>{%- endif -%}
+                  </div>
+                  {%- if tagged_count > 0 -%}
+                    <ul class="surface-{{ s.color_scheme }} flex gap-2 bg-transparent" role="list" aria-hidden="true">
+                      {%- for n in (1..3) -%}
+                        {%- assign key = 'product_' | append: n -%}
+                        {%- assign tagged_product = p[key] -%}
+                        {%- if tagged_product != blank -%}
+                          <li class="size-11 overflow-hidden rounded-[calc(var(--s-radius-media)/2)] bg-bg p-0.5 shadow-sm transition-transform group-hover:scale-95 motion-reduce:transition-none md:size-12">
+                            {%- if tagged_product.featured_media -%}
+                              {{ tagged_product.featured_media | image_url: width: 120 | image_tag: widths: '60, 120', sizes: '48px', loading: 'lazy', alt: '', class: 'size-full rounded-[inherit] object-contain' }}
+                            {%- else -%}
+                              {{ 'product-1' | placeholder_svg_tag: 'size-full' }}
+                            {%- endif -%}
+                          </li>
+                        {%- endif -%}
+                      {%- endfor -%}
+                    </ul>
+                  {%- endif -%}
+                </div>
+                <button
+                  type="button"
+                  class="absolute inset-0 z-[1] cursor-pointer rounded-media focus-visible:outline-2 focus-visible:-outline-offset-4"
+                  data-modal-open="{{ modal_id }}"
+                  aria-haspopup="dialog"
+                  aria-expanded="false"
+                  aria-controls="{{ modal_id }}"
+                >
+                  <span class="sr-only">{{ open_label | escape }}</span>
+                </button>
+              </div>
+            </li>
+          {%- endfor -%}
+        </ul>
+        {%- if s.layout == 'slider' or s.mobile_layout == 'slider' -%}
+          {%- render 'slider-buttons', class: 'justify-end' -%}
+        {%- endif -%}
+      </aw-slider>
+
+      {%- comment -%} One window per post; images inside load only when it opens (lazy + hidden dialog). {%- endcomment -%}
+      {%- for post in section.blocks -%}
+        {%- liquid
+          assign p = post.settings
+          assign modal_id = 'FeedPost-' | append: section.id | append: '-' | append: post.id
+          assign title_id = modal_id | append: '-title'
+          assign media = p.image
+          if media == blank and p.video != blank
+            assign media = p.video.preview_image
+          endif
+          assign media_ratio = media.aspect_ratio | default: ratio
+          assign media_alt = media.alt | escape
+          assign caption_text = p.caption | strip_html | strip
+
+          assign prev_id = ''
+          assign next_id = ''
+          if forloop.first == false
+            assign prev_index = forloop.index0 | minus: 1
+            assign prev_id = 'FeedPost-' | append: section.id | append: '-' | append: section.blocks[prev_index].id
+          endif
+          if forloop.last == false
+            assign next_id = 'FeedPost-' | append: section.id | append: '-' | append: section.blocks[forloop.index].id
+          endif
+          assign post_label = 'sections.shop_the_feed.post_label' | t: number: forloop.index, count: post_count
+          assign has_products = false
+          if p.product_1 != blank or p.product_2 != blank or p.product_3 != blank
+            assign has_products = true
+          endif
+        -%}
+        <aw-modal id="{{ modal_id }}">
+          <dialog
+            data-ref="dialog"
+            class="mx-auto mt-auto mb-0 max-h-[92dvh] w-full max-w-none overflow-y-auto rounded-t-card p-0 backdrop:bg-overlay surface-{{ settings.drawer_color_scheme }} opacity-0 translate-y-6 transition-[opacity,translate,display,overlay] transition-discrete duration-300 ease-out open:opacity-100 open:translate-y-0 starting:open:opacity-0 starting:open:translate-y-6 motion-reduce:transition-none md:my-auto md:w-[calc(100%-4rem)] md:max-w-5xl md:overflow-hidden md:rounded-card"
+            aria-labelledby="{{ title_id }}"
+          >
+            <div class="grid md:h-[min(42rem,88dvh)] md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+              <div class="relative aspect-(--media-ratio) max-h-[50dvh] w-full bg-placeholder md:aspect-auto md:h-full md:max-h-none" style="--media-ratio: {{ media_ratio }};">
+                {%- if p.video != blank -%}
+                  {%- render 'video-player', video: p.video, cover: p.image, autoplay: false, loop: true, description: caption_text, sizes: '(min-width: 750px) 55vw, 100vw', class: 'absolute inset-0 size-full' -%}
+                {%- elsif media != blank -%}
+                  {{ media | image_url: width: 1400 | image_tag: widths: '500, 750, 1000, 1400', sizes: '(min-width: 750px) 55vw, 100vw', loading: 'lazy', alt: media_alt, class: 'absolute inset-0 size-full object-cover' }}
+                {%- else -%}
+                  {{ 'lifestyle-1' | placeholder_svg_tag: 'absolute inset-0 size-full' }}
+                {%- endif -%}
+              </div>
+              <div class="flex min-h-0 flex-col">
+                <div class="flex items-center justify-between gap-3 border-b border-border px-5 py-3 md:px-6">
+                  {%- if account_bar != blank -%}
+                    {{ account_bar }}
+                  {%- else -%}
+                    <span></span>
+                  {%- endif -%}
+                  <button type="button" class="-me-2 flex size-11 shrink-0 items-center justify-center rounded-full hover:bg-fg/5" data-modal-close aria-label="{{ 'general.accessibility.close' | t }}">
+                    {%- render 'icon', name: 'close', class: 'size-6' -%}
+                  </button>
+                </div>
+                <div class="flex flex-1 flex-col gap-5 px-5 py-5 md:overflow-y-auto md:px-6">
+                  <h2 id="{{ title_id }}" class="sr-only">{{ post_label }}</h2>
+                  {%- if caption_text != blank -%}
+                    <div class="rte">{{ p.caption }}</div>
+                  {%- endif -%}
+                  {%- if has_products -%}
+                    <div class="flex flex-col gap-3">
+                      <h3 class="type-eyebrow text-muted">{{ 'sections.shop_the_feed.products_heading' | t }}</h3>
+                      <ul class="flex flex-col divide-y divide-border" role="list">
+                        {%- for n in (1..3) -%}
+                          {%- assign key = 'product_' | append: n -%}
+                          {%- assign tagged_product = p[key] -%}
+                          {%- if tagged_product != blank -%}
+                            <li class="py-3 first:pt-0 last:pb-0">
+                              {% render 'product-card-mini', product: tagged_product, quick_add: s.quick_add, show_vendor: s.show_vendor %}
+                            </li>
+                          {%- endif -%}
+                        {%- endfor -%}
+                      </ul>
+                    </div>
+                  {%- endif -%}
+                  {%- if p.link != blank -%}
+                    <a href="{{ p.link }}" class="inline-flex items-center gap-2 self-start type-sm underline underline-offset-4" target="_blank" rel="noopener">
+                      {%- if platform_icon != blank -%}<span class="size-5 shrink-0">{{ platform_icon }}</span>{%- endif -%}
+                      {{- 'sections.shop_the_feed.view_post' | t -}}
+                      <span class="sr-only">{{ 'general.accessibility.new_window' | t }}</span>
+                    </a>
+                  {%- endif -%}
+                </div>
+                {%- if post_count > 1 -%}
+                  <div class="flex items-center justify-between gap-3 border-t border-border px-5 py-3 md:px-6">
+                    <span class="type-sm text-muted" aria-hidden="true">{{ forloop.index }} / {{ post_count }}</span>
+                    <div class="flex gap-2">
+                      <button
+                        type="button"
+                        class="inline-flex size-11 items-center justify-center rounded-full border border-border bg-bg text-fg transition hover:border-fg disabled:cursor-not-allowed disabled:opacity-40"
+                        data-feed-go="{{ prev_id }}"
+                        data-dir="prev"
+                        aria-label="{{ 'sections.shop_the_feed.previous_post' | t }}"
+                        {% if prev_id == blank %}
+                          disabled
+                        {% endif %}
+                      >
+                        {%- render 'icon', name: 'chevron-left', class: 'size-5 rtl:rotate-180' -%}
+                      </button>
+                      <button
+                        type="button"
+                        class="inline-flex size-11 items-center justify-center rounded-full border border-border bg-bg text-fg transition hover:border-fg disabled:cursor-not-allowed disabled:opacity-40"
+                        data-feed-go="{{ next_id }}"
+                        data-dir="next"
+                        aria-label="{{ 'sections.shop_the_feed.next_post' | t }}"
+                        {% if next_id == blank %}
+                          disabled
+                        {% endif %}
+                      >
+                        {%- render 'icon', name: 'chevron-right', class: 'size-5 rtl:rotate-180' -%}
+                      </button>
+                    </div>
+                  </div>
+                {%- endif -%}
+              </div>
+            </div>
+          </dialog>
+        </aw-modal>
+      {%- endfor -%}
+    {%- endif -%}
+  </div>
+</aw-feed>
+<script src="{{ 'c-modal.js' | asset_url }}" type="module"></script>
+<script src="{{ 'c-feed.js' | asset_url }}" type="module"></script>
+{%- if s.layout == 'slider' or s.mobile_layout == 'slider' -%}
+  <script src="{{ 'c-slider.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+{%- if s.quick_add -%}
+  <script src="{{ 'c-quick-add.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.shop_the_feed.name",
+  "tag": "section",
+  "class": "section-shop-the-feed",
+  "disabled_on": {
+    "groups": ["header", "footer", "custom.overlay"]
+  },
+  "max_blocks": 12,
+  "blocks": [
+    {
+      "type": "post",
+      "name": "t:sections.shop_the_feed.blocks.post.name",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "t:sections.shop_the_feed.blocks.post.settings.image.label"
+        },
+        {
+          "type": "video",
+          "id": "video",
+          "label": "t:sections.shop_the_feed.blocks.post.settings.video.label",
+          "info": "t:sections.shop_the_feed.blocks.post.settings.video.info"
+        },
+        {
+          "type": "richtext",
+          "id": "caption",
+          "label": "t:sections.shop_the_feed.blocks.post.settings.caption.label"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "t:sections.shop_the_feed.blocks.post.settings.link.label",
+          "info": "t:sections.shop_the_feed.blocks.post.settings.link.info"
+        },
+        {
+          "type": "header",
+          "content": "t:sections.shop_the_feed.blocks.post.settings.products_header"
+        },
+        {
+          "type": "product",
+          "id": "product_1",
+          "label": "t:sections.shop_the_feed.blocks.post.settings.product_1.label"
+        },
+        {
+          "type": "product",
+          "id": "product_2",
+          "label": "t:sections.shop_the_feed.blocks.post.settings.product_2.label"
+        },
+        {
+          "type": "product",
+          "id": "product_3",
+          "label": "t:sections.shop_the_feed.blocks.post.settings.product_3.label"
+        }
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:shared.section_heading.eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:shared.section_heading.heading",
+      "default": "Shop the feed"
+    },
+    {
+      "type": "select",
+      "id": "heading_highlight",
+      "label": "t:shared.heading_highlight.label",
+      "info": "t:shared.heading_highlight.info",
+      "options": [
+        { "value": "none", "label": "t:shared.heading_highlight.options.none" },
+        { "value": "color", "label": "t:shared.heading_highlight.options.color" },
+        { "value": "marker", "label": "t:shared.heading_highlight.options.marker" },
+        { "value": "underline", "label": "t:shared.heading_highlight.options.underline" },
+        { "value": "outline", "label": "t:shared.heading_highlight.options.outline" },
+        { "value": "circle", "label": "t:shared.heading_highlight.options.circle" },
+        { "value": "squiggle", "label": "t:shared.heading_highlight.options.squiggle" }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:shared.section_heading.description"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.shop_the_feed.settings.account_header"
+    },
+    {
+      "type": "image_picker",
+      "id": "account_avatar",
+      "label": "t:sections.shop_the_feed.settings.account_avatar.label"
+    },
+    {
+      "type": "text",
+      "id": "account_handle",
+      "label": "t:sections.shop_the_feed.settings.account_handle.label",
+      "info": "t:sections.shop_the_feed.settings.account_handle.info"
+    },
+    {
+      "type": "text",
+      "id": "follow_label",
+      "label": "t:sections.shop_the_feed.settings.follow_label.label",
+      "default": "Follow"
+    },
+    {
+      "type": "url",
+      "id": "follow_link",
+      "label": "t:sections.shop_the_feed.settings.follow_link.label",
+      "info": "t:sections.shop_the_feed.settings.follow_link.info"
+    },
+    {
+      "type": "select",
+      "id": "platform_icon",
+      "label": "t:sections.shop_the_feed.settings.platform_icon.label",
+      "info": "t:sections.shop_the_feed.settings.platform_icon.info",
+      "options": [
+        { "value": "none", "label": "t:sections.shop_the_feed.settings.platform_icon.options.none" },
+        { "value": "instagram", "label": "Instagram" },
+        { "value": "tiktok", "label": "TikTok" },
+        { "value": "pinterest", "label": "Pinterest" }
+      ],
+      "default": "instagram"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.layout"
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "t:sections.collection_list.settings.layout.label",
+      "options": [
+        { "value": "grid", "label": "t:sections.testimonials.settings.layout.options.grid" },
+        { "value": "slider", "label": "t:sections.testimonials.settings.layout.options.slider" }
+      ],
+      "default": "slider"
+    },
+    {
+      "type": "range",
+      "id": "columns",
+      "label": "t:shared.columns_desktop",
+      "min": 2,
+      "max": 5,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "select",
+      "id": "mobile_layout",
+      "label": "t:shared.mobile_layout.label",
+      "options": [
+        { "value": "slider", "label": "t:shared.mobile_layout.options.slider" },
+        { "value": "stack", "label": "t:shared.mobile_layout.options.stack" }
+      ],
+      "default": "slider"
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "label": "t:shared.columns_mobile.label",
+      "options": [
+        { "value": "1", "label": "t:shared.columns_mobile.options.one" },
+        { "value": "2", "label": "t:shared.columns_mobile.options.two" }
+      ],
+      "default": "1"
+    },
+    {
+      "type": "select",
+      "id": "image_ratio",
+      "label": "t:sections.multicolumn.settings.image_ratio.label",
+      "options": [
+        { "value": "portrait", "label": "t:shared.ratio.options.portrait" },
+        { "value": "square", "label": "t:shared.ratio.options.square" },
+        { "value": "landscape", "label": "t:shared.ratio.options.landscape" }
+      ],
+      "default": "portrait"
+    },
+    {
+      "type": "color_scheme",
+      "id": "tile_text_scheme",
+      "label": "t:sections.shop_the_feed.settings.tile_text_scheme.label",
+      "info": "t:sections.shop_the_feed.settings.tile_text_scheme.info",
+      "default": "scheme-3"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.shop_the_feed.settings.products_header"
+    },
+    {
+      "type": "checkbox",
+      "id": "quick_add",
+      "label": "t:shared.card_quick_add.label",
+      "info": "t:shared.card_quick_add.info",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_vendor",
+      "label": "t:sections.shop_the_feed.settings.show_vendor.label",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.shop_the_feed.name",
+      "blocks": [
+        { "type": "post" },
+        { "type": "post" },
+        { "type": "post" },
+        { "type": "post" }
+      ]
+    }
+  ]
+}
+{% endschema %}

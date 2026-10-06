@@ -1,0 +1,100 @@
+{% doc %}
+  @description Local pickup availability of the selected variant: "Pickup available at <store>" with the usual preparation time (or "not available"), and a link that opens a side panel listing every pickup location with status, address and phone. Uses Shopify's own store availability data; hidden when no location offers pickup or the variant is sold out. Updates when the variant changes.
+  Use when: stores with local pickup enabled (Settings → Shipping and delivery → Local pickup).
+
+  @example
+  {% content_for 'block', type: 'product-pickup', id: 'pickup' %}
+{% enddoc %}
+{%- liquid
+  assign product = closest.product
+  assign variant = product.selected_or_first_available_variant
+  assign pickup_locations = variant.store_availabilities | where: 'pick_up_enabled', true
+  assign drawer_id = 'Pickup-' | append: section.id | append: '-' | append: block.id
+-%}
+<div class="empty:hidden" data-swap="pickup-{{ block.id }}" {{ block.shopify_attributes }}>
+  {%- if variant.available and pickup_locations.size > 0 -%}
+    {%- assign nearest = pickup_locations.first -%}
+    {%- assign nearest_name = nearest.location.name | escape -%}
+    <div class="flex items-start gap-3 type-sm">
+      {%- if nearest.available -%}
+        {%- render 'icon', name: 'check', class: 'mt-0.5 size-5 text-success' -%}
+      {%- else -%}
+        {%- render 'icon', name: 'info', class: 'mt-0.5 size-5 text-muted' -%}
+      {%- endif -%}
+      <div class="flex flex-col gap-1">
+        {%- if nearest.available -%}
+          <p>{{ 'products.pickup.available_at_html' | t: location: nearest_name }}</p>
+          {%- if nearest.pick_up_time != blank -%}
+            <p class="type-xs text-muted">{{ nearest.pick_up_time }}</p>
+          {%- endif -%}
+        {%- else -%}
+          <p>{{ 'products.pickup.unavailable_at_html' | t: location: nearest_name }}</p>
+        {%- endif -%}
+        <button type="button" class="self-start type-xs underline underline-offset-4" data-drawer-open="{{ drawer_id }}" aria-controls="{{ drawer_id }}" aria-expanded="false" aria-haspopup="dialog">
+          {%- if pickup_locations.size == 1 -%}
+            {{ 'products.pickup.view_store' | t }}
+          {%- else -%}
+            {{ 'products.pickup.check_other_stores' | t }}
+          {%- endif -%}
+        </button>
+      </div>
+    </div>
+    <aw-drawer id="{{ drawer_id }}">
+      <dialog
+        data-ref="dialog"
+        class="m-0 ms-auto h-dvh max-h-dvh w-full max-w-md surface-{{ settings.drawer_color_scheme }} p-0 backdrop:bg-overlay"
+        aria-labelledby="{{ drawer_id }}-title"
+      >
+        <div class="flex h-full flex-col">
+          <div class="flex items-center justify-between gap-4 border-b border-border px-5 py-3">
+            <h2 id="{{ drawer_id }}-title" class="type-h5">{{ 'products.pickup.title' | t }}</h2>
+            <button type="button" class="-me-2 flex size-11 items-center justify-center" data-drawer-close aria-label="{{ 'general.accessibility.close' | t }}">
+              {%- render 'icon', name: 'close', class: 'size-6' -%}
+            </button>
+          </div>
+          <div class="flex-1 overflow-y-auto px-5 py-5">
+            <p class="type-body font-semibold">{{ product.title | escape }}</p>
+            {%- unless product.has_only_default_variant -%}
+              <p class="type-sm text-muted">{{ variant.title | escape }}</p>
+            {%- endunless -%}
+            <ul class="mt-5 flex flex-col divide-y divide-border border-t border-border" role="list">
+              {%- for availability in pickup_locations -%}
+                <li class="flex flex-col gap-1 py-4 type-sm">
+                  <h3 class="type-h6">{{ availability.location.name | escape }}</h3>
+                  <p class="flex items-center gap-2">
+                    {%- if availability.available -%}
+                      {%- render 'icon', name: 'check', class: 'size-4 text-success' -%}
+                      {{ 'products.pickup.available' | t }}{% if availability.pick_up_time != blank %} · {{ availability.pick_up_time }}{% endif %}
+                    {%- else -%}
+                      {%- render 'icon', name: 'info', class: 'size-4 text-muted' -%}
+                      {{ 'products.pickup.unavailable' | t }}
+                    {%- endif -%}
+                  </p>
+                  <address class="not-italic text-muted">{{ availability.location.address | format_address }}</address>
+                  {%- if availability.location.address.phone != blank -%}
+                    <p><a href="tel:{{ availability.location.address.phone | remove: ' ' }}" class="underline">{{ availability.location.address.phone }}</a></p>
+                  {%- endif -%}
+                </li>
+              {%- endfor -%}
+            </ul>
+          </div>
+        </div>
+      </dialog>
+    </aw-drawer>
+  {%- endif -%}
+</div>
+<script src="{{ 'c-drawer.js' | asset_url }}" type="module"></script>
+
+{% schema %}
+{
+  "name": "t:blocks.product_pickup.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:blocks.product_pickup.settings.info"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.product_pickup.name" }]
+}
+{% endschema %}

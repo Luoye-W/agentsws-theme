@@ -1,0 +1,105 @@
+{% comment %}
+  @description "You may also like" row on product pages, filled by Shopify's product recommendations (related or complementary products). Loads after the page so it never slows the product view.
+  Use when: product templates, below the main product section.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+-%}
+<aw-recommendations
+  class="block surface-{{ s.color_scheme }}"
+  data-url="{{ routes.product_recommendations_url }}?section_id={{ section.id }}&product_id={{ product.id }}&limit={{ s.products_to_show }}&intent={{ s.intent }}"
+>
+  {%- if recommendations.performed and recommendations.products_count > 0 -%}
+    <div class="page-width flex flex-col gap-8 py-12 md:py-16">
+      {%- if s.heading != blank -%}
+        <h2 class="type-h3">{{ s.heading }}</h2>
+      {%- endif -%}
+      <ul class="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-x-6" role="list">
+        {%- for recommendation in recommendations.products -%}
+          <li>{% render 'product-card', product: recommendation, sizes: '(min-width: 750px) 25vw, 50vw', quick_add: s.card_quick_add, show_highlights: s.card_show_highlights, rating_chip: s.card_rating_chip %}</li>
+        {%- endfor -%}
+      </ul>
+    </div>
+  {%- endif -%}
+</aw-recommendations>
+<script src="{{ 'c-recommendations.js' | asset_url }}" type="module"></script>
+{%- if section.settings.card_quick_add -%}
+  <script src="{{ 'c-quick-add.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.product_recommendations.name",
+  "class": "section-product-recommendations",
+  "enabled_on": {
+    "templates": [
+      "product"
+    ]
+  },
+  "settings": [
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:sections.featured_collection.settings.heading.label",
+      "default": "You may also like"
+    },
+    {
+      "type": "select",
+      "id": "intent",
+      "label": "t:sections.product_recommendations.settings.intent.label",
+      "options": [
+        {
+          "value": "related",
+          "label": "t:sections.product_recommendations.settings.intent.options.related"
+        },
+        {
+          "value": "complementary",
+          "label": "t:sections.product_recommendations.settings.intent.options.complementary"
+        }
+      ],
+      "default": "related"
+    },
+    {
+      "type": "range",
+      "id": "products_to_show",
+      "label": "t:sections.featured_collection.settings.products_to_show.label",
+      "min": 2,
+      "max": 8,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "checkbox",
+      "id": "card_quick_add",
+      "label": "t:shared.card_quick_add.label",
+      "info": "t:shared.card_quick_add.info",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "card_show_highlights",
+      "label": "t:shared.card_show_highlights.label",
+      "info": "t:shared.card_show_highlights.info",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "card_rating_chip",
+      "label": "t:shared.card_rating_chip.label",
+      "info": "t:shared.card_rating_chip.info",
+      "default": false
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.product_recommendations.name"
+    }
+  ]
+}
+{% endschema %}

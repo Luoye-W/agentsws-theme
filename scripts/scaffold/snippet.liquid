@@ -1,0 +1,11 @@
+{% doc %}
+  @description __DESCRIPTION__
+  Use when: __USE_WHEN__
+
+  @param {string} text - Replace with the real parameters. Every argument callers pass needs an @param line.
+  @param {string} [modifier] - Optional parameters are wrapped in [brackets].
+
+  @example
+  {% render '__NAME__', text: 'Hello' %}
+{% enddoc %}
+<span class="__NAME__ type-sm">{{ text }}</span>

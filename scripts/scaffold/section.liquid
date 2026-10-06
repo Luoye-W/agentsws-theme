@@ -1,0 +1,62 @@
+{% comment %}
+  @description __DESCRIPTION__
+  Use when: __USE_WHEN__
+{% endcomment %}
+{%- comment -%}
+  Scaffolded by `npm run new`. Edit freely: this is a custom- file, upgrades never overwrite it.
+  Prefer adding blocks to the core "container" section before creating a new section.
+{%- endcomment -%}
+{%- liquid
+  assign s = section.settings
+-%}
+<div
+  class="__NAME__ surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+>
+  <div class="page-width flex flex-col gap-6">
+    {% content_for 'blocks' %}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "t:sections.__KEY__.name",
+  "tag": "section",
+  "class": "section-__NAME__",
+  "blocks": [{ "type": "@theme" }, { "type": "@app" }],
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.__KEY__.name",
+      "blocks": [{ "type": "heading", "settings": { "text": "__TITLE__" } }, { "type": "text" }]
+    }
+  ]
+}
+{% endschema %}

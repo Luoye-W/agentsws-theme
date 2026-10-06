@@ -1,0 +1,498 @@
+{% comment %}
+  @description Product page: media gallery (slider with thumbnails below, beside the image or none/dots, 2-column grid, stacked column or "featured" — first image large, the others in a narrow column; image shape matching the first image, each image's own or a fixed ratio; full-screen zoom or a click-to-magnify 2× lens; phone slides full width or 75% with dots, thumbnails or a counter; optional "only the selected variant's images" with alt-text tags) next to a column of blocks (title, price, badges, rating, variant picker, stock, buy buttons, add-ons, pickup, description, specifications, highlights, trust rows, pop-up links, countdown, complementary products, collapsible rows, text, app blocks). Image column width is a preset or a custom percentage (30–75%) on wide screens; the shorter column can stay in view while scrolling. Price, picker, stock, SKU and buy buttons update in place when the shopper picks another variant. Optional sticky add-to-cart bar once the buy button scrolls away. Records the product for the "Recently viewed" section.
+  Blocks with a "Placement: below the images" setting (spec tiles, icon list) move under the gallery on desktop while the info column stays sticky; on phones they follow the info column.
+  Use when: product templates (templates/product*.json). Change what appears in the info column by adding, removing or reordering its blocks; change the gallery in the section settings.
+{% endcomment %}
+{%- capture blocks_html -%}{% content_for 'blocks' %}{%- endcapture -%}
+{%- liquid
+  assign s = section.settings
+  assign selected_variant = product.selected_or_first_available_variant
+  assign featured = selected_variant.featured_media | default: product.featured_media
+  assign has_media = true
+  if product.media.size == 0
+    assign has_media = false
+  endif
+
+  comment
+    Desktop column widths. From 1280 px the images take media_pct percent of the row (preset sizes or a custom
+    percentage); between 750 and 1279 px the details column keeps a readable 320–560 px and the images take the rest.
+  endcomment
+  case s.media_width
+    when 'small'
+      assign media_pct = 42
+    when 'medium'
+      assign media_pct = 50
+    when 'xlarge'
+      assign media_pct = 66
+    when 'custom'
+      assign media_pct = s.media_width_percent | default: 55
+    else
+      assign media_pct = 58
+  endcase
+  assign info_pct = 100 | minus: media_pct
+  assign media_vw = media_pct
+  assign media_md_vw = 58
+  if s.gallery_layout == 'grid'
+    assign media_vw = media_vw | divided_by: 2
+    assign media_md_vw = 29
+  elsif s.gallery_layout == 'featured'
+    assign media_vw = media_vw | times: 2 | divided_by: 3
+    assign media_md_vw = 29
+  endif
+  assign image_sizes = '(min-width: 1280px) ' | append: media_vw | append: 'vw, (min-width: 750px) ' | append: media_md_vw | append: 'vw, 100vw'
+
+  comment
+    The slider layout keeps the media column in view; grid and stack layouts are tall, so the info column sticks instead.
+  endcomment
+  assign sticky_class = 'md:sticky md:top-[calc(var(--header-h,0px)+1.5rem)] md:self-start'
+
+  comment
+    Blocks placed "below the images" wrap their output in <!--aw:below-media--> … <!--/aw:below-media--> (top-level
+    blocks only). Split the captured blocks once: marked parts go under the gallery, the rest stays in the info column.
+  endcomment
+  assign below_start = '<!--aw:below-media-->'
+  assign below_end = '<!--/aw:below-media-->'
+  assign info_html = blocks_html
+  assign below_html = ''
+  if has_media and blocks_html contains below_start
+    assign parts = blocks_html | split: below_start
+    assign info_html = parts.first
+    for part in parts offset: 1
+      assign below_piece = part | split: below_end | first
+      assign rest_piece = part | remove_first: below_piece | remove_first: below_end
+      assign below_html = below_html | append: below_piece
+      assign info_html = info_html | append: rest_piece
+    endfor
+  endif
+  assign has_below = false
+  if below_html != blank
+    assign has_below = true
+  endif
+
+  if s.sticky_info == false
+    assign media_sticky = ''
+    assign info_sticky = ''
+  elsif s.gallery_layout == 'slider' and has_below == false
+    assign media_sticky = sticky_class
+    assign info_sticky = ''
+  else
+    assign media_sticky = ''
+    assign info_sticky = sticky_class
+  endif
+
+  assign sticky_visibility = ''
+  if s.sticky_cart == 'mobile'
+    assign sticky_visibility = 'md:hidden'
+  endif
+-%}
+<aw-product
+  class="block surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+  data-section="{{ section.id }}"
+  data-url="{{ product.url }}"
+>
+  <div
+    class="{% if has_media %}page-width grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,clamp(20rem,40vw,35rem))] lg:gap-x-16 xl:grid-cols-[minmax(0,var(--media-fr))_minmax(0,var(--info-fr))] xl:gap-x-[clamp(3rem,5vw,5.75rem)]{% if has_below %} md:grid-rows-[auto_1fr]{% endif %}{% else %}page-width-narrow{% endif %}"
+    {% if has_media %}
+      style="--media-fr: {{ media_pct }}fr; --info-fr: {{ info_pct }}fr;"
+    {% endif %}
+  >
+    {%- if has_media -%}
+      <div class="min-w-0 md:col-start-1 md:row-start-1 {{ media_sticky }}">
+        {% render 'product-gallery',
+          product: product,
+          section_id: section.id,
+          featured: featured,
+          variant: selected_variant,
+          ratio: s.media_ratio,
+          fit: s.media_fit,
+          layout: s.gallery_layout,
+          thumbnail_position: s.thumbnail_position,
+          zoom: s.enable_zoom,
+          zoom_mode: s.zoom_mode,
+          zoom_button: s.zoom_mobile_button,
+          mobile_width: s.mobile_slide_width,
+          mobile_nav: s.mobile_navigation,
+          filter_variant_media: s.variant_media_only,
+          video_autoplay: s.video_autoplay,
+          video_loop: s.video_loop,
+          sizes: image_sizes
+        %}
+      </div>
+    {%- endif -%}
+    <div class="{% if has_media %}md:col-start-2 md:row-start-1 {% if has_below %}md:row-span-2 {% endif %}{{ info_sticky }} {% endif %}flex min-w-0 flex-col gap-6">
+      {{ info_html }}
+    </div>
+    {%- if has_below -%}
+      <div class="flex min-w-0 flex-col gap-6 md:col-start-1 md:row-start-2 md:self-start" data-below-media>
+        {{ below_html }}
+      </div>
+    {%- endif -%}
+  </div>
+
+  {%- if s.sticky_cart != 'none' -%}
+    <aw-sticky-cart
+      class="fixed inset-x-0 bottom-0 z-30 block translate-y-full opacity-0 transition duration-300 data-visible:translate-y-0 data-visible:opacity-100 md:start-auto md:end-4 md:bottom-4 md:w-[min(34rem,calc(100%-2rem))] {{ sticky_visibility }}"
+      data-section="{{ section.id }}"
+      inert
+    >
+      <div
+        class="surface-{{ s.color_scheme }} flex items-center gap-3 border-t border-border px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg md:rounded-card md:border md:pb-3"
+        data-swap="sticky-{{ section.id }}"
+      >
+        {%- assign sticky_image = selected_variant.featured_image | default: product.featured_image -%}
+        {%- if sticky_image -%}
+          {%- assign sticky_alt = product.title | escape -%}
+          <div class="hidden size-14 shrink-0 overflow-hidden rounded-media bg-fg/5 md:block">
+            {{ sticky_image | image_url: width: 160 | image_tag: widths: '80, 160', sizes: '56px', class: 'size-full object-contain', loading: 'lazy', alt: sticky_alt }}
+          </div>
+        {%- endif -%}
+        <div class="flex min-w-0 flex-1 flex-col">
+          <p class="line-clamp-1 type-sm font-semibold">{{ product.title | escape }}</p>
+          {%- unless product.has_only_default_variant -%}
+            <p class="line-clamp-1 type-xs text-muted">{{ selected_variant.title | escape }}</p>
+          {%- endunless -%}
+          {% render 'price', product: product, variant: selected_variant, size: 'sm' %}
+        </div>
+        <button
+          type="button"
+          class="btn btn-primary shrink-0 aria-busy:opacity-70"
+          data-ref="submit"
+          {% unless selected_variant.available %}
+            disabled
+          {% endunless %}
+        >
+          {%- if selected_variant.available -%}
+            {{ 'products.product.add_to_cart' | t }}
+          {%- else -%}
+            {{ 'products.product.sold_out' | t }}
+          {%- endif -%}
+        </button>
+      </div>
+      <p class="surface-{{ s.color_scheme }} px-4 py-2 type-sm text-error" role="alert" data-ref="error" hidden></p>
+    </aw-sticky-cart>
+    <script src="{{ 'c-sticky-cart.js' | asset_url }}" type="module"></script>
+  {%- endif -%}
+
+  <aw-recently-viewed data-record="{{ product.handle }}" hidden></aw-recently-viewed>
+  <span hidden data-variant-state data-variant-id="{{ selected_variant.id }}" data-media-id="{{ selected_variant.featured_media.id }}"></span>
+</aw-product>
+<script src="{{ 'c-product.js' | asset_url }}" type="module"></script>
+<script src="{{ 'c-recently-viewed.js' | asset_url }}" type="module"></script>
+<script type="application/ld+json">
+  {{ product | structured_data }}
+</script>
+
+{% schema %}
+{
+  "name": "t:sections.main_product.name",
+  "class": "section-main-product",
+  "blocks": [
+    {
+      "type": "@theme"
+    },
+    {
+      "type": "@app"
+    }
+  ],
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:sections.main_product.settings.header_media"
+    },
+    {
+      "type": "select",
+      "id": "gallery_layout",
+      "label": "t:sections.main_product.settings.gallery_layout.label",
+      "info": "t:sections.main_product.settings.gallery_layout.info",
+      "options": [
+        {
+          "value": "slider",
+          "label": "t:sections.main_product.settings.gallery_layout.options.slider"
+        },
+        {
+          "value": "grid",
+          "label": "t:sections.main_product.settings.gallery_layout.options.grid"
+        },
+        {
+          "value": "stack",
+          "label": "t:sections.main_product.settings.gallery_layout.options.stack"
+        },
+        {
+          "value": "featured",
+          "label": "t:sections.main_product.settings.gallery_layout.options.featured"
+        }
+      ],
+      "default": "slider"
+    },
+    {
+      "type": "select",
+      "id": "thumbnail_position",
+      "label": "t:sections.main_product.settings.thumbnail_position.label",
+      "info": "t:sections.main_product.settings.thumbnail_position.info",
+      "options": [
+        {
+          "value": "below",
+          "label": "t:sections.main_product.settings.thumbnail_position.options.below"
+        },
+        {
+          "value": "start",
+          "label": "t:sections.main_product.settings.thumbnail_position.options.start"
+        },
+        {
+          "value": "none",
+          "label": "t:sections.main_product.settings.thumbnail_position.options.none_dots"
+        }
+      ],
+      "default": "below",
+      "visible_if": "{{ section.settings.gallery_layout == 'slider' }}"
+    },
+    {
+      "type": "select",
+      "id": "media_width",
+      "label": "t:sections.main_product.settings.media_width.label",
+      "info": "t:sections.main_product.settings.media_width.info",
+      "options": [
+        {
+          "value": "small",
+          "label": "t:sections.main_product.settings.media_width.options.small_pct"
+        },
+        {
+          "value": "medium",
+          "label": "t:sections.main_product.settings.media_width.options.medium_pct"
+        },
+        {
+          "value": "large",
+          "label": "t:sections.main_product.settings.media_width.options.large_pct"
+        },
+        {
+          "value": "xlarge",
+          "label": "t:sections.main_product.settings.media_width.options.xlarge_pct"
+        },
+        {
+          "value": "custom",
+          "label": "t:sections.main_product.settings.media_width.options.custom"
+        }
+      ],
+      "default": "large"
+    },
+    {
+      "type": "range",
+      "id": "media_width_percent",
+      "label": "t:sections.main_product.settings.media_width_percent.label",
+      "info": "t:sections.main_product.settings.media_width_percent.info",
+      "min": 30,
+      "max": 75,
+      "step": 5,
+      "unit": "%",
+      "default": 55,
+      "visible_if": "{{ section.settings.media_width == 'custom' }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "sticky_info",
+      "label": "t:sections.main_product.settings.sticky_info.label",
+      "info": "t:sections.main_product.settings.sticky_info.info",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "media_ratio",
+      "label": "t:sections.main_product.settings.media_ratio.label",
+      "info": "t:sections.main_product.settings.media_ratio.info",
+      "options": [
+        {
+          "value": "first",
+          "label": "t:sections.main_product.settings.media_ratio.options.first"
+        },
+        {
+          "value": "natural",
+          "label": "t:sections.main_product.settings.media_ratio.options.natural"
+        },
+        {
+          "value": "square",
+          "label": "t:sections.main_product.settings.media_ratio.options.square"
+        },
+        {
+          "value": "portrait",
+          "label": "t:sections.main_product.settings.media_ratio.options.portrait"
+        },
+        {
+          "value": "landscape",
+          "label": "t:sections.main_product.settings.media_ratio.options.landscape"
+        },
+        {
+          "value": "wide",
+          "label": "t:sections.main_product.settings.media_ratio.options.wide"
+        }
+      ],
+      "default": "first"
+    },
+    {
+      "type": "select",
+      "id": "media_fit",
+      "label": "t:shared.fit.label",
+      "options": [
+        {
+          "value": "contain",
+          "label": "t:shared.fit.options.contain"
+        },
+        {
+          "value": "cover",
+          "label": "t:shared.fit.options.cover"
+        }
+      ],
+      "default": "contain",
+      "visible_if": "{{ section.settings.media_ratio != 'natural' }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_zoom",
+      "label": "t:sections.main_product.settings.zoom.label",
+      "info": "t:sections.main_product.settings.zoom.info",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "zoom_mode",
+      "label": "t:sections.main_product.settings.zoom_mode.label",
+      "info": "t:sections.main_product.settings.zoom_mode.info",
+      "options": [
+        {
+          "value": "lightbox",
+          "label": "t:sections.main_product.settings.zoom_mode.options.lightbox"
+        },
+        {
+          "value": "hover",
+          "label": "t:sections.main_product.settings.zoom_mode.options.hover"
+        }
+      ],
+      "default": "lightbox",
+      "visible_if": "{{ section.settings.enable_zoom }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "zoom_mobile_button",
+      "label": "t:sections.main_product.settings.zoom_mobile_button.label",
+      "info": "t:sections.main_product.settings.zoom_mobile_button.info",
+      "default": true,
+      "visible_if": "{{ section.settings.enable_zoom }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "variant_media_only",
+      "label": "t:sections.main_product.settings.variant_media_only.label",
+      "info": "t:sections.main_product.settings.variant_media_only.info_tags",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "video_autoplay",
+      "label": "t:sections.main_product.settings.video_autoplay.label",
+      "info": "t:sections.main_product.settings.video_autoplay.info",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "video_loop",
+      "label": "t:sections.main_product.settings.video_loop.label",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:sections.main_product.settings.header_mobile"
+    },
+    {
+      "type": "select",
+      "id": "mobile_slide_width",
+      "label": "t:sections.main_product.settings.mobile_slide_width.label",
+      "options": [
+        {
+          "value": "full",
+          "label": "t:sections.main_product.settings.mobile_slide_width.options.full"
+        },
+        {
+          "value": "peek",
+          "label": "t:sections.main_product.settings.mobile_slide_width.options.peek"
+        }
+      ],
+      "default": "full"
+    },
+    {
+      "type": "select",
+      "id": "mobile_navigation",
+      "label": "t:sections.main_product.settings.mobile_navigation.label",
+      "options": [
+        {
+          "value": "dots",
+          "label": "t:sections.main_product.settings.mobile_navigation.options.dots"
+        },
+        {
+          "value": "thumbnails",
+          "label": "t:sections.main_product.settings.mobile_navigation.options.thumbnails"
+        },
+        {
+          "value": "counter",
+          "label": "t:sections.main_product.settings.mobile_navigation.options.counter"
+        }
+      ],
+      "default": "dots"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.main_product.settings.header_sticky_cart"
+    },
+    {
+      "type": "select",
+      "id": "sticky_cart",
+      "label": "t:sections.main_product.settings.sticky_cart.label",
+      "info": "t:sections.main_product.settings.sticky_cart.info",
+      "options": [
+        {
+          "value": "none",
+          "label": "t:sections.main_product.settings.sticky_cart.options.none"
+        },
+        {
+          "value": "mobile",
+          "label": "t:sections.main_product.settings.sticky_cart.options.mobile"
+        },
+        {
+          "value": "all",
+          "label": "t:sections.main_product.settings.sticky_cart.options.all"
+        }
+      ],
+      "default": "all"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 80
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,90 @@
+{% comment %}
+  @description Account activation (classic accounts, from the invitation email): set a password and confirm it, with errors next to the fields. "Decline invitation" is a separate form, so it works without filling in the password.
+  Use when: templates/customers/activate_account.json only.
+{% endcomment %}
+{%- assign s = section.settings -%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+>
+  <div class="page-width">
+    <div class="mx-auto flex w-full max-w-md flex-col gap-6">
+      <div class="flex flex-col gap-2 text-center">
+        <h1 class="type-h1">{{ 'customer.activate.title' | t }}</h1>
+        <p class="text-muted">{{ 'customer.activate.subtext' | t }}</p>
+      </div>
+      {%- form 'activate_customer_password', class: 'flex flex-col gap-4' -%}
+        {%- if form.errors -%}
+          {%- assign activate_errors = form.errors | default_errors -%}
+          {% render 'form-alert', tone: 'error', message: activate_errors, focus: true %}
+        {%- endif -%}
+        {%- assign password_label = 'customer.fields.password' | t -%}
+        {%- assign password_error = form.errors.messages.password -%}
+        {% render 'account-field',
+          type: 'password',
+          name: 'customer[password]',
+          id: 'ActivatePassword',
+          label: password_label,
+          autocomplete: 'new-password',
+          required: true,
+          error: password_error
+        %}
+        {%- assign confirm_label = 'customer.fields.password_confirm' | t -%}
+        {%- assign confirm_error = form.errors.messages.password_confirmation -%}
+        {% render 'account-field',
+          type: 'password',
+          name: 'customer[password_confirmation]',
+          id: 'ActivatePasswordConfirm',
+          label: confirm_label,
+          autocomplete: 'new-password',
+          required: true,
+          error: confirm_error
+        %}
+        <button type="submit" name="activate" value="1" class="btn btn-primary mt-2 w-full">{{ 'customer.activate.submit' | t }}</button>
+      {%- endform -%}
+      {%- form 'activate_customer_password', class: 'flex justify-center' -%}
+        <input type="hidden" name="decline" value="1">
+        <button type="submit" class="btn btn-link">{{ 'customer.activate.decline' | t }}</button>
+      {%- endform -%}
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "t:sections.main_activate_account.name",
+  "tag": "section",
+  "class": "section-main-activate-account",
+  "enabled_on": {
+    "templates": ["customers/activate_account"]
+  },
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 80
+    }
+  ]
+}
+{% endschema %}

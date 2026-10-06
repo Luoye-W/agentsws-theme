@@ -1,0 +1,81 @@
+{% doc %}
+  @description Labeled form field (label above the input) using the theme's input style: text, email, tel, password (with a show / hide button) or multi-line text. Shows the field's error under it and links it with aria-describedby; marks required fields for screen readers and sighted users.
+  Use when: customer account forms, address forms, comment forms and other Shopify forms.
+
+  @param {string} name - The input name, e.g. "customer[email]"
+  @param {string} id - Unique element id
+  @param {string} label - Visible label text (already translated)
+  @param {string} [type] - text (default), email, tel, password or textarea
+  @param {string} [value] - Current value (re-filled after a failed submit)
+  @param {string} [autocomplete] - The autocomplete token, e.g. "email", "new-password"
+  @param {boolean} [required] - Field must be filled in
+  @param {string} [error] - Error message for this field; marks the input invalid
+  @param {boolean} [invalid] - Mark the input invalid without its own message (the message is elsewhere)
+  @param {string} [describedby] - Id of an element that describes the field, e.g. the form's error box
+  @param {string} [hint] - Help text under the field
+  @param {string} [autocapitalize] - The autocapitalize attribute, e.g. "characters" for postcodes
+  @param {string} [inputmode] - The inputmode attribute
+
+  @example
+  {% render 'account-field', name: 'customer[email]', id: 'LoginEmail', label: email_label, type: 'email', autocomplete: 'email', required: true %}
+{% enddoc %}
+{%- liquid
+  assign field_type = type | default: 'text'
+  assign described_by = describedby | default: ''
+  assign is_invalid = false
+  if invalid or error != blank
+    assign is_invalid = true
+  endif
+  if error != blank
+    assign described_by = described_by | append: ' ' | append: id | append: '-error' | strip
+  endif
+  if hint != blank
+    assign hint_id = id | append: '-hint'
+    assign described_by = described_by | append: ' ' | append: hint_id | strip
+  endif
+-%}
+<div class="flex flex-col gap-1.5">
+  <label for="{{ id }}" class="type-sm font-medium">
+    {{- label -}}
+    {%- if required -%}<span aria-hidden="true"> *</span>{%- endif -%}
+  </label>
+  {%- capture field_attributes -%}
+    id="{{ id }}" name="{{ name }}"
+    {%- if autocomplete != blank %} autocomplete="{{ autocomplete }}"{% endif -%}
+    {%- if autocapitalize != blank %} autocapitalize="{{ autocapitalize }}"{% endif -%}
+    {%- if inputmode != blank %} inputmode="{{ inputmode }}"{% endif -%}
+    {%- if required %} required aria-required="true"{% endif -%}
+    {%- if is_invalid %} aria-invalid="true"{% endif -%}
+    {%- if described_by != blank %} aria-describedby="{{ described_by }}"{% endif -%}
+  {%- endcapture -%}
+  {%- case field_type -%}
+    {%- when 'textarea' -%}
+      <textarea {{ field_attributes }} rows="5" class="field py-3 aria-invalid:border-error">{{ value | escape }}</textarea>
+    {%- when 'password' -%}
+      <aw-password-field
+        class="relative block"
+        data-show="{{ 'customer.password.show' | t | escape }}"
+        data-hide="{{ 'customer.password.hide' | t | escape }}"
+      >
+        <input type="password" {{ field_attributes }} class="field pe-20 aria-invalid:border-error" data-ref="input">
+        <button
+          type="button"
+          class="absolute inset-y-0 end-0 px-3 type-xs font-semibold underline"
+          aria-controls="{{ id }}"
+          data-ref="toggle"
+          hidden
+        >
+          {{- 'customer.password.show' | t -}}
+        </button>
+      </aw-password-field>
+      <script src="{{ 'c-password-field.js' | asset_url }}" type="module"></script>
+    {%- else -%}
+      <input type="{{ field_type }}" value="{{ value | escape }}" {{ field_attributes }} class="field aria-invalid:border-error">
+  {%- endcase -%}
+  {%- if hint != blank -%}
+    <p id="{{ hint_id }}" class="type-xs text-muted">{{ hint }}</p>
+  {%- endif -%}
+  {%- if error != blank -%}
+    <p id="{{ id }}-error" class="type-xs text-error">{{ error }}</p>
+  {%- endif -%}
+</div>

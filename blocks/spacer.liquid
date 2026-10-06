@@ -1,0 +1,47 @@
+{% doc %}
+  @description Empty vertical space with separate mobile and desktop heights.
+  Use when: extra breathing room between blocks that gap/padding settings cannot give.
+
+  @example
+  {% content_for 'block', type: 'spacer', id: 'space' %}
+{% enddoc %}
+<div
+  class="w-full h-(--spacer-mobile) md:h-(--spacer-desktop)"
+  style="--spacer-mobile: {{ block.settings.height_mobile }}px; --spacer-desktop: {{ block.settings.height_desktop }}px;"
+  aria-hidden="true"
+  {{ block.shopify_attributes }}
+></div>
+
+{% schema %}
+{
+  "name": "t:blocks.spacer.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "range",
+      "id": "height_mobile",
+      "label": "t:blocks.spacer.settings.height_mobile.label",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "height_desktop",
+      "label": "t:blocks.spacer.settings.height_desktop.label",
+      "min": 0,
+      "max": 200,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:blocks.spacer.name"
+    }
+  ]
+}
+{% endschema %}

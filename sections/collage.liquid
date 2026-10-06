@@ -1,0 +1,183 @@
+{% comment %}
+  @description Bento-style collage on a 12-column grid: image, video, product and collection tiles, each spanning its own number of columns and rows, with an optional heading above. Tiles keep their order (no gap-filling reshuffle), so reading and tab order match what shoppers see; on mobile tiles stack full width or pair up at half width.
+  Use when: mood boards, shop-by-category mosaics, a campaign wall mixing lifestyle images, a video and hero products.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign heading_id = 'CollageHeading-' | append: section.id
+-%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1)); --collage-row: {{ s.row_height }}px; --collage-row-mobile: {{ s.row_height_mobile }}px; --collage-overlay: {{ s.overlay_opacity | divided_by: 100.0 }};"
+>
+  <div class="page-width flex flex-col gap-8">
+    {%- render 'section-intro', eyebrow: s.eyebrow, heading: s.heading, highlight: s.heading_highlight, text: s.text, align: s.heading_alignment, id: heading_id -%}
+    <div class="grid grid-cols-2 auto-rows-(--collage-row-mobile) gap-3 md:grid-cols-12 md:auto-rows-(--collage-row) md:gap-(--s-grid-gap)">
+      {% content_for 'blocks' %}
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "t:sections.collage.name",
+  "tag": "section",
+  "class": "section-collage",
+  "blocks": [
+    {
+      "type": "_collage-item"
+    }
+  ],
+  "max_blocks": 12,
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:sections.featured_collection.settings.eyebrow.label"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:sections.featured_collection.settings.heading.label",
+      "default": "Explore the collection"
+    },
+    {
+      "type": "select",
+      "id": "heading_highlight",
+      "label": "t:shared.heading_highlight.label",
+      "info": "t:shared.heading_highlight.info",
+      "options": [
+        { "value": "none", "label": "t:shared.heading_highlight.options.none" },
+        { "value": "color", "label": "t:shared.heading_highlight.options.color" },
+        { "value": "marker", "label": "t:shared.heading_highlight.options.marker" },
+        { "value": "underline", "label": "t:shared.heading_highlight.options.underline" },
+        { "value": "outline", "label": "t:shared.heading_highlight.options.outline" },
+        { "value": "circle", "label": "t:shared.heading_highlight.options.circle" },
+        { "value": "squiggle", "label": "t:shared.heading_highlight.options.squiggle" }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:sections.featured_collection.settings.text.label"
+    },
+    {
+      "type": "select",
+      "id": "heading_alignment",
+      "label": "t:shared.media.heading_alignment",
+      "options": [
+        { "value": "start", "label": "t:shared.align.options.start" },
+        { "value": "center", "label": "t:shared.align.options.center" }
+      ],
+      "default": "start"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.layout",
+      "info": "t:sections.collage.settings.grid_info"
+    },
+    {
+      "type": "range",
+      "id": "row_height",
+      "label": "t:sections.collage.settings.row_height.label",
+      "min": 120,
+      "max": 480,
+      "step": 10,
+      "unit": "px",
+      "default": 240
+    },
+    {
+      "type": "range",
+      "id": "row_height_mobile",
+      "label": "t:sections.collage.settings.row_height_mobile.label",
+      "min": 100,
+      "max": 400,
+      "step": 10,
+      "unit": "px",
+      "default": 180
+    },
+    {
+      "type": "range",
+      "id": "overlay_opacity",
+      "label": "t:sections.collage.settings.overlay_opacity.label",
+      "min": 0,
+      "max": 90,
+      "step": 5,
+      "unit": "%",
+      "default": 45
+    },
+    {
+      "type": "color_scheme",
+      "id": "text_color_scheme",
+      "label": "t:sections.hero.settings.text_surface.label",
+      "info": "t:sections.hero.settings.text_surface.info",
+      "default": "scheme-3"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.collage.name",
+      "blocks": [
+        {
+          "type": "_collage-item",
+          "settings": {
+            "media_type": "image",
+            "heading": "Add a title",
+            "column_span": 7,
+            "row_span": 2
+          }
+        },
+        {
+          "type": "_collage-item",
+          "settings": {
+            "media_type": "collection",
+            "column_span": 5,
+            "row_span": 1,
+            "mobile_width": "half"
+          }
+        },
+        {
+          "type": "_collage-item",
+          "settings": {
+            "media_type": "product",
+            "column_span": 5,
+            "row_span": 1,
+            "mobile_width": "half"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,796 @@
+{% comment %}
+  @description Blog post page: tags, title and meta (date, author, reading time, comments) centred or start-aligned (tags and meta on one line above the title), cover image as a full-width banner behind the title (optionally under a transparent header, with the post body rising over the banner's bottom edge) or inline below it, an optional reading progress bar, a table of contents built from the post's headings (above the text or in a sticky side column), the post content (optional large centred quote style), an author box, any blocks you add (share, custom Liquid, apps), share links with the comment count, previous / next post cards and comments with the comment form — plain or grouped in a tinted panel. Outputs article structured data.
+  Use when: templates/article*.json only. Put related posts below it with the "Blog posts" section.
+{% endcomment %}
+{%- capture article_blocks -%}{% content_for 'blocks' %}{%- endcapture -%}
+{%- liquid
+  assign s = section.settings
+  assign image = article.image | default: s.fallback_image
+  assign show_comments_count = false
+  if s.show_comments_count and blog.comments_enabled?
+    assign show_comments_count = true
+  endif
+
+  assign image_style = s.image_style
+  if image == blank
+    assign image_style = 'none'
+  endif
+  assign padding_top = s.padding_top
+  if image_style == 'banner'
+    assign padding_top = 0
+  endif
+  assign overlap = false
+  if image_style == 'banner' and s.content_overlap
+    assign overlap = true
+  endif
+  assign on_banner = false
+  if image_style == 'banner'
+    assign on_banner = true
+  endif
+  assign transparent = false
+  if image_style == 'banner' and s.transparent_header
+    assign transparent = true
+  endif
+  assign panel = false
+  if s.footer_style == 'panel'
+    assign panel = true
+  endif
+  assign toc = s.toc | default: 'none'
+
+  if s.content_width == 'narrow'
+    assign width_class = 'page-width-narrow'
+  else
+    assign width_class = 'page-width'
+  endif
+
+  case s.banner_height
+    when 'small'
+      assign banner_height_class = 'min-h-[50svh] md:min-h-[420px]'
+    when 'large'
+      assign banner_height_class = 'min-h-[80svh] md:min-h-[680px]'
+    when 'adapt'
+      assign banner_height_class = 'aspect-(--hero-ratio-mobile) md:aspect-(--hero-ratio)'
+    else
+      assign banner_height_class = 'min-h-[60svh] md:min-h-[540px]'
+  endcase
+
+  case s.title_size
+    when 'display'
+      assign title_class = 'type-display'
+    when 'h2'
+      assign title_class = 'type-h2'
+    else
+      assign title_class = 'type-h1'
+  endcase
+
+  assign image_alt = image.alt | default: article.title | escape
+  assign loading = 'lazy'
+  assign fetch_priority = 'auto'
+  if section.index <= 2
+    assign loading = 'eager'
+    assign fetch_priority = 'high'
+  endif
+
+  comment
+    section.blocks cannot tell which theme blocks were added (type is always "@theme"): the share block marks itself
+    with data-share-block, so look for that in the rendered blocks.
+  endcomment
+  assign has_share_block = false
+  if article_blocks contains 'data-share-block'
+    assign has_share_block = true
+  endif
+  assign share_url = request.origin | append: article.url
+  assign content_id = 'ArticleContent-' | append: section.id
+  assign article_id = 'Article-' | append: section.id
+
+  if panel
+    assign card_class = 'rounded-card bg-bg p-5 md:p-8'
+    assign nav_card_class = 'rounded-card bg-bg p-5 md:p-6'
+  else
+    assign card_class = 'rounded-card border border-border p-5 md:p-8'
+    assign nav_card_class = 'rounded-card border border-border p-5 hover:border-fg'
+  endif
+-%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+>
+  {%- if s.show_progress -%}
+    <aw-reading-progress class="pointer-events-none fixed inset-x-0 top-0 z-50 block h-1" data-target="{{ article_id }}" aria-hidden="true">
+      <span class="block h-full origin-left scale-x-0 bg-primary rtl:origin-right" data-ref="bar"></span>
+    </aw-reading-progress>
+  {%- endif -%}
+  <article id="{{ article_id }}" class="flex flex-col {% unless overlap %}gap-10 md:gap-14{% endunless %}">
+    {%- capture article_meta -%}
+      {% render 'article-meta',
+        article: article,
+        show_date: s.show_date,
+        show_author: s.show_author,
+        show_comments: show_comments_count,
+        show_reading_time: s.show_reading_time,
+        icons: s.meta_icons,
+        class: 'type-sm opacity-80'
+      %}
+    {%- endcapture -%}
+    {%- capture article_header -%}
+      {%- if s.header_alignment == 'start' -%}
+        <div class="flex flex-col items-start gap-4 text-start">
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+            {%- if s.show_tags -%}
+              {% render 'article-tags', article: article, blog_url: blog.url, limit: 6, on_image: on_banner %}
+            {%- endif -%}
+            {{ article_meta }}
+          </div>
+          <h1 class="{{ title_class }} max-w-4xl">{{ article.title | escape }}</h1>
+        </div>
+      {%- else -%}
+        <div class="flex flex-col items-center gap-4 text-center">
+          {%- if s.show_tags -%}
+            {% render 'article-tags', article: article, blog_url: blog.url, limit: 6, on_image: on_banner %}
+          {%- endif -%}
+          <h1 class="{{ title_class }} max-w-4xl">{{ article.title | escape }}</h1>
+          {{ article_meta }}
+        </div>
+      {%- endif -%}
+    {%- endcapture -%}
+
+    {%- if image_style == 'banner' -%}
+      <header
+        class="relative isolate flex items-end overflow-hidden surface-{{ s.banner_color_scheme }} {{ banner_height_class }} {% if transparent %}pt-[var(--transparent-header-offset,0px)]{% endif %}"
+        style="--hero-ratio: {{ image.aspect_ratio | default: 2 }}; --hero-ratio-mobile: {{ image.aspect_ratio | default: 2 }}; --hero-overlay: {{ s.overlay_opacity | divided_by: 100.0 }};"
+        {% if transparent %}
+          data-transparent-header
+        {% endif %}
+      >
+        <div class="absolute inset-0 -z-10">
+          {{
+            image
+            | image_url: width: 3000
+            | image_tag:
+              widths: '750, 1100, 1500, 1800, 2400, 3000',
+              sizes: '100vw',
+              loading: loading,
+              fetchpriority: fetch_priority,
+              alt: image_alt,
+              class: 'size-full object-cover'
+          }}
+          <div class="absolute inset-0 bg-linear-to-t from-[rgb(0_0_0/var(--hero-overlay))] to-[rgb(0_0_0/calc(var(--hero-overlay)*0.35))]" aria-hidden="true"></div>
+        </div>
+        <div class="{% if s.header_alignment == 'start' %}{{ width_class }}{% else %}page-width{% endif %} w-full bg-transparent py-12 md:py-20 {% if overlap %}pb-20 md:pb-32{% endif %}">{{ article_header }}</div>
+      </header>
+    {%- else -%}
+      <header class="{% if s.header_alignment == 'start' %}{{ width_class }}{% else %}page-width{% endif %}">{{ article_header }}</header>
+      {%- if image_style == 'inline' -%}
+        <div class="page-width">
+          <div class="overflow-hidden rounded-media bg-placeholder">
+            {{
+              image
+              | image_url: width: 2400
+              | image_tag:
+                widths: '750, 1100, 1500, 1800, 2400',
+                sizes: '(min-width: 1400px) 1280px, 100vw',
+                loading: loading,
+                fetchpriority: fetch_priority,
+                alt: image_alt,
+                class: 'h-auto w-full'
+            }}
+          </div>
+        </div>
+      {%- endif -%}
+    {%- endif -%}
+
+    {%- capture toc_html -%}
+      {%- if toc != 'none' -%}
+        <aw-article-toc class="block {% if toc == 'top' %}rounded-card border border-border p-5 md:p-6{% endif %}" data-target="{{ content_id }}" hidden>
+          <nav aria-labelledby="TocHeading-{{ section.id }}">
+            <p id="TocHeading-{{ section.id }}" class="type-eyebrow text-muted">{{ 'blogs.article.toc' | t }}</p>
+            <ol class="mt-3 flex flex-col type-sm" role="list" data-ref="list"></ol>
+          </nav>
+        </aw-article-toc>
+      {%- endif -%}
+    {%- endcapture -%}
+
+    {%- capture engagement -%}
+      {%- if s.show_share and has_share_block == false -%}
+        {%- capture comments_link -%}
+          {%- if s.share_comments_count and blog.comments_enabled? -%}
+            <a href="#comments" class="inline-flex items-center gap-1.5 type-sm no-underline hover:underline">
+              {%- render 'icon', name: 'chat', class: 'size-4' -%}
+              {{- 'blogs.comments.count' | t: count: article.comments_count -}}
+            </a>
+          {%- endif -%}
+        {%- endcapture -%}
+        {% render 'article-share', url: share_url, title: article.title, image: article.image, style: s.share_style, trailing: comments_link %}
+      {%- endif -%}
+
+      {%- if s.show_prev_next -%}
+        {%- assign newer = blog.previous_article -%}
+        {%- assign older = blog.next_article -%}
+        {%- if newer or older -%}
+          <nav class="grid gap-4 md:grid-cols-2" aria-label="{{ 'blogs.article.more_posts' | t }}">
+            {%- if newer -%}
+              <a href="{{ newer.url }}" class="group flex items-start gap-4 no-underline {{ nav_card_class }}">
+                {%- render 'icon', name: 'arrow-left', class: 'mt-0.5 size-5 shrink-0 transition group-hover:-translate-x-1 motion-reduce:transition-none rtl:rotate-180' -%}
+                <span class="flex min-w-0 flex-col gap-1.5">
+                  <span class="type-xs text-muted">{{ 'blogs.article.previous_post' | t }}</span>
+                  {%- if s.prev_next_meta -%}
+                    {% render 'article-meta', article: newer, show_date: true, show_author: true, icons: s.meta_icons, class: 'type-xs text-muted' %}
+                  {%- endif -%}
+                  <span class="type-h6 group-hover:underline">{{ newer.title | escape }}</span>
+                </span>
+              </a>
+            {%- endif -%}
+            {%- if older -%}
+              <a href="{{ older.url }}" class="group flex items-start justify-between gap-4 no-underline md:col-start-2 {{ nav_card_class }}">
+                <span class="flex min-w-0 flex-col gap-1.5">
+                  <span class="type-xs text-muted">{{ 'blogs.article.next_post' | t }}</span>
+                  {%- if s.prev_next_meta -%}
+                    {% render 'article-meta', article: older, show_date: true, show_author: true, icons: s.meta_icons, class: 'type-xs text-muted' %}
+                  {%- endif -%}
+                  <span class="type-h6 group-hover:underline">{{ older.title | escape }}</span>
+                </span>
+                {%- render 'icon', name: 'arrow-right', class: 'mt-0.5 size-5 shrink-0 transition group-hover:translate-x-1 motion-reduce:transition-none rtl:rotate-180' -%}
+              </a>
+            {%- endif -%}
+          </nav>
+        {%- endif -%}
+      {%- endif -%}
+
+      {%- if blog.comments_enabled? -%}
+        {%- assign comments_form_id = 'CommentForm-' | append: section.id -%}
+        <section id="comments" class="flex flex-col gap-8 {% unless panel %}border-t border-border pt-10{% endunless %}" aria-labelledby="CommentsHeading-{{ section.id }}">
+          <h2 id="CommentsHeading-{{ section.id }}" class="type-h3">
+            {%- if article.comments_count > 0 -%}
+              {{- 'blogs.comments.count' | t: count: article.comments_count -}}
+            {%- else -%}
+              {{- 'blogs.comments.title' | t -}}
+            {%- endif -%}
+          </h2>
+
+          {%- paginate article.comments by s.comments_per_page -%}
+            {%- if article.comments.size > 0 -%}
+              <ol class="flex flex-col gap-4" role="list">
+                {%- for comment in article.comments -%}
+                  <li id="{{ comment.id }}" class="flex flex-col gap-2 rounded-card {% if panel %}bg-bg{% else %}bg-fg/[0.03]{% endif %} p-5">
+                    <p class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                      <span class="font-semibold">{{ comment.author | escape }}</span>
+                      <span class="type-xs text-muted">{{ comment.created_at | time_tag: format: 'date_at_time' }}</span>
+                    </p>
+                    <div class="rte">{{ comment.content }}</div>
+                  </li>
+                {%- endfor -%}
+              </ol>
+              {%- if paginate.pages > 1 -%}
+                <nav class="flex items-center justify-between gap-4" aria-label="{{ 'blogs.comments.pagination' | t }}">
+                  {%- if paginate.previous -%}
+                    <a href="{{ paginate.previous.url }}#comments" class="btn btn-secondary">{{ 'blogs.comments.newer' | t }}</a>
+                  {%- else -%}
+                    <span></span>
+                  {%- endif -%}
+                  <span class="type-sm text-muted">{{ 'general.pagination.page' | t: page: paginate.current_page }}</span>
+                  {%- if paginate.next -%}
+                    <a href="{{ paginate.next.url }}#comments" class="btn btn-secondary">{{ 'blogs.comments.older' | t }}</a>
+                  {%- else -%}
+                    <span></span>
+                  {%- endif -%}
+                </nav>
+              {%- endif -%}
+            {%- endif -%}
+          {%- endpaginate -%}
+
+          {%- form 'new_comment', article, id: comments_form_id, class: 'flex flex-col gap-4' -%}
+            <div class="flex flex-col gap-4 {{ card_class }}">
+              <h3 class="type-h4">{{ 'blogs.comments.form_title' | t }}</h3>
+              {%- if blog.moderated? -%}
+                <p class="type-sm text-muted">{{ 'blogs.comments.moderated' | t }}</p>
+              {%- endif -%}
+              {%- if form.posted_successfully? -%}
+                {%- if blog.moderated? -%}
+                  {%- assign comment_success = 'blogs.comments.success_moderated' | t -%}
+                {%- else -%}
+                  {%- assign comment_success = 'blogs.comments.success' | t -%}
+                {%- endif -%}
+                {% render 'form-alert', tone: 'success', message: comment_success, focus: true %}
+              {%- endif -%}
+              {%- if form.errors -%}
+                {%- assign comment_errors = form.errors | default_errors -%}
+                {%- assign comment_error_id = comments_form_id | append: '-errors' -%}
+                {% render 'form-alert', tone: 'error', message: comment_errors, id: comment_error_id, focus: true %}
+              {%- endif -%}
+              <div class="grid gap-4 md:grid-cols-2">
+                {%- assign author_error = form.errors.messages.author -%}
+                {%- assign author_label = 'blogs.comments.name' | t -%}
+                {% render 'account-field',
+                  name: 'comment[author]',
+                  id: 'CommentAuthor',
+                  label: author_label,
+                  value: form.author,
+                  autocomplete: 'name',
+                  required: true,
+                  error: author_error
+                %}
+                {%- assign email_error = form.errors.messages.email -%}
+                {%- assign email_label = 'blogs.comments.email' | t -%}
+                {% render 'account-field',
+                  type: 'email',
+                  name: 'comment[email]',
+                  id: 'CommentEmail',
+                  label: email_label,
+                  value: form.email,
+                  autocomplete: 'email',
+                  required: true,
+                  error: email_error
+                %}
+              </div>
+              {%- assign body_error = form.errors.messages.body -%}
+              {%- assign body_label = 'blogs.comments.message' | t -%}
+              {% render 'account-field',
+                type: 'textarea',
+                name: 'comment[body]',
+                id: 'CommentBody',
+                label: body_label,
+                value: form.body,
+                required: true,
+                error: body_error
+              %}
+              <div class="flex flex-col gap-3">
+                <button type="submit" class="btn btn-primary self-start">{{ 'blogs.comments.post' | t }}</button>
+                <p class="type-xs text-muted">{{ 'shopify.online_store.spam_detection.disclaimer_html' | t }}</p>
+              </div>
+            </div>
+          {%- endform -%}
+        </section>
+      {%- endif -%}
+    {%- endcapture -%}
+
+    {%- capture main_column -%}
+      {%- if toc == 'top' -%}{{ toc_html }}{%- endif -%}
+      <div id="{{ content_id }}" class="rte type-body md:type-lg [&_img]:rounded-media" data-quote="{{ s.quote_style }}">{{ article.content }}</div>
+
+      {%- if s.show_author_box and article.user != blank -%}
+        <aside class="flex items-start gap-5 rounded-card border border-border p-5 md:p-6" aria-labelledby="AuthorName-{{ section.id }}">
+          {%- if article.user.image -%}
+            {{
+              article.user.image
+              | image_url: width: 160
+              | image_tag: widths: '80, 160', sizes: '64px', loading: 'lazy', alt: '', class: 'size-16 shrink-0 rounded-full object-cover'
+            }}
+          {%- endif -%}
+          <div class="flex min-w-0 flex-col gap-1">
+            <p class="type-eyebrow text-muted">{{ 'blogs.article.written_by' | t }}</p>
+            <p id="AuthorName-{{ section.id }}" class="type-h5">{{ article.user.name | escape }}</p>
+            {%- if article.user.bio != blank -%}
+              <div class="rte type-sm text-muted">{{ article.user.bio }}</div>
+            {%- endif -%}
+          </div>
+        </aside>
+      {%- endif -%}
+
+      {%- if section.blocks.size > 0 -%}
+        <div class="flex flex-col gap-6">{{ article_blocks }}</div>
+      {%- endif -%}
+
+      {%- unless panel -%}{{ engagement }}{%- endunless -%}
+    {%- endcapture -%}
+
+    <div class="{% if overlap %}relative -mt-10 rounded-t-card bg-bg pt-10 md:-mt-16 md:pt-16{% endif %}">
+      {%- if toc == 'sidebar' -%}
+        <div class="page-width lg:grid lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-12">
+          <div class="max-lg:hidden">
+            <div class="sticky top-[calc(var(--header-h,0px)+2rem)]">{{ toc_html }}</div>
+          </div>
+          <div class="flex min-w-0 max-w-3xl flex-col gap-10">{{ main_column }}</div>
+        </div>
+      {%- else -%}
+        <div class="{{ width_class }} flex flex-col gap-10">{{ main_column }}</div>
+      {%- endif -%}
+    </div>
+
+    {%- if panel and engagement != blank -%}
+      <div class="mt-4 rounded-t-card bg-fg/[0.03] py-10 md:mt-6 md:py-16">
+        <div class="{{ width_class }} flex flex-col gap-10">{{ engagement }}</div>
+      </div>
+    {%- endif -%}
+  </article>
+</div>
+{%- if s.show_progress -%}
+  <script src="{{ 'c-reading-progress.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+{%- if toc != 'none' -%}
+  <script src="{{ 'c-article-toc.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+<script type="application/ld+json">
+  {{ article | structured_data }}
+</script>
+
+{% stylesheet %}
+  /* "Large" quote style: blockquotes in the post become centred pull quotes in the heading font. */
+  .section-main-article [data-quote='large'] blockquote {
+    border: 0;
+    padding: 0;
+    margin-block: 2.5rem;
+    text-align: center;
+    font-family: var(--s-font-heading);
+    font-weight: var(--s-font-heading-weight, 700);
+    font-size: clamp(1.375rem, 1rem + 1.4vw, 2rem);
+    line-height: 1.25;
+    text-wrap: balance;
+  }
+  .section-main-article [data-quote='large'] blockquote::before {
+    content: '\201C';
+    display: block;
+    font-size: 2.5em;
+    line-height: 0.8;
+  }
+  .section-main-article [data-quote='large'] blockquote p + p {
+    font-family: var(--s-font-body);
+    font-weight: 400;
+    font-size: 1rem;
+    font-style: italic;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.main_article.name",
+  "tag": "section",
+  "class": "section-main-article",
+  "enabled_on": {
+    "templates": [
+      "article"
+    ]
+  },
+  "blocks": [
+    {
+      "type": "@theme"
+    },
+    {
+      "type": "@app"
+    }
+  ],
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:sections.main_article.settings.header_header"
+    },
+    {
+      "type": "select",
+      "id": "header_alignment",
+      "label": "t:sections.main_article.settings.header_alignment.label",
+      "info": "t:sections.main_article.settings.header_alignment.info",
+      "options": [
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        },
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "select",
+      "id": "title_size",
+      "label": "t:sections.main_article.settings.title_size.label",
+      "options": [
+        {
+          "value": "display",
+          "label": "t:sections.main_blog.settings.heading_size.options.display"
+        },
+        {
+          "value": "h1",
+          "label": "t:sections.main_blog.settings.heading_size.options.h1"
+        },
+        {
+          "value": "h2",
+          "label": "t:sections.main_blog.settings.heading_size.options.h2"
+        }
+      ],
+      "default": "h1"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_tags",
+      "label": "t:sections.main_blog.settings.show_tags.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_date",
+      "label": "t:sections.main_blog.settings.show_date.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_author",
+      "label": "t:sections.main_blog.settings.show_author.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_reading_time",
+      "label": "t:sections.main_blog.settings.show_reading_time.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_comments_count",
+      "label": "t:sections.main_blog.settings.show_comments.label",
+      "info": "t:sections.main_blog.settings.show_comments.info",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "meta_icons",
+      "label": "t:sections.main_blog.settings.meta_icons.label",
+      "info": "t:sections.main_blog.settings.meta_icons.info",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:sections.main_article.settings.image_header"
+    },
+    {
+      "type": "select",
+      "id": "image_style",
+      "label": "t:sections.main_article.settings.image_style.label",
+      "options": [
+        {
+          "value": "banner",
+          "label": "t:sections.main_article.settings.image_style.options.banner"
+        },
+        {
+          "value": "inline",
+          "label": "t:sections.main_article.settings.image_style.options.inline"
+        },
+        {
+          "value": "none",
+          "label": "t:sections.main_article.settings.image_style.options.none"
+        }
+      ],
+      "default": "inline"
+    },
+    {
+      "type": "image_picker",
+      "id": "fallback_image",
+      "label": "t:sections.main_article.settings.fallback_image.label",
+      "info": "t:sections.main_article.settings.fallback_image.info"
+    },
+    {
+      "type": "select",
+      "id": "banner_height",
+      "label": "t:sections.hero.settings.height.label",
+      "options": [
+        {
+          "value": "adapt",
+          "label": "t:sections.hero.settings.height.options.adapt"
+        },
+        {
+          "value": "small",
+          "label": "t:sections.hero.settings.height.options.small"
+        },
+        {
+          "value": "medium",
+          "label": "t:sections.hero.settings.height.options.medium"
+        },
+        {
+          "value": "large",
+          "label": "t:sections.hero.settings.height.options.large"
+        }
+      ],
+      "default": "medium",
+      "visible_if": "{{ section.settings.image_style == 'banner' }}"
+    },
+    {
+      "type": "range",
+      "id": "overlay_opacity",
+      "label": "t:sections.hero.settings.overlay_opacity.label",
+      "min": 0,
+      "max": 90,
+      "step": 5,
+      "unit": "%",
+      "default": 45,
+      "visible_if": "{{ section.settings.image_style == 'banner' }}"
+    },
+    {
+      "type": "color_scheme",
+      "id": "banner_color_scheme",
+      "label": "t:sections.main_article.settings.banner_color_scheme.label",
+      "info": "t:sections.hero.settings.text_surface.info",
+      "default": "scheme-3",
+      "visible_if": "{{ section.settings.image_style == 'banner' }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "transparent_header",
+      "label": "t:sections.main_article.settings.transparent_header.label",
+      "info": "t:sections.main_article.settings.transparent_header.info",
+      "default": false,
+      "visible_if": "{{ section.settings.image_style == 'banner' }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "content_overlap",
+      "label": "t:sections.main_article.settings.content_overlap.label",
+      "info": "t:sections.main_article.settings.content_overlap.info",
+      "default": false,
+      "visible_if": "{{ section.settings.image_style == 'banner' }}"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.main_article.settings.content_header"
+    },
+    {
+      "type": "select",
+      "id": "content_width",
+      "label": "t:shared.width.label",
+      "options": [
+        {
+          "value": "narrow",
+          "label": "t:shared.width.options.narrow"
+        },
+        {
+          "value": "page",
+          "label": "t:shared.width.options.page"
+        }
+      ],
+      "default": "narrow"
+    },
+    {
+      "type": "select",
+      "id": "toc",
+      "label": "t:sections.main_article.settings.toc.label",
+      "info": "t:sections.main_article.settings.toc.info",
+      "options": [
+        {
+          "value": "none",
+          "label": "t:sections.main_article.settings.toc.options.none"
+        },
+        {
+          "value": "top",
+          "label": "t:sections.main_article.settings.toc.options.top"
+        },
+        {
+          "value": "sidebar",
+          "label": "t:sections.main_article.settings.toc.options.sidebar"
+        }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_progress",
+      "label": "t:sections.main_article.settings.show_progress.label",
+      "info": "t:sections.main_article.settings.show_progress.info",
+      "default": false
+    },
+    {
+      "type": "select",
+      "id": "quote_style",
+      "label": "t:sections.main_article.settings.quote_style.label",
+      "options": [
+        {
+          "value": "line",
+          "label": "t:sections.main_article.settings.quote_style.options.line"
+        },
+        {
+          "value": "large",
+          "label": "t:sections.main_article.settings.quote_style.options.large"
+        }
+      ],
+      "default": "line"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_author_box",
+      "label": "t:sections.main_article.settings.show_author_box.label",
+      "info": "t:sections.main_article.settings.show_author_box.info",
+      "default": false
+    },
+    {
+      "type": "select",
+      "id": "footer_style",
+      "label": "t:sections.main_article.settings.footer_style.label",
+      "info": "t:sections.main_article.settings.footer_style.info",
+      "options": [
+        {
+          "value": "plain",
+          "label": "t:sections.main_article.settings.footer_style.options.plain"
+        },
+        {
+          "value": "panel",
+          "label": "t:sections.main_article.settings.footer_style.options.panel"
+        }
+      ],
+      "default": "plain"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_share",
+      "label": "t:sections.main_article.settings.show_share.label",
+      "info": "t:sections.main_article.settings.show_share.info",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "share_style",
+      "label": "t:sections.main_article.settings.share_style.label",
+      "options": [
+        {
+          "value": "pills",
+          "label": "t:sections.main_article.settings.share_style.options.pills"
+        },
+        {
+          "value": "icons",
+          "label": "t:sections.main_article.settings.share_style.options.icons"
+        }
+      ],
+      "default": "pills",
+      "visible_if": "{{ section.settings.show_share }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "share_comments_count",
+      "label": "t:sections.main_article.settings.share_comments_count.label",
+      "info": "t:sections.main_blog.settings.show_comments.info",
+      "default": false,
+      "visible_if": "{{ section.settings.show_share }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_prev_next",
+      "label": "t:sections.main_article.settings.show_prev_next.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "prev_next_meta",
+      "label": "t:sections.main_article.settings.prev_next_meta.label",
+      "default": false,
+      "visible_if": "{{ section.settings.show_prev_next }}"
+    },
+    {
+      "type": "range",
+      "id": "comments_per_page",
+      "label": "t:sections.main_article.settings.comments_per_page.label",
+      "info": "t:sections.main_article.settings.comments_per_page.info",
+      "min": 5,
+      "max": 50,
+      "step": 5,
+      "default": 10
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 80
+    }
+  ]
+}
+{% endschema %}

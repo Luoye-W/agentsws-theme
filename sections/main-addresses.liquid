@@ -1,0 +1,186 @@
+{% comment %}
+  @description Address book (classic accounts): address cards (default first, labelled), "Add a new address", edit and delete for each address. Add / edit forms open in a dialog with country → province lists; a form that comes back with errors reopens on its own and shows them. Deleting asks for confirmation in a themed dialog. Friendly message when there are no addresses.
+  Use when: templates/customers/addresses.json only.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign dialog_class = 'm-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto rounded-card p-0 backdrop:bg-overlay max-md:mb-0 max-md:w-full max-md:max-w-none max-md:rounded-b-none'
+-%}
+<aw-account-addresses
+  class="block surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+>
+  <div class="page-width flex flex-col gap-8">
+    <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <h1 class="type-h1">{{ 'customer.addresses.title' | t }}</h1>
+      <a href="{{ routes.account_url }}" class="btn btn-secondary self-start md:self-auto">{{ 'customer.account.return' | t }}</a>
+    </div>
+
+    <div>
+      <button type="button" class="btn btn-primary" data-modal-open="AddressNew-{{ section.id }}" aria-haspopup="dialog">
+        {%- render 'icon', name: 'plus', class: 'size-5' -%}
+        {{- 'customer.addresses.add_new' | t -}}
+      </button>
+    </div>
+
+    {%- comment -%} New address dialog: capture the form first so the dialog can reopen when it has errors. {%- endcomment -%}
+    {%- assign new_has_errors = false -%}
+    {%- capture new_address_form -%}
+      {%- form 'customer_address', customer.new_address, class: 'flex flex-col gap-5' -%}
+        {%- if form.errors -%}
+          {%- assign new_has_errors = true -%}
+          {%- assign new_errors = form.errors | default_errors -%}
+          {% render 'form-alert', tone: 'error', message: new_errors %}
+        {%- endif -%}
+        {%- assign new_prefix = 'AddressNew-' | append: section.id -%}
+        {% render 'address-form-fields', form: form, prefix: new_prefix %}
+        <div class="flex flex-col gap-3 md:flex-row">
+          <button type="submit" class="btn btn-primary">{{ 'customer.addresses.add' | t }}</button>
+          <button type="button" class="btn btn-secondary" data-modal-close>{{ 'customer.addresses.cancel' | t }}</button>
+        </div>
+      {%- endform -%}
+    {%- endcapture -%}
+    <aw-modal id="AddressNew-{{ section.id }}" {% if new_has_errors %}data-open-on-load{% endif %}>
+      <dialog data-ref="dialog" class="{{ dialog_class }} surface-{{ settings.drawer_color_scheme }}" aria-labelledby="AddressNewHeading-{{ section.id }}">
+        <div class="flex items-center justify-between gap-4 border-b border-border px-5 py-3 md:px-8">
+          <h2 id="AddressNewHeading-{{ section.id }}" class="type-h5">{{ 'customer.addresses.add_new' | t }}</h2>
+          <button type="button" class="-me-2 flex size-11 items-center justify-center" data-modal-close aria-label="{{ 'general.accessibility.close' | t }}">
+            {%- render 'icon', name: 'close', class: 'size-6' -%}
+          </button>
+        </div>
+        <div class="px-5 py-6 md:px-8">{{ new_address_form }}</div>
+      </dialog>
+    </aw-modal>
+
+    {%- paginate customer.addresses by s.addresses_per_page -%}
+      {%- if customer.addresses.size > 0 -%}
+        <ul class="grid gap-4 md:grid-cols-2 lg:grid-cols-3" role="list">
+          {%- for address in customer.addresses -%}
+            {%- liquid
+              assign is_default = false
+              if address.id == customer.default_address.id
+                assign is_default = true
+              endif
+              assign address_summary = address.address1 | default: address.city | default: forloop.index | escape
+            -%}
+            <li class="flex flex-col gap-4 rounded-card bg-fg/[0.04] p-6">
+              {%- if is_default -%}
+                <p class="type-eyebrow">{{ 'customer.addresses.default' | t }}</p>
+              {%- endif -%}
+              <div class="flex-1 type-sm">{{ address | format_address }}</div>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" class="btn btn-secondary min-h-10 px-4 type-sm" data-modal-open="AddressEdit-{{ address.id }}" aria-haspopup="dialog">
+                  {{- 'customer.addresses.edit' | t -}}
+                  <span class="sr-only">: {{ address_summary }}</span>
+                </button>
+                <button type="button" class="btn btn-secondary min-h-10 px-4 type-sm" data-modal-open="AddressDelete-{{ address.id }}" aria-haspopup="dialog">
+                  {{- 'customer.addresses.delete' | t -}}
+                  <span class="sr-only">: {{ address_summary }}</span>
+                </button>
+              </div>
+
+              {%- assign edit_has_errors = false -%}
+              {%- capture edit_address_form -%}
+                {%- form 'customer_address', address, class: 'flex flex-col gap-5' -%}
+                  {%- if form.errors -%}
+                    {%- assign edit_has_errors = true -%}
+                    {%- assign edit_errors = form.errors | default_errors -%}
+                    {% render 'form-alert', tone: 'error', message: edit_errors %}
+                  {%- endif -%}
+                  {%- assign edit_prefix = 'AddressEdit-' | append: address.id -%}
+                  {% render 'address-form-fields', form: form, prefix: edit_prefix, is_default: is_default %}
+                  <div class="flex flex-col gap-3 md:flex-row">
+                    <button type="submit" class="btn btn-primary">{{ 'customer.addresses.update' | t }}</button>
+                    <button type="button" class="btn btn-secondary" data-modal-close>{{ 'customer.addresses.cancel' | t }}</button>
+                  </div>
+                {%- endform -%}
+              {%- endcapture -%}
+              <aw-modal id="AddressEdit-{{ address.id }}" {% if edit_has_errors %}data-open-on-load{% endif %}>
+                <dialog data-ref="dialog" class="{{ dialog_class }} surface-{{ settings.drawer_color_scheme }}" aria-labelledby="AddressEditHeading-{{ address.id }}">
+                  <div class="flex items-center justify-between gap-4 border-b border-border px-5 py-3 md:px-8">
+                    <h2 id="AddressEditHeading-{{ address.id }}" class="type-h5">{{ 'customer.addresses.edit_address' | t }}</h2>
+                    <button type="button" class="-me-2 flex size-11 items-center justify-center" data-modal-close aria-label="{{ 'general.accessibility.close' | t }}">
+                      {%- render 'icon', name: 'close', class: 'size-6' -%}
+                    </button>
+                  </div>
+                  <div class="px-5 py-6 md:px-8">{{ edit_address_form }}</div>
+                </dialog>
+              </aw-modal>
+
+              <aw-modal id="AddressDelete-{{ address.id }}">
+                <dialog data-ref="dialog" class="m-auto w-[calc(100%-2rem)] max-w-md rounded-card p-0 backdrop:bg-overlay surface-{{ settings.drawer_color_scheme }}" aria-labelledby="AddressDeleteHeading-{{ address.id }}">
+                  <form method="post" action="{{ address.url }}" class="flex flex-col gap-4 p-6">
+                    <input type="hidden" name="_method" value="delete">
+                    <h2 id="AddressDeleteHeading-{{ address.id }}" class="type-h5">{{ 'customer.addresses.delete_confirm' | t }}</h2>
+                    <div class="type-sm text-muted">{{ address | format_address }}</div>
+                    <div class="flex flex-col gap-3 md:flex-row">
+                      <button type="submit" class="btn btn-primary">{{ 'customer.addresses.delete' | t }}</button>
+                      <button type="button" class="btn btn-secondary" data-modal-close autofocus>{{ 'customer.addresses.cancel' | t }}</button>
+                    </div>
+                  </form>
+                </dialog>
+              </aw-modal>
+            </li>
+          {%- endfor -%}
+        </ul>
+        {% render 'pagination', paginate: paginate %}
+      {%- else -%}
+        <p class="rounded-card border border-dashed border-border p-6 text-muted">{{ 'customer.addresses.none' | t }}</p>
+      {%- endif -%}
+    {%- endpaginate -%}
+  </div>
+</aw-account-addresses>
+<script src="{{ 'c-modal.js' | asset_url }}" type="module"></script>
+<script src="{{ 'c-account-addresses.js' | asset_url }}" type="module"></script>
+
+{% schema %}
+{
+  "name": "t:sections.main_addresses.name",
+  "tag": "section",
+  "class": "section-main-addresses",
+  "enabled_on": {
+    "templates": ["customers/addresses"]
+  },
+  "settings": [
+    {
+      "type": "range",
+      "id": "addresses_per_page",
+      "label": "t:sections.main_addresses.settings.addresses_per_page.label",
+      "min": 3,
+      "max": 30,
+      "step": 3,
+      "default": 12
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 80
+    }
+  ]
+}
+{% endschema %}

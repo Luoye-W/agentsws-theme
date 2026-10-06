@@ -1,0 +1,183 @@
+{% doc %}
+  @description Blog post tile: cover image, tag pills, meta line (date / author / reading time / comments), title link and excerpt. Five shapes: stacked (image above text), horizontal (image beside text from tablet up), side (image beside text only on large screens, stacked below that — for narrow columns such as the right side of a collage), lead (large first post, image beside text) and overlay (text on the image over a dark gradient, whole card clickable; fills the height its parent gives it, at least --overlay-min-h, default 24rem). The title is the only focusable link; the image link is hidden from keyboard and screen readers to avoid a duplicate stop. Posts without a cover image show text only.
+  Use when: blog listing, "latest posts" rows and related posts.
+
+  @param {object} article - The article
+  @param {string} [blog_url] - URL of the article's blog (tag pills link to its tag pages)
+  @param {string} [layout] - stacked (default), horizontal, side, lead or overlay
+  @param {string} [overlay_scheme] - Color scheme id for the text of the overlay shape (e.g. a dark scheme with light text); darkens the image with the --overlay-opacity CSS variable set by the parent (default 0.6)
+  @param {string} [ratio] - Image shape: natural, square, portrait, landscape (default) or wide
+  @param {boolean} [show_image] - Show the cover image, default true
+  @param {boolean} [show_tags] - Show tag pills
+  @param {boolean} [tags_on_image] - Place the tag pills over the top corner of the cover image instead of above the text (posts without an image keep them above the text)
+  @param {boolean} [meta_icons] - Small calendar / clock icons in the meta line
+  @param {boolean} [show_date] - Show the publish date
+  @param {boolean} [show_author] - Show the author
+  @param {boolean} [show_comments] - Show the comment count (pass true only when the blog has comments enabled)
+  @param {boolean} [show_reading_time] - Show the reading time
+  @param {boolean} [show_excerpt] - Show the excerpt (or the first words of the post when it has no excerpt)
+  @param {string} [heading_tag] - Tag for the title, default "h3"
+  @param {string} [sizes] - Image sizes attribute, default "(min-width: 990px) 33vw, (min-width: 750px) 50vw, 100vw"
+  @param {boolean} [eager] - Load the image eagerly (first posts above the fold)
+
+  @example
+  {% render 'article-card', article: article, blog_url: blog.url, show_date: true, show_excerpt: true %}
+{% enddoc %}
+{%- liquid
+  assign card_layout = layout | default: 'stacked'
+  assign title_tag = heading_tag | default: 'h3'
+  assign image_sizes = sizes | default: '(min-width: 990px) 33vw, (min-width: 750px) 50vw, 100vw'
+  assign has_image = false
+  if article.image and show_image != false
+    assign has_image = true
+  endif
+  assign loading = 'lazy'
+  assign fetch_priority = 'auto'
+  if eager
+    assign loading = 'eager'
+    assign fetch_priority = 'high'
+  endif
+
+  case ratio
+    when 'natural'
+      assign image_ratio = article.image.aspect_ratio | default: 1.5
+    when 'square'
+      assign image_ratio = '1'
+    when 'portrait'
+      assign image_ratio = '0.8'
+    when 'wide'
+      assign image_ratio = '1.778'
+    else
+      assign image_ratio = '1.333'
+  endcase
+
+  case card_layout
+    when 'horizontal'
+      assign card_class = 'flex-col md:flex-row md:items-center md:gap-8'
+      assign media_class = 'md:w-2/5 md:shrink-0'
+      assign title_class = 'type-h4'
+    when 'side'
+      assign card_class = 'flex-col lg:flex-row lg:items-stretch lg:gap-6'
+      assign media_class = 'lg:w-2/5 lg:shrink-0 lg:min-h-52'
+      assign title_class = 'type-h5'
+    when 'lead'
+      assign card_class = 'flex-col md:grid md:grid-cols-12 md:items-center md:gap-10'
+      assign media_class = 'md:col-span-7'
+      assign title_class = 'type-h2'
+    else
+      assign card_class = 'flex-col'
+      assign media_class = ''
+      assign title_class = 'type-h5'
+  endcase
+
+  assign pills_on_image = false
+  if show_tags and tags_on_image and has_image and article.tags.size > 0
+    assign pills_on_image = true
+  endif
+  assign image_class = 'aspect-(--ratio) size-full object-cover transition-transform duration-500 group-hover:scale-105'
+  if card_layout == 'side'
+    assign image_class = 'aspect-(--ratio) size-full object-cover transition-transform duration-500 group-hover:scale-105 lg:aspect-auto lg:absolute lg:inset-0'
+  endif
+
+  assign image_alt = article.image.alt | default: article.title | escape
+  assign excerpt = article.excerpt | strip_html
+  if excerpt == blank
+    assign excerpt = article.content | strip_html | truncatewords: 30
+  endif
+-%}
+{%- if card_layout == 'overlay' -%}
+<article class="group relative isolate flex h-full min-h-(--overlay-min-h,24rem) flex-col justify-end overflow-hidden rounded-media bg-placeholder">
+  {%- if has_image -%}
+    {{
+      article.image
+      | image_url: width: 1800
+      | image_tag:
+        widths: '540, 720, 960, 1200, 1500, 1800',
+        sizes: image_sizes,
+        loading: loading,
+        fetchpriority: fetch_priority,
+        alt: '',
+        class: 'absolute inset-0 -z-10 size-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none'
+    }}
+    <div class="absolute inset-0 -z-10 bg-linear-to-t from-[rgb(0_0_0/var(--overlay-opacity,0.6))] via-[rgb(0_0_0/calc(var(--overlay-opacity,0.6)*0.5))] to-transparent" aria-hidden="true"></div>
+  {%- endif -%}
+  {%- if show_tags and article.tags.size > 0 -%}
+    <div class="absolute start-4 top-4 rounded-full bg-bg p-1 shadow-sm md:start-6 md:top-6">
+      {% render 'article-tags', article: article, blog_url: blog_url %}
+    </div>
+  {%- endif -%}
+  {%- liquid
+    assign overlay_text_class = ''
+    if has_image and overlay_scheme != blank
+      assign overlay_text_class = 'surface-' | append: overlay_scheme | append: ' bg-transparent'
+    endif
+  -%}
+  <div class="{{ overlay_text_class }} flex flex-col gap-3 p-5 pt-16 md:p-8 md:pt-24">
+    {% render 'article-meta',
+      article: article,
+      show_date: show_date,
+      show_author: show_author,
+      show_comments: show_comments,
+      show_reading_time: show_reading_time,
+      icons: meta_icons,
+      class: 'type-sm opacity-80'
+    %}
+    <{{ title_tag }} class="type-h2">
+      <a href="{{ article.url }}" class="no-underline after:absolute after:inset-0 after:rounded-media hover:underline focus-visible:outline-none after:focus-visible:outline-2 after:focus-visible:-outline-offset-4">{{ article.title | escape }}</a>
+    </{{ title_tag }}>
+    {%- if show_excerpt and excerpt != blank -%}
+      <p class="line-clamp-3 max-w-2xl opacity-90">{{ excerpt }}</p>
+    {%- endif -%}
+  </div>
+</article>
+{%- else -%}
+<article class="group flex h-full gap-4 {{ card_class }}">
+  {%- if has_image -%}
+    <div class="relative {{ media_class }}">
+      <a
+        href="{{ article.url }}"
+        class="relative block h-full overflow-hidden rounded-media bg-placeholder"
+        style="--ratio: {{ image_ratio }};"
+        tabindex="-1"
+        aria-hidden="true"
+      >
+        {{
+          article.image
+          | image_url: width: 1600
+          | image_tag:
+            widths: '360, 540, 720, 960, 1200, 1600',
+            sizes: image_sizes,
+            loading: loading,
+            fetchpriority: fetch_priority,
+            alt: image_alt,
+            class: image_class
+        }}
+      </a>
+      {%- if pills_on_image -%}
+        <div class="absolute start-3 top-3 md:start-4 md:top-4">
+          {% render 'article-tags', article: article, blog_url: blog_url, limit: 2, on_image: true %}
+        </div>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+  <div class="flex min-w-0 flex-1 flex-col gap-2 md:col-span-5">
+    {%- if show_tags and pills_on_image == false -%}
+      {% render 'article-tags', article: article, blog_url: blog_url %}
+    {%- endif -%}
+    {% render 'article-meta',
+      article: article,
+      show_date: show_date,
+      show_author: show_author,
+      show_comments: show_comments,
+      show_reading_time: show_reading_time,
+      icons: meta_icons
+    %}
+    <{{ title_tag }} class="{{ title_class }}">
+      <a href="{{ article.url }}" class="no-underline hover:underline">{{ article.title | escape }}</a>
+    </{{ title_tag }}>
+    {%- if show_excerpt and excerpt != blank -%}
+      <p class="line-clamp-3 text-muted">{{ excerpt }}</p>
+    {%- endif -%}
+  </div>
+</article>
+{%- endif -%}

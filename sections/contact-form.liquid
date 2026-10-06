@@ -1,0 +1,635 @@
+{% comment %}
+  @description Contact form that sends to the store's customer-service email through Shopify's own contact form (Shopify adds its spam protection). Name, email, phone and message fields with separate show / required switches, labels above the fields or inside them, extra custom fields as child blocks (short text, long text, checkbox, radio buttons, dropdown), prefilled for signed-in customers. After sending, a success or error message appears at the top and receives focus; fields keep what the visitor typed. Contact details (address, email, phone, opening hours, social icons) as "Contact detail" blocks beside the form or as a row of cards below it — plain, in a tinted box or as bordered cards. Layout "With map" puts a Google Maps view of the store address (no API key) beside the form, with the heading above the form. Optional heading group (sizes up to display) and privacy note.
+  Use when: the contact page (with or without a map), wholesale or press enquiry pages, warranty or support request pages.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign form_id = 'ContactForm-' | append: section.id
+  assign heading_id = 'ContactHeading-' | append: section.id
+  assign labels_inside = false
+  if s.field_labels == 'inside'
+    assign labels_inside = true
+  endif
+
+  assign is_map = false
+  assign details_position = s.details_position
+  if s.layout == 'map'
+    assign is_map = true
+    assign details_position = 'below'
+  endif
+
+  assign name_value = customer.name
+  assign email_value = customer.email
+  assign phone_value = customer.phone
+
+  assign success_text = s.success_message | strip
+  if success_text == blank
+    assign success_text = 'sections.contact_form.success' | t
+  endif
+  assign submit_text = s.submit_label | strip
+  if submit_text == blank
+    assign submit_text = 'sections.contact_form.submit' | t
+  endif
+
+  assign label_name = 'sections.contact_form.name' | t
+  assign label_email = 'sections.contact_form.email' | t
+  assign label_phone = 'sections.contact_form.phone' | t
+  assign label_message = 'sections.contact_form.message' | t
+-%}
+{%- comment -%}
+  Child blocks render once. "Contact detail" blocks wrap their markup in <!--aw-detail--> … <!--/aw-detail--> so they can be
+  moved out of the form into the details area; everything else (custom form fields, apps) stays inside the form.
+{%- endcomment -%}
+{%- capture blocks_html -%}{% content_for 'blocks' %}{%- endcapture -%}
+{%- liquid
+  assign fields_html = ''
+  assign details_blocks = ''
+  assign block_parts = blocks_html | split: '<!--aw-detail-->'
+  for part in block_parts
+    if forloop.first
+      assign fields_html = fields_html | append: part
+    else
+      assign detail_pieces = part | split: '<!--/aw-detail-->'
+      assign detail_html = detail_pieces.first | default: ''
+      assign rest_html = part | remove_first: detail_html | remove_first: '<!--/aw-detail-->'
+      assign details_blocks = details_blocks | append: detail_html
+      assign fields_html = fields_html | append: rest_html
+    endif
+  endfor
+
+  assign has_details = false
+  if details_blocks != blank or s.details != blank
+    assign has_details = true
+  endif
+
+  if has_details and details_position == 'side'
+    assign layout_class = 'grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,22rem)] lg:gap-16'
+  else
+    assign layout_class = 'grid'
+  endif
+
+  case s.details_style
+    when 'plain'
+      assign details_side_class = 'flex h-max flex-col gap-8'
+      assign details_below_class = 'grid gap-8 sm:grid-cols-[repeat(auto-fit,minmax(13rem,1fr))]'
+    when 'cards'
+      assign details_side_class = 'flex h-max flex-col gap-4'
+      assign details_below_class = 'grid gap-4 sm:grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] lg:gap-6'
+    else
+      assign details_side_class = 'flex h-max flex-col gap-6 rounded-card bg-fg/5 p-6 md:p-8'
+      assign details_below_class = 'grid gap-6 rounded-card bg-fg/5 p-6 sm:grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] md:p-8'
+  endcase
+
+  if s.map_mobile_position == 'bottom'
+    assign map_order_class = ''
+  else
+    assign map_order_class = 'max-md:order-first'
+  endif
+  if s.map_position == 'start'
+    assign map_order_class = map_order_class | append: ' md:order-first'
+  endif
+-%}
+{%- capture heading_html -%}
+  {%- render 'section-heading',
+    eyebrow: s.eyebrow,
+    heading: s.heading,
+    text: s.description,
+    alignment: s.heading_alignment,
+    heading_id: heading_id,
+    size: s.heading_size,
+    tag: s.heading_tag
+  -%}
+{%- endcapture -%}
+{%- capture form_html -%}
+  {%- form 'contact', id: form_id, class: 'grid content-start gap-5 md:grid-cols-2' -%}
+    {%- if form.posted_successfully? -%}
+      <div class="flex items-start gap-3 rounded-card border border-border p-4 text-success md:col-span-2" role="status" tabindex="-1" autofocus>
+        {%- render 'icon', name: 'check', class: 'size-5' -%}
+        <p class="font-semibold">{{ success_text | escape }}</p>
+      </div>
+    {%- endif -%}
+    {%- if form.errors -%}
+      <div class="flex items-start gap-3 rounded-card border border-border p-4 text-error md:col-span-2" role="alert" tabindex="-1" autofocus id="{{ form_id }}-errors">
+        {%- render 'icon', name: 'shield', class: 'size-5' -%}
+        <div class="type-sm">
+          <p class="font-semibold">{{ 'sections.contact_form.error' | t }}</p>
+          {{ form.errors | default_errors }}
+        </div>
+      </div>
+      {%- liquid
+        assign name_value = form.name
+        assign email_value = form.email
+        assign phone_value = form.phone
+      -%}
+    {%- endif -%}
+
+    {%- unless labels_inside -%}
+      <p class="type-xs text-muted md:col-span-2">{{ 'sections.contact_form.required_note' | t }}</p>
+    {%- endunless -%}
+
+    {%- if s.show_name -%}
+      <div class="flex flex-col gap-1.5">
+        <label for="{{ form_id }}-name" class="type-sm font-semibold{% if labels_inside %} sr-only{% endif %}">
+          {{- label_name -}}
+          {%- if s.name_required %} <span aria-hidden="true">*</span>{% endif -%}
+        </label>
+        <input
+          type="text"
+          id="{{ form_id }}-name"
+          name="contact[name]"
+          class="field"
+          autocomplete="name"
+          value="{{ name_value | escape }}"
+          {% if labels_inside %}
+            placeholder="{{ label_name | escape }}"
+          {% endif %}
+          {% if s.name_required %}
+            required
+          {% endif %}
+        >
+      </div>
+    {%- endif -%}
+
+    <div class="flex flex-col gap-1.5">
+      <label for="{{ form_id }}-email" class="type-sm font-semibold{% if labels_inside %} sr-only{% endif %}">
+        {{- label_email }} <span aria-hidden="true">*</span>
+      </label>
+      <input
+        type="email"
+        id="{{ form_id }}-email"
+        name="contact[email]"
+        class="field"
+        autocomplete="email"
+        spellcheck="false"
+        autocapitalize="off"
+        required
+        value="{{ email_value | escape }}"
+        {% if labels_inside %}
+          placeholder="{{ label_email | escape }}"
+        {% endif %}
+        {% if form.errors contains 'email' %}
+          aria-invalid="true" aria-describedby="{{ form_id }}-errors"
+        {% endif %}
+      >
+    </div>
+
+    {%- if s.show_phone -%}
+      <div class="flex flex-col gap-1.5">
+        <label for="{{ form_id }}-phone" class="type-sm font-semibold{% if labels_inside %} sr-only{% endif %}">
+          {{- label_phone -}}
+          {%- if s.phone_required %} <span aria-hidden="true">*</span>{% endif -%}
+        </label>
+        <input
+          type="tel"
+          id="{{ form_id }}-phone"
+          name="contact[phone]"
+          class="field"
+          autocomplete="tel"
+          value="{{ phone_value | escape }}"
+          {% if labels_inside %}
+            placeholder="{{ label_phone | escape }}"
+          {% endif %}
+          {% if s.phone_required %}
+            required
+          {% endif %}
+        >
+      </div>
+    {%- endif -%}
+
+    {{ fields_html }}
+
+    {%- if s.show_message -%}
+      <div class="flex flex-col gap-1.5 md:col-span-2">
+        <label for="{{ form_id }}-body" class="type-sm font-semibold{% if labels_inside %} sr-only{% endif %}">
+          {{- label_message -}}
+          {%- if s.message_required %} <span aria-hidden="true">*</span>{% endif -%}
+        </label>
+        <textarea
+          id="{{ form_id }}-body"
+          name="contact[body]"
+          class="field min-h-36 py-3"
+          rows="6"
+          {% if labels_inside %}
+            placeholder="{{ label_message | escape }}"
+          {% endif %}
+          {% if s.message_required %}
+            required
+          {% endif %}
+        >
+          {{- form.body -}}
+        </textarea>
+      </div>
+    {%- endif -%}
+
+    <div class="md:col-span-2">
+      <button type="submit" class="btn btn-primary">{{ submit_text | escape }}</button>
+    </div>
+
+    {%- if s.privacy_note != blank -%}
+      <div class="rte type-xs text-muted md:col-span-2">{{ s.privacy_note }}</div>
+    {%- endif -%}
+  {%- endform -%}
+{%- endcapture -%}
+{%- capture details_inner -%}
+  {%- if s.details != blank -%}
+    <div class="rte flex flex-col gap-3">{{ s.details }}</div>
+  {%- endif -%}
+  {{ details_blocks }}
+{%- endcapture -%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1)); --map-h: {{ s.map_height }}px; --map-h-mobile: {{ s.map_height_mobile }}px;"
+  data-labels="{{ s.field_labels }}"
+  data-details="{{ s.details_style }}"
+>
+  <div class="{% render 'width-classes', width: s.width %} flex flex-col gap-8 md:gap-10 lg:gap-14">
+    {%- if is_map -%}
+      <div class="grid gap-8 md:grid-cols-2 md:gap-10 lg:gap-16">
+        <div class="flex min-w-0 flex-col gap-8 md:gap-10">
+          {{ heading_html }}
+          {{ form_html }}
+        </div>
+        <div class="relative min-h-(--map-h-mobile) overflow-hidden rounded-media md:min-h-(--map-h) {{ map_order_class }}">
+          {%- render 'map-embed',
+            address: s.map_address,
+            zoom: s.map_zoom,
+            style: s.map_style,
+            image: s.map_image,
+            load_on_click: s.map_load_on_click,
+            show_link: s.map_show_link,
+            sizes: '(min-width: 750px) 50vw, 100vw'
+          -%}
+        </div>
+      </div>
+    {%- else -%}
+      {{ heading_html }}
+      <div class="{{ layout_class }}">
+        {{ form_html }}
+        {%- if has_details and details_position == 'side' -%}
+          <aside class="{{ details_side_class }}">
+            {{ details_inner }}
+          </aside>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+    {%- if has_details and details_position == 'below' -%}
+      <div class="{{ details_below_class }}">
+        {{ details_inner }}
+      </div>
+    {%- endif -%}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "t:sections.contact_form.name",
+  "tag": "section",
+  "class": "section-contact-form",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "blocks": [
+    {
+      "type": "_form-field"
+    },
+    {
+      "type": "contact-detail"
+    }
+  ],
+  "max_blocks": 20,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:sections.contact_form.settings.delivery_notice"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.section_heading.header"
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:shared.section_heading.eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:shared.section_heading.heading",
+      "default": "Contact us"
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "t:shared.section_heading.description"
+    },
+    {
+      "type": "select",
+      "id": "heading_alignment",
+      "label": "t:shared.section_heading.alignment",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        }
+      ],
+      "default": "start"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "t:sections.contact_form.settings.heading_size.label",
+      "options": [
+        { "value": "display", "label": "t:blocks.heading.settings.size.options.display" },
+        { "value": "h1", "label": "t:blocks.heading.settings.size.options.h1" },
+        { "value": "h2", "label": "t:blocks.heading.settings.size.options.h2" },
+        { "value": "h3", "label": "t:blocks.heading.settings.size.options.h3" }
+      ],
+      "default": "h2"
+    },
+    {
+      "type": "select",
+      "id": "heading_tag",
+      "label": "t:sections.contact_form.settings.heading_tag.label",
+      "info": "t:sections.contact_form.settings.heading_tag.info",
+      "options": [
+        { "value": "h1", "label": "H1" },
+        { "value": "h2", "label": "H2" }
+      ],
+      "default": "h2"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.layout"
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "t:sections.contact_form.settings.layout.label",
+      "info": "t:sections.contact_form.settings.layout.info",
+      "options": [
+        { "value": "standard", "label": "t:sections.contact_form.settings.layout.options.standard" },
+        { "value": "map", "label": "t:sections.contact_form.settings.layout.options.map" }
+      ],
+      "default": "standard"
+    },
+    {
+      "type": "select",
+      "id": "details_position",
+      "label": "t:sections.contact_form.settings.details_position.label",
+      "options": [
+        { "value": "side", "label": "t:sections.contact_form.settings.details_position.options.side" },
+        { "value": "below", "label": "t:sections.contact_form.settings.details_position.options.below" }
+      ],
+      "default": "side",
+      "visible_if": "{{ section.settings.layout == 'standard' }}"
+    },
+    {
+      "type": "select",
+      "id": "details_style",
+      "label": "t:sections.contact_form.settings.details_style.label",
+      "info": "t:sections.contact_form.settings.details_style.info",
+      "options": [
+        { "value": "tinted", "label": "t:sections.contact_form.settings.details_style.options.tinted" },
+        { "value": "plain", "label": "t:sections.contact_form.settings.details_style.options.plain" },
+        { "value": "cards", "label": "t:sections.contact_form.settings.details_style.options.cards" }
+      ],
+      "default": "tinted"
+    },
+    {
+      "type": "select",
+      "id": "field_labels",
+      "label": "t:sections.contact_form.settings.field_labels.label",
+      "info": "t:sections.contact_form.settings.field_labels.info",
+      "options": [
+        { "value": "above", "label": "t:sections.contact_form.settings.field_labels.options.above" },
+        { "value": "inside", "label": "t:sections.contact_form.settings.field_labels.options.inside" }
+      ],
+      "default": "above"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.contact_form.settings.map_header"
+    },
+    {
+      "type": "text",
+      "id": "map_address",
+      "label": "t:blocks.map.settings.address.label",
+      "info": "t:blocks.map.settings.address.info",
+      "default": "151 O'Connor St, Ottawa, ON, Canada",
+      "visible_if": "{{ section.settings.layout == 'map' }}"
+    },
+    {
+      "type": "range",
+      "id": "map_zoom",
+      "label": "t:blocks.map.settings.zoom.label",
+      "min": 3,
+      "max": 20,
+      "step": 1,
+      "default": 15,
+      "visible_if": "{{ section.settings.layout == 'map' }}"
+    },
+    {
+      "type": "select",
+      "id": "map_style",
+      "label": "t:blocks.map.settings.map_style.label",
+      "options": [
+        { "value": "standard", "label": "t:blocks.map.settings.map_style.options.standard" },
+        { "value": "grey", "label": "t:blocks.map.settings.map_style.options.grey" },
+        { "value": "muted", "label": "t:blocks.map.settings.map_style.options.muted" },
+        { "value": "dark", "label": "t:blocks.map.settings.map_style.options.dark" }
+      ],
+      "default": "standard",
+      "visible_if": "{{ section.settings.layout == 'map' }}"
+    },
+    {
+      "type": "image_picker",
+      "id": "map_image",
+      "label": "t:blocks.map.settings.image.label",
+      "info": "t:blocks.map.settings.image.info",
+      "visible_if": "{{ section.settings.layout == 'map' }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "map_load_on_click",
+      "label": "t:blocks.map.settings.load_on_click.label",
+      "info": "t:blocks.map.settings.load_on_click.info",
+      "default": false,
+      "visible_if": "{{ section.settings.layout == 'map' }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "map_show_link",
+      "label": "t:blocks.map.settings.show_link.label",
+      "default": false,
+      "visible_if": "{{ section.settings.layout == 'map' }}"
+    },
+    {
+      "type": "range",
+      "id": "map_height",
+      "label": "t:sections.contact_form.settings.map_height.label",
+      "info": "t:sections.contact_form.settings.map_height.info",
+      "min": 300,
+      "max": 900,
+      "step": 10,
+      "unit": "px",
+      "default": 500,
+      "visible_if": "{{ section.settings.layout == 'map' }}"
+    },
+    {
+      "type": "range",
+      "id": "map_height_mobile",
+      "label": "t:blocks.map.settings.height_mobile.label",
+      "min": 200,
+      "max": 700,
+      "step": 10,
+      "unit": "px",
+      "default": 320,
+      "visible_if": "{{ section.settings.layout == 'map' }}"
+    },
+    {
+      "type": "select",
+      "id": "map_position",
+      "label": "t:sections.contact_form.settings.map_position.label",
+      "options": [
+        { "value": "start", "label": "t:sections.contact_form.settings.map_position.options.start" },
+        { "value": "end", "label": "t:sections.contact_form.settings.map_position.options.end" }
+      ],
+      "default": "end",
+      "visible_if": "{{ section.settings.layout == 'map' }}"
+    },
+    {
+      "type": "select",
+      "id": "map_mobile_position",
+      "label": "t:sections.contact_form.settings.map_mobile_position.label",
+      "options": [
+        { "value": "top", "label": "t:sections.contact_form.settings.map_mobile_position.options.top" },
+        { "value": "bottom", "label": "t:sections.contact_form.settings.map_mobile_position.options.bottom" }
+      ],
+      "default": "bottom",
+      "visible_if": "{{ section.settings.layout == 'map' }}"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.contact_form.settings.fields_header"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_name",
+      "label": "t:sections.contact_form.settings.show_name.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "name_required",
+      "label": "t:sections.contact_form.settings.name_required.label",
+      "default": false,
+      "visible_if": "{{ section.settings.show_name }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_phone",
+      "label": "t:sections.contact_form.settings.show_phone.label",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "phone_required",
+      "label": "t:sections.contact_form.settings.phone_required.label",
+      "default": false,
+      "visible_if": "{{ section.settings.show_phone }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_message",
+      "label": "t:sections.contact_form.settings.show_message.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "message_required",
+      "label": "t:sections.contact_form.settings.message_required.label",
+      "default": true,
+      "visible_if": "{{ section.settings.show_message }}"
+    },
+    {
+      "type": "text",
+      "id": "submit_label",
+      "label": "t:sections.contact_form.settings.submit_label.label",
+      "info": "t:sections.contact_form.settings.submit_label.info"
+    },
+    {
+      "type": "text",
+      "id": "success_message",
+      "label": "t:sections.contact_form.settings.success_message.label",
+      "info": "t:sections.contact_form.settings.success_message.info"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "privacy_note",
+      "label": "t:sections.contact_form.settings.privacy_note.label",
+      "info": "t:sections.contact_form.settings.privacy_note.info"
+    },
+    {
+      "type": "richtext",
+      "id": "details",
+      "label": "t:sections.contact_form.settings.details.label",
+      "info": "t:sections.contact_form.settings.details.info"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "select",
+      "id": "width",
+      "label": "t:shared.width.label",
+      "options": [
+        {
+          "value": "narrow",
+          "label": "t:shared.width.options.narrow"
+        },
+        {
+          "value": "page",
+          "label": "t:shared.width.options.page"
+        }
+      ],
+      "default": "page"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.contact_form.name"
+    }
+  ]
+}
+{% endschema %}

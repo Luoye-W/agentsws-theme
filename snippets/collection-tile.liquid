@@ -1,0 +1,113 @@
+{% doc %}
+  @description One collection as a list item: image (collection image, else its first product image, else a placeholder), title and optional product count. The image shape comes from the --tile-ratio CSS variable set by the parent (default square). The whole tile is one link. Three styles: plain (image with the title below), tile (a light panel with the image inside, the title with the product count as a small superscript, an optional subtitle and an arrow) and overlay (title, subtitle and arrow over the image; the image is darkened by the --tile-overlay CSS variable, default 0.3).
+  Use when: the all-collections page or any grid of collections.
+
+  @param {object} collection - The collection
+  @param {boolean} [show_count] - Show the number of products
+  @param {boolean} [eager] - Load the image eagerly (first tile)
+  @param {string} [style] - plain (default), tile or overlay
+  @param {string} [image_fit] - Tile style: contain (default, whole product image inside the panel) or cover (image fills the panel)
+  @param {string} [subtitle] - One line under the title (tile and overlay styles)
+  @param {string} [text_scheme] - Overlay style: color scheme id for the text over the image
+
+  @example
+  {% render 'collection-tile', collection: collection, show_count: true, style: 'tile', subtitle: 'Shop the range' %}
+{% enddoc %}
+{%- liquid
+  assign tile_image = collection.featured_image
+  assign tile_style = style | default: 'plain'
+  assign loading = 'lazy'
+  if eager
+    assign loading = 'eager'
+  endif
+  assign count = 0
+  if show_count
+    assign count = collection.all_products_count
+  endif
+  assign title = collection.title | escape
+  assign tile_sizes = '(min-width: 990px) 25vw, (min-width: 750px) 33vw, 50vw'
+  assign overlay_scheme = text_scheme | default: 'scheme-3'
+-%}
+<li>
+  {%- case tile_style -%}
+    {%- when 'tile' -%}
+      {%- liquid
+        if image_fit == 'cover'
+          assign image_class = 'size-full rounded-media object-cover transition duration-500 group-hover:scale-[1.04] motion-reduce:transition-none'
+        else
+          assign image_class = 'size-full object-contain transition duration-500 group-hover:scale-[1.04] motion-reduce:transition-none'
+        endif
+      -%}
+      <a href="{{ collection.url }}" class="group flex h-full flex-col gap-4 rounded-card bg-fg/5 p-4 no-underline md:p-5">
+        <div class="flex aspect-[var(--tile-ratio,1)] items-center justify-center overflow-hidden">
+          {%- if tile_image -%}
+            {{ tile_image | image_url: width: 1000 | image_tag: widths: '300, 450, 600, 800, 1000', sizes: tile_sizes, loading: loading, alt: '', class: image_class }}
+          {%- else -%}
+            {{ 'collection-1' | placeholder_svg_tag: 'size-full' }}
+          {%- endif -%}
+        </div>
+        <div class="mt-auto flex items-end justify-between gap-3">
+          <span class="flex min-w-0 flex-col gap-1">
+            <span class="type-h4">
+              {{- title -}}
+              {%- if count > 0 -%}
+                <sup class="ms-0.5 type-xs font-normal" aria-hidden="true">{{ count }}</sup>
+                <span class="sr-only">({{ 'collections.product_count' | t: count: count }})</span>
+              {%- endif -%}
+            </span>
+            {%- if subtitle != blank -%}
+              <span class="line-clamp-2 type-sm text-muted">{{ subtitle }}</span>
+            {%- endif -%}
+          </span>
+          {%- render 'icon', name: 'arrow-right', class: 'size-5 shrink-0 transition group-hover:translate-x-1 motion-reduce:transition-none rtl:rotate-180' -%}
+        </div>
+      </a>
+    {%- when 'overlay' -%}
+      <a href="{{ collection.url }}" class="group relative isolate block h-full aspect-[var(--tile-ratio,1)] overflow-hidden rounded-card bg-placeholder no-underline">
+        {%- if tile_image -%}
+          {{ tile_image | image_url: width: 1000 | image_tag: widths: '300, 450, 600, 800, 1000', sizes: tile_sizes, loading: loading, alt: '', class: 'absolute inset-0 -z-10 size-full object-cover transition duration-500 group-hover:scale-[1.04] motion-reduce:transition-none' }}
+        {%- else -%}
+          {{ 'collection-1' | placeholder_svg_tag: 'absolute inset-0 -z-10 size-full' }}
+        {%- endif -%}
+        <span class="absolute inset-0 -z-10 bg-linear-to-t from-[rgb(0_0_0/var(--tile-overlay,0.3))] to-transparent" aria-hidden="true"></span>
+        <span class="surface-{{ overlay_scheme }} absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-transparent p-4 md:p-5">
+          <span class="flex min-w-0 flex-col gap-1">
+            <span class="type-h4">
+              {{- title -}}
+              {%- if count > 0 -%}
+                <sup class="ms-0.5 type-xs font-normal" aria-hidden="true">{{ count }}</sup>
+                <span class="sr-only">({{ 'collections.product_count' | t: count: count }})</span>
+              {%- endif -%}
+            </span>
+            {%- if subtitle != blank -%}
+              <span class="line-clamp-2 type-sm opacity-80">{{ subtitle }}</span>
+            {%- endif -%}
+          </span>
+          {%- render 'icon', name: 'arrow-right', class: 'size-5 shrink-0 transition group-hover:translate-x-1 motion-reduce:transition-none rtl:rotate-180' -%}
+        </span>
+      </a>
+    {%- else -%}
+      <a href="{{ collection.url }}" class="group flex flex-col gap-3 no-underline">
+        <div class="aspect-[var(--tile-ratio,1)] overflow-hidden rounded-media bg-placeholder">
+          {%- if tile_image -%}
+            {{
+              tile_image
+              | image_url: width: 1000
+              | image_tag: widths: '300, 450, 600, 800, 1000', sizes: tile_sizes, loading: loading, alt: '', class: 'size-full object-cover transition-transform duration-500 group-hover:scale-105'
+            }}
+          {%- else -%}
+            {{ 'collection-1' | placeholder_svg_tag: 'size-full' }}
+          {%- endif -%}
+        </div>
+        <span class="flex flex-col gap-0.5">
+          <span class="type-card group-hover:underline">{{ title }}</span>
+          {%- if show_count -%}
+            <span class="type-sm text-muted">{{ 'collections.product_count' | t: count: collection.all_products_count }}</span>
+          {%- endif -%}
+          {%- if subtitle != blank -%}
+            <span class="line-clamp-2 type-sm text-muted">{{ subtitle }}</span>
+          {%- endif -%}
+        </span>
+      </a>
+  {%- endcase -%}
+</li>

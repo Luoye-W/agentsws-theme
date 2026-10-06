@@ -1,0 +1,649 @@
+{
+  "sections": {
+    "slideshow": {
+      "type": "slideshow",
+      "settings": {
+        "layout": "peek",
+        "autoplay": true,
+        "autoplay_interval": 6,
+        "height": "large",
+        "full_width": false,
+        "padding_top": 16,
+        "padding_bottom": 0
+      },
+      "blocks": {
+        "slide-1": {
+          "type": "_slide",
+          "settings": {
+            "image": "shopify://shop_images/16300863-4570-4a7c-b43e-b8c3a49f96ad.png",
+            "overlay_opacity": 25,
+            "position": "bottom_left",
+            "content_align": "start",
+            "text_color_scheme": "scheme-3"
+          },
+          "blocks": {
+            "title": {
+              "type": "heading",
+              "settings": {
+                "text": "Hear every groove",
+                "size": "display",
+                "tag": "h2",
+                "alignment": "left"
+              }
+            },
+            "cta": {
+              "type": "button",
+              "settings": {
+                "label": "Shop turntables",
+                "link": "shopify://collections/analog-vinyl-foundations",
+                "style": "secondary"
+              }
+            }
+          },
+          "block_order": [
+            "title",
+            "cta"
+          ]
+        },
+        "slide-2": {
+          "type": "_slide",
+          "settings": {
+            "image": "shopify://shop_images/565c5d31-1dc6-4bbf-aa43-6fd4f9f72b75.png",
+            "overlay_opacity": 25,
+            "position": "bottom_left",
+            "content_align": "start",
+            "text_color_scheme": "scheme-3"
+          },
+          "blocks": {
+            "title": {
+              "type": "heading",
+              "settings": {
+                "text": "Studio sound, at home",
+                "size": "display",
+                "tag": "h2",
+                "alignment": "left"
+              }
+            },
+            "cta": {
+              "type": "button",
+              "settings": {
+                "label": "Shop interfaces",
+                "link": "shopify://collections/reference-monitor-series",
+                "style": "secondary"
+              }
+            }
+          },
+          "block_order": [
+            "title",
+            "cta"
+          ]
+        },
+        "slide-3": {
+          "type": "_slide",
+          "settings": {
+            "image": "shopify://shop_images/42fd740c-5025-43b4-8c32-a9290ae1f762.png",
+            "overlay_opacity": 25,
+            "position": "bottom_left",
+            "content_align": "start",
+            "text_color_scheme": "scheme-3"
+          },
+          "blocks": {
+            "title": {
+              "type": "heading",
+              "settings": {
+                "text": "Record like a pro",
+                "size": "display",
+                "tag": "h2",
+                "alignment": "left"
+              }
+            },
+            "cta": {
+              "type": "button",
+              "settings": {
+                "label": "Shop microphones",
+                "link": "shopify://collections/reference-monitor-series",
+                "style": "secondary"
+              }
+            }
+          },
+          "block_order": [
+            "title",
+            "cta"
+          ]
+        }
+      },
+      "block_order": [
+        "slide-1",
+        "slide-2",
+        "slide-3"
+      ]
+    },
+    "intro": {
+      "type": "container",
+      "settings": {
+        "direction": "row",
+        "align": "start",
+        "justify": "between",
+        "gap": 48,
+        "padding_top": 72,
+        "padding_bottom": 56
+      },
+      "blocks": {
+        "left": {
+          "type": "group",
+          "settings": {
+            "width": "half",
+            "gap": 24
+          },
+          "blocks": {
+            "h": {
+              "type": "heading",
+              "settings": {
+                "text": "We believe in the power of <em>sound</em>",
+                "size": "h1",
+                "tag": "h2",
+                "alignment": "left"
+              }
+            },
+            "b": {
+              "type": "button",
+              "settings": {
+                "label": "Our story",
+                "link": "shopify://pages/contact",
+                "style": "secondary"
+              }
+            }
+          },
+          "block_order": [
+            "h",
+            "b"
+          ]
+        },
+        "right": {
+          "type": "group",
+          "settings": {
+            "width": "half",
+            "gap": 16
+          },
+          "blocks": {
+            "t": {
+              "type": "text",
+              "settings": {
+                "text": "<p><strong>Demo store.</strong> This layout shows how the theme's sections recreate a full audio storefront: products, collections and imagery come from Shopify's sample catalogs.</p><p>Swap in your own brand story here.</p>",
+                "size": "body",
+                "muted": true,
+                "alignment": "left"
+              }
+            }
+          },
+          "block_order": [
+            "t"
+          ]
+        }
+      },
+      "block_order": [
+        "left",
+        "right"
+      ]
+    },
+    "collections": {
+      "type": "collection-list",
+      "settings": {
+        "collections": [
+          "demo-tech-all",
+          "reference-monitor-series",
+          "analog-vinyl-foundations",
+          "ergonomic-surface-essentials",
+          "seamless-power-hubs"
+        ],
+        "heading": "",
+        "card_style": "tile",
+        "tile_image_fit": "contain",
+        "image_ratio": "portrait",
+        "title_position": "below",
+        "show_count": true,
+        "layout": "slider",
+        "columns": 4,
+        "mobile_layout": "slider",
+        "padding_top": 0,
+        "padding_bottom": 72
+      }
+    },
+    "banner": {
+      "type": "hero",
+      "settings": {
+        "image": "shopify://shop_images/78832378-e5d6-4a87-94b9-21ea47157ece.png",
+        "height": "large",
+        "position": "middle_center",
+        "mobile_position": "middle",
+        "content_align": "center",
+        "text_color_scheme": "scheme-3",
+        "overlay_opacity": 35
+      },
+      "blocks": {
+        "h": {
+          "type": "heading",
+          "settings": {
+            "text": "Sound. Sculpted.",
+            "size": "display",
+            "tag": "h2",
+            "alignment": "center"
+          }
+        },
+        "t": {
+          "type": "text",
+          "settings": {
+            "text": "<p>A turntable that excites the eye and the ear from every angle.</p>",
+            "size": "lg",
+            "muted": false,
+            "alignment": "center"
+          }
+        },
+        "b": {
+          "type": "button",
+          "settings": {
+            "label": "Shop turntables",
+            "link": "shopify://collections/analog-vinyl-foundations",
+            "style": "secondary"
+          }
+        }
+      },
+      "block_order": [
+        "h",
+        "t",
+        "b"
+      ]
+    },
+    "featured": {
+      "type": "featured-product",
+      "settings": {
+        "product": "brushed-steel-turntable",
+        "gallery_layout": "slider",
+        "thumbnail_position": "start",
+        "media_width": "large",
+        "badge_text": "Featured \u2022 Featured \u2022 Featured \u2022 ",
+        "badge_icon": "star",
+        "enable_zoom": true,
+        "show_details_link": true,
+        "padding_top": 72,
+        "padding_bottom": 72
+      },
+      "blocks": {
+        "title": {
+          "type": "product-title",
+          "settings": {
+            "size": "h3",
+            "show_vendor": true
+          }
+        },
+        "price": {
+          "type": "product-price",
+          "settings": {
+            "show_tax_note": false
+          }
+        },
+        "picker": {
+          "type": "product-variant-picker",
+          "settings": {
+            "style": "buttons",
+            "swatches": true
+          }
+        },
+        "buy": {
+          "type": "product-buy-buttons",
+          "settings": {
+            "show_quantity": true,
+            "show_dynamic_checkout": false
+          }
+        }
+      },
+      "block_order": [
+        "title",
+        "price",
+        "picker",
+        "buy"
+      ]
+    },
+    "bundle": {
+      "type": "bundle-builder",
+      "settings": {
+        "heading": "Build your bundle",
+        "description": "<p>Pick any three pieces for your setup and add them to the cart together.</p>",
+        "products": [
+          "compact-audio-interface",
+          "anodized-aluminum-professional-microphone",
+          "brushed-steel-turntable",
+          "premium-audio-cable",
+          "adjustable-laptop-stand",
+          "eco-power-extension-cord"
+        ],
+        "columns_desktop": 3,
+        "columns_mobile": "2",
+        "min_items": 3,
+        "max_items": 6,
+        "allow_duplicates": false,
+        "panel_heading": "Your bundle",
+        "note": "Choose at least three products.",
+        "padding_top": 72,
+        "padding_bottom": 72
+      }
+    },
+    "compare": {
+      "type": "image-comparison",
+      "settings": {
+        "eyebrow": "Two finishes",
+        "heading": "Choose your <em>finish</em>",
+        "heading_highlight": "underline",
+        "image_before": "shopify://shop_images/47dab7aa-3114-459e-aa0b-8c16dde5f042.png",
+        "label_before": "Brushed steel",
+        "image_after": "shopify://shop_images/55c3197c-9776-4e26-9a3a-bb700517e873.png",
+        "label_after": "Brushed metal",
+        "ratio": "wide",
+        "padding_top": 72,
+        "padding_bottom": 72
+      }
+    },
+    "marquee": {
+      "type": "marquee",
+      "settings": {
+        "separator": "dot",
+        "text_size": "xlarge",
+        "font": "heading",
+        "outline": true,
+        "speed": "slow",
+        "padding_top": 24,
+        "padding_bottom": 24
+      },
+      "blocks": {
+        "m1": {
+          "type": "_marquee-item",
+          "settings": {
+            "text": "Studio-grade clarity"
+          }
+        },
+        "m2": {
+          "type": "_marquee-item",
+          "settings": {
+            "text": "Play anything"
+          }
+        },
+        "m3": {
+          "type": "_marquee-item",
+          "settings": {
+            "text": "Built to last"
+          }
+        },
+        "m4": {
+          "type": "_marquee-item",
+          "settings": {
+            "text": "Hear the details"
+          }
+        }
+      },
+      "block_order": [
+        "m1",
+        "m2",
+        "m3",
+        "m4"
+      ]
+    },
+    "countdown": {
+      "type": "countdown",
+      "settings": {
+        "end_date": "2026-12-31",
+        "end_time": "23:59",
+        "when_ended": "hide_section",
+        "layout": "banner",
+        "heading": "Holiday sale on studio cables",
+        "text": "<p>Demo countdown \u2014 set a real end date for your own sale.</p>",
+        "button_label": "Shop cables",
+        "button_link": "shopify://collections/analog-vinyl-foundations",
+        "image": "shopify://shop_images/36d36cf1-604f-4dd8-a87d-08d4cc371098.png",
+        "overlay_opacity": 55,
+        "color_scheme": "scheme-3",
+        "timer_size": "lg",
+        "padding_top": 96,
+        "padding_bottom": 96
+      }
+    },
+    "lookbook": {
+      "type": "lookbook",
+      "settings": {
+        "eyebrow": "Premium setups",
+        "heading": "Bring quality sound <em>home</em>",
+        "heading_highlight": "underline",
+        "image": "shopify://shop_images/c55ba300-0e09-4129-8ee7-ceb34f774469.png",
+        "layout": "list",
+        "list_position": "end",
+        "padding_top": 72,
+        "padding_bottom": 72
+      },
+      "blocks": {
+        "h1": {
+          "type": "hotspot",
+          "settings": {
+            "product": "graphite-top-coffee-table-with-brushed-aluminum-legs",
+            "x": 50,
+            "y": 62
+          }
+        },
+        "h2": {
+          "type": "hotspot",
+          "settings": {
+            "product": "brushed-steel-turntable",
+            "x": 38,
+            "y": 40
+          }
+        },
+        "h3": {
+          "type": "hotspot",
+          "settings": {
+            "product": "premium-audio-cable",
+            "x": 70,
+            "y": 48
+          }
+        }
+      },
+      "block_order": [
+        "h1",
+        "h2",
+        "h3"
+      ]
+    },
+    "tabs": {
+      "type": "featured-collections-tabs",
+      "settings": {
+        "heading": "Best sellers",
+        "card_show_highlights": true,
+        "layout": "slider",
+        "products_to_show": 8,
+        "columns_desktop": 4,
+        "show_view_all": false,
+        "padding_top": 72,
+        "padding_bottom": 72
+      },
+      "blocks": {
+        "t1": {
+          "type": "tab",
+          "settings": {
+            "collection": "reference-monitor-series",
+            "label": "Studio"
+          }
+        },
+        "t2": {
+          "type": "tab",
+          "settings": {
+            "collection": "analog-vinyl-foundations",
+            "label": "Vinyl"
+          }
+        },
+        "t3": {
+          "type": "tab",
+          "settings": {
+            "collection": "ergonomic-surface-essentials",
+            "label": "Desk"
+          }
+        },
+        "t4": {
+          "type": "tab",
+          "settings": {
+            "collection": "seamless-power-hubs",
+            "label": "Power"
+          }
+        }
+      },
+      "block_order": [
+        "t1",
+        "t2",
+        "t3",
+        "t4"
+      ]
+    },
+    "scroll": {
+      "type": "scrolling-images",
+      "settings": {
+        "tilt": 3,
+        "speed": 40,
+        "tile_height": 260,
+        "tile_height_mobile": 180,
+        "gap": 16,
+        "color_scheme": "scheme-4",
+        "padding_top": 40,
+        "padding_bottom": 40
+      },
+      "blocks": {
+        "i1": {
+          "type": "_scrolling-image",
+          "settings": {
+            "image": "shopify://shop_images/c06e954374e5c9e036ac977c0e31d0b2.png"
+          }
+        },
+        "i2": {
+          "type": "_scrolling-image",
+          "settings": {
+            "image": "shopify://shop_images/36d3410f411db406947c31fb85dfcf31.png"
+          }
+        },
+        "i3": {
+          "type": "_scrolling-image",
+          "settings": {
+            "image": "shopify://shop_images/ef6cf469bbc0d20ccf3f0866c8a84c46.png"
+          }
+        },
+        "i4": {
+          "type": "_scrolling-image",
+          "settings": {
+            "image": "shopify://shop_images/64fb1882710babc1d49699293ef22e3e.png"
+          }
+        },
+        "i5": {
+          "type": "_scrolling-image",
+          "settings": {
+            "image": "shopify://shop_images/c0355a9fdd13bd2688ea10cd9b459944.png"
+          }
+        },
+        "i6": {
+          "type": "_scrolling-image",
+          "settings": {
+            "image": "shopify://shop_images/fc27cf231166a28ec84a922156345428.png"
+          }
+        }
+      },
+      "block_order": [
+        "i1",
+        "i2",
+        "i3",
+        "i4",
+        "i5",
+        "i6"
+      ]
+    },
+    "blog": {
+      "type": "blog-posts",
+      "settings": {
+        "heading": "Latest stories",
+        "layout": "lead_list",
+        "blog": "journal",
+        "post_count": 3,
+        "columns_desktop": 3,
+        "show_view_all": true,
+        "padding_top": 72,
+        "padding_bottom": 56
+      }
+    },
+    "services": {
+      "type": "multicolumn",
+      "settings": {
+        "heading": "",
+        "columns": 4,
+        "columns_mobile": "2",
+        "mobile_layout": "stack",
+        "card_style": "plain",
+        "icon_position": "start",
+        "icon_size": 28,
+        "padding_top": 32,
+        "padding_bottom": 32
+      },
+      "blocks": {
+        "c1": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "chat",
+            "heading": "Customer service",
+            "text": "<p>Real people answer within one business day.</p>"
+          }
+        },
+        "c2": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "truck",
+            "heading": "Shipping",
+            "text": "<p>Describe your delivery promise here.</p>"
+          }
+        },
+        "c3": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "gift",
+            "heading": "Refer a friend",
+            "text": "<p>Explain your referral offer here.</p>"
+          }
+        },
+        "c4": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "lock",
+            "heading": "Secure payment",
+            "text": "<p>Payments are processed by Shopify.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "c1",
+        "c2",
+        "c3",
+        "c4"
+      ]
+    }
+  },
+  "order": [
+    "slideshow",
+    "intro",
+    "collections",
+    "banner",
+    "featured",
+    "compare",
+    "bundle",
+    "marquee",
+    "countdown",
+    "lookbook",
+    "tabs",
+    "scroll",
+    "blog",
+    "services"
+  ]
+}

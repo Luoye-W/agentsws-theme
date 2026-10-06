@@ -1,0 +1,53 @@
+{% doc %}
+  @description One line of article facts separated by thin dividers: publish date, author, estimated reading time and comment count (links to the comments). Items that are switched off or empty are skipped; nothing is output when all are off.
+  Use when: article cards, the article page header and previous / next links.
+
+  @param {object} article - The article
+  @param {boolean} [show_date] - Show the publish date
+  @param {boolean} [show_author] - Show "By <author>"
+  @param {boolean} [show_comments] - Show the comment count; pass true only when the blog has comments enabled
+  @param {boolean} [show_reading_time] - Show an estimated reading time (about 220 words per minute)
+  @param {string} [class] - Text size and colour classes, default "type-sm text-muted"
+  @param {boolean} [icons] - Put a small calendar icon before the date and a clock icon before the reading time (the comment count always has its speech-bubble icon)
+
+  @example
+  {% render 'article-meta', article: article, show_date: true, show_author: true %}
+{% enddoc %}
+{%- liquid
+  assign meta_class = class | default: 'type-sm text-muted'
+  assign minutes = 0
+  if show_reading_time
+    assign word_count = article.content | strip_html | split: ' ' | size
+    assign minutes = word_count | divided_by: 220 | at_least: 1
+  endif
+-%}
+{%- capture meta_items -%}
+  {%- if show_date and article.published_at -%}
+    <li class="inline-flex items-center gap-1.5">
+      {%- if icons -%}{%- render 'icon', name: 'calendar', class: 'size-4 shrink-0' -%}{%- endif -%}
+      {{- article.published_at | time_tag: format: 'date' -}}
+    </li>
+  {%- endif -%}
+  {%- if show_author and article.author != blank -%}
+    <li>{{ 'blogs.article.by_author' | t: author: article.author }}</li>
+  {%- endif -%}
+  {%- if minutes > 0 -%}
+    <li class="inline-flex items-center gap-1.5">
+      {%- if icons -%}{%- render 'icon', name: 'clock', class: 'size-4 shrink-0' -%}{%- endif -%}
+      {{- 'blogs.article.reading_time' | t: count: minutes -}}
+    </li>
+  {%- endif -%}
+  {%- if show_comments -%}
+    <li>
+      <a href="{{ article.url }}#comments" class="inline-flex items-center gap-1.5 no-underline hover:underline">
+        {%- render 'icon', name: 'chat', class: 'size-4' -%}
+        {{- 'blogs.comments.count' | t: count: article.comments_count -}}
+      </a>
+    </li>
+  {%- endif -%}
+{%- endcapture -%}
+{%- if meta_items != blank -%}
+  <ul class="flex flex-wrap items-center gap-x-3 gap-y-1 {{ meta_class }} *:not-first:border-s *:not-first:border-current/30 *:not-first:ps-3" role="list">
+    {{- meta_items -}}
+  </ul>
+{%- endif -%}

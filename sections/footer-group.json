@@ -1,0 +1,114 @@
+{
+  "type": "footer",
+  "name": "t:sections.groups.footer",
+  "sections": {
+    "footer": {
+      "type": "footer",
+      "blocks": {
+        "about": {
+          "type": "group",
+          "settings": {
+            "width": "third"
+          },
+          "blocks": {
+            "about-title": {
+              "type": "heading",
+              "settings": {
+                "text": "About the store",
+                "size": "h5",
+                "tag": "h2"
+              }
+            },
+            "about-text": {
+              "type": "text",
+              "settings": {
+                "text": "<p>Use this area to tell customers who you are.</p>",
+                "size": "sm",
+                "muted": true
+              }
+            },
+            "about-social": {
+              "type": "social-links",
+              "settings": {
+                "icon_size": "medium",
+                "alignment": "start"
+              }
+            }
+          },
+          "block_order": [
+            "about-title",
+            "about-text",
+            "about-social"
+          ]
+        },
+        "signup": {
+          "type": "email-signup",
+          "settings": {
+            "heading": "Join the list",
+            "button_style": "arrow"
+          }
+        },
+        "credit": {
+          "type": "oss-credit",
+          "settings": {}
+        }
+      },
+      "block_order": [
+        "about",
+        "signup",
+        "credit"
+      ],
+      "settings": {
+        "color_scheme": "scheme-2"
+      }
+    },
+    "mobile_dock": {
+      "type": "mobile-dock",
+      "disabled": true,
+      "blocks": {
+        "home": {
+          "type": "_dock-item",
+          "settings": {
+            "action": "home",
+            "label": "Home"
+          }
+        },
+        "menu": {
+          "type": "_dock-item",
+          "settings": {
+            "action": "menu",
+            "label": "Menu"
+          }
+        },
+        "search": {
+          "type": "_dock-item",
+          "settings": {
+            "action": "search",
+            "label": "Search"
+          }
+        },
+        "cart": {
+          "type": "_dock-item",
+          "settings": {
+            "action": "cart",
+            "label": "Cart"
+          }
+        }
+      },
+      "block_order": [
+        "home",
+        "menu",
+        "search",
+        "cart"
+      ],
+      "settings": {
+        "color_scheme": "scheme-1",
+        "show_border": true
+      }
+    }
+  },
+  "order": [
+    "footer",
+    "mobile_dock"
+  ]
+}

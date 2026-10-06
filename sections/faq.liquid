@@ -1,0 +1,681 @@
+{% comment %}
+  @description Questions and answers as an accordion (native details / summary, keyboard and screen-reader friendly). Several answers open at once or only one at a time; optionally the first one starts open. Optional categories: headings between questions or one bordered card per category (heading, short text, its questions), with optional jump links to each category above the list, a heading group on top and a "still have questions?" contact panel beside (desktop) or below (mobile) — text, a button and/or a contact form (Shopify's contact form: name, email, optional phone, message) in its own color scheme. Layout "Card" puts the questions and the contact panel together in one rounded card, with the description in a tinted note beside the heading. Can output FAQPage structured data built only from the questions actually shown — off by default.
+  Use when: FAQ pages, product-page questions, shipping / returns / sizing explanations, setup help. Answers can be connected to product or page metafields (dynamic sources) so one answer is maintained once and reused on several templates.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign heading_id = 'FaqHeading-' | append: section.id
+
+  assign has_contact = false
+  if s.contact_heading != blank or s.contact_text != blank
+    assign has_contact = true
+  endif
+  if s.contact_link_label != blank and s.contact_link != blank
+    assign has_contact = true
+  endif
+  if s.contact_form
+    assign has_contact = true
+  endif
+  assign form_id = 'FaqContact-' | append: section.id
+  case s.contact_style
+    when 'scheme'
+      assign contact_surface = 'surface-' | append: s.contact_color_scheme | append: ' bg-bg'
+      assign contact_padding = 'rounded-card p-6 md:p-8'
+    when 'plain'
+      assign contact_surface = ''
+      assign contact_padding = ''
+    else
+      assign contact_surface = 'bg-fg/5'
+      assign contact_padding = 'rounded-card p-6 md:p-8'
+  endcase
+  assign contact_labels_inside = false
+  if s.contact_field_labels == 'inside'
+    assign contact_labels_inside = true
+  endif
+  assign label_name = 'sections.contact_form.name' | t
+  assign label_email = 'sections.contact_form.email' | t
+  assign label_phone = 'sections.contact_form.phone' | t
+  assign label_message = 'sections.contact_form.message' | t
+
+  assign group_cards = false
+  if s.group_style == 'cards'
+    assign group_cards = true
+  endif
+  assign card_class = 'flex flex-col gap-5 rounded-card border border-border p-5 md:p-8'
+
+  if has_contact
+    assign layout_class = 'grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:gap-16'
+  else
+    assign layout_class = 'grid'
+  endif
+-%}
+{%- comment -%}
+  Pass 1: render every question once. Pass 2 places them — directly (category headings in between) or, with category
+  cards, inside one card per category (questions before the first category get a card of their own).
+{%- endcomment -%}
+{%- liquid
+  assign item_sep = '<!--faq-item-->'
+  assign item_list = ''
+  assign first_item_done = false
+-%}
+{%- for block in section.blocks -%}
+  {%- capture one_item -%}
+    {%- if block.type == 'item' -%}
+      {%- liquid
+        assign question = block.settings.question | strip
+        assign start_open = false
+        if s.open_first and first_item_done == false
+          assign start_open = true
+        endif
+        assign first_item_done = true
+      -%}
+      {%- if question == blank and request.design_mode == false -%}
+        <div hidden {{ block.shopify_attributes }}></div>
+      {%- else -%}
+        <details
+          class="group/faq border-b border-border in-data-[style=cards]:rounded-card in-data-[style=cards]:border in-data-[style=cards]:px-5 md:in-data-[style=cards]:px-6"
+          {% if s.open_mode == 'single' %}
+            name="faq-{{ section.id }}"
+          {% endif %}
+          {% if start_open %}
+            open
+          {% endif %}
+          {{ block.shopify_attributes }}
+        >
+          <summary class="flex cursor-pointer list-none items-center justify-between gap-4 py-5 type-h6 [&::-webkit-details-marker]:hidden">
+            <span>
+              {%- if question != blank -%}
+                {{ question | escape }}
+              {%- else -%}
+                <span class="text-muted">{{ 'sections.faq.empty_question' | t }}</span>
+              {%- endif -%}
+            </span>
+            <span class="flex size-8 shrink-0 items-center justify-center rounded-full border border-border transition group-open/faq:rotate-45" aria-hidden="true">
+              {%- render 'icon', name: 'plus', class: 'size-4' -%}
+            </span>
+          </summary>
+          {%- if block.settings.answer != blank -%}
+            <div class="rte max-w-prose pb-6 text-muted">{{ block.settings.answer }}</div>
+          {%- endif -%}
+        </details>
+      {%- endif -%}
+    {%- endif -%}
+  {%- endcapture -%}
+  {%- assign item_list = item_list | append: one_item | append: item_sep -%}
+{%- endfor -%}
+{%- assign rendered_items = item_list | split: item_sep -%}
+{%- capture faq_items -%}
+  {%- if group_cards -%}
+    {%- capture lead_items -%}
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'group' -%}{%- break -%}{%- endif -%}
+        {{ rendered_items[forloop.index0] }}
+      {%- endfor -%}
+    {%- endcapture -%}
+    {%- if lead_items != blank -%}
+      <div class="{{ card_class }}">
+        <div class="flex min-w-0 flex-col *:border-t *:border-b-0 in-data-[style=cards]:gap-3 in-data-[style=cards]:*:border-b">{{ lead_items }}</div>
+      </div>
+    {%- endif -%}
+  {%- endif -%}
+  {%- for block in section.blocks -%}
+    {%- if block.type == 'group' -%}
+      {%- assign group_anchor = 'Faq-' | append: section.id | append: '-' | append: block.id -%}
+      {%- if group_cards -%}
+        {%- assign group_start = forloop.index -%}
+        {%- capture group_items -%}
+          {%- for later in section.blocks offset: group_start -%}
+            {%- if later.type == 'group' -%}{%- break -%}{%- endif -%}
+            {%- assign item_index = group_start | plus: forloop.index0 -%}
+            {{ rendered_items[item_index] }}
+          {%- endfor -%}
+        {%- endcapture -%}
+        <div class="{{ card_class }} scroll-mt-[calc(var(--header-h,0px)+1.5rem)]" id="{{ group_anchor }}" {{ block.shopify_attributes }}>
+          {%- if block.settings.heading != blank or block.settings.text != blank -%}
+            <div class="flex flex-col gap-2">
+              {%- if block.settings.heading != blank -%}
+                <h3 class="type-h3">{{ block.settings.heading }}</h3>
+              {%- endif -%}
+              {%- if block.settings.text != blank -%}
+                <div class="rte type-sm text-muted">{{ block.settings.text }}</div>
+              {%- endif -%}
+            </div>
+          {%- endif -%}
+          <div class="flex min-w-0 flex-col *:border-t *:border-b-0 in-data-[style=cards]:gap-3 in-data-[style=cards]:*:border-b">{{ group_items }}</div>
+        </div>
+      {%- else -%}
+        <div class="flex scroll-mt-[calc(var(--header-h,0px)+1.5rem)] flex-col gap-2 pt-10 pb-2 first:pt-0" id="{{ group_anchor }}" {{ block.shopify_attributes }}>
+          {%- if block.settings.heading != blank -%}
+            <h3 class="type-h4">{{ block.settings.heading }}</h3>
+          {%- endif -%}
+          {%- if block.settings.text != blank -%}
+            <div class="rte type-sm text-muted">{{ block.settings.text }}</div>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+    {%- elsif group_cards == false -%}
+      {{ rendered_items[forloop.index0] }}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- capture group_nav -%}
+  {%- if s.group_links -%}
+    {%- for block in section.blocks -%}
+      {%- if block.type == 'group' and block.settings.heading != blank -%}
+        <li>
+          <a href="#Faq-{{ section.id }}-{{ block.id }}" class="inline-flex min-h-10 items-center rounded-full border border-border px-4 type-sm no-underline hover:border-fg">
+            {{- block.settings.heading | strip_html -}}
+          </a>
+        </li>
+      {%- endif -%}
+    {%- endfor -%}
+  {%- endif -%}
+{%- endcapture -%}
+{%- if group_nav != blank -%}
+  {%- capture group_nav -%}
+    <nav aria-label="{{ 'sections.faq.categories' | t }}">
+      <ul class="flex flex-wrap gap-2" role="list">{{ group_nav }}</ul>
+    </nav>
+  {%- endcapture -%}
+{%- endif -%}
+{%- capture contact_inner -%}
+    {%- if s.contact_form == false -%}
+      {%- render 'icon', name: 'chat', class: 'size-7' -%}
+    {%- endif -%}
+    {%- if s.contact_heading != blank -%}
+      <h3 class="type-h4">{{ s.contact_heading | escape }}</h3>
+    {%- endif -%}
+    {%- if s.contact_text != blank -%}
+      <div class="rte text-muted">{{ s.contact_text }}</div>
+    {%- endif -%}
+    {%- if s.contact_link_label != blank and s.contact_link != blank -%}
+      <a href="{{ s.contact_link }}" class="btn btn-primary">{{ s.contact_link_label | escape }}</a>
+    {%- endif -%}
+    {%- if s.contact_form -%}
+      {%- form 'contact', id: form_id, class: 'flex w-full flex-col gap-4' -%}
+        {%- if form.posted_successfully? -%}
+          {%- assign faq_success = 'sections.contact_form.success' | t -%}
+          {% render 'form-alert', tone: 'success', message: faq_success %}
+        {%- endif -%}
+        {%- if form.errors -%}
+          {%- capture faq_errors -%}{{ 'sections.contact_form.error' | t }} {{ form.errors | default_errors }}{%- endcapture -%}
+          {%- assign faq_error_id = form_id | append: '-errors' -%}
+          {% render 'form-alert', tone: 'error', message: faq_errors, id: faq_error_id, focus: true %}
+        {%- endif -%}
+        <input type="hidden" name="contact[page]" value="{{ page_title | escape }}">
+        <div class="flex flex-col gap-1.5">
+          <label for="{{ form_id }}-name" class="type-sm{% if contact_labels_inside %} sr-only{% endif %}">{{ label_name }}</label>
+          <input type="text" id="{{ form_id }}-name" name="contact[name]" class="field" autocomplete="name" value="{{ form.name | default: customer.name | escape }}"{% if contact_labels_inside %} placeholder="{{ label_name | escape }}"{% endif %}>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label for="{{ form_id }}-email" class="type-sm{% if contact_labels_inside %} sr-only{% endif %}">{{ label_email }} <span aria-hidden="true">*</span></label>
+          <input type="email" id="{{ form_id }}-email" name="contact[email]" class="field" autocomplete="email" spellcheck="false" autocapitalize="off" required value="{{ form.email | default: customer.email | escape }}"{% if contact_labels_inside %} placeholder="{{ label_email | escape }}"{% endif %}>
+        </div>
+        {%- if s.contact_show_phone -%}
+          <div class="flex flex-col gap-1.5">
+            <label for="{{ form_id }}-phone" class="type-sm{% if contact_labels_inside %} sr-only{% endif %}">{{ label_phone }}</label>
+            <input type="tel" id="{{ form_id }}-phone" name="contact[phone]" class="field" autocomplete="tel" value="{{ form.phone | default: customer.phone | escape }}"{% if contact_labels_inside %} placeholder="{{ label_phone | escape }}"{% endif %}>
+          </div>
+        {%- endif -%}
+        <div class="flex flex-col gap-1.5">
+          <label for="{{ form_id }}-message" class="type-sm{% if contact_labels_inside %} sr-only{% endif %}">{{ label_message }}</label>
+          <textarea id="{{ form_id }}-message" name="contact[body]" class="field min-h-32" rows="4"{% if contact_labels_inside %} placeholder="{{ label_message | escape }}"{% endif %}>{{ form.body | escape }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary self-start">
+          {%- if s.contact_button_label != blank -%}
+            {{- s.contact_button_label | escape -}}
+          {%- else -%}
+            {{- 'sections.contact_form.submit' | t -}}
+          {%- endif -%}
+        </button>
+      {%- endform -%}
+    {%- endif -%}
+{%- endcapture -%}
+{%- if s.layout == 'card' -%}
+  <div
+    class="pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+    style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+    data-style="{{ s.style }}"
+  >
+    <div class="{% render 'width-classes', width: s.width %}">
+      <div class="surface-{{ s.color_scheme }} grid overflow-hidden rounded-card bg-bg{% if has_contact %} lg:grid-cols-[minmax(0,1fr)_minmax(20rem,28rem)]{% endif %}">
+        <div class="flex min-w-0 flex-col gap-8 px-5 py-8 md:p-10 lg:p-12">
+          {%- if s.eyebrow != blank or s.heading != blank or s.description != blank -%}
+            <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+              <div class="flex flex-col gap-3">
+                {%- if s.eyebrow != blank -%}
+                  <p class="type-eyebrow text-muted">{{ s.eyebrow | escape }}</p>
+                {%- endif -%}
+                {%- if s.heading != blank -%}
+                  <h2 class="type-h1" id="{{ heading_id }}">{{ s.heading }}</h2>
+                {%- endif -%}
+              </div>
+              {%- if s.description != blank -%}
+                <div class="rte max-w-md rounded-card bg-fg/5 px-5 py-4 type-sm text-muted">{{ s.description }}</div>
+              {%- endif -%}
+            </div>
+          {%- endif -%}
+          {{ group_nav }}
+          <div class="flex min-w-0 flex-col in-data-[style=cards]:gap-3{% if group_cards %} gap-6{% endif %}">
+            {{ faq_items }}
+          </div>
+        </div>
+        {%- if has_contact -%}
+          <aside class="{{ contact_surface }} flex flex-col items-start gap-4 px-5 py-8 md:p-10 lg:p-12">
+            {{ contact_inner }}
+          </aside>
+        {%- endif -%}
+      </div>
+    </div>
+  </div>
+{%- else -%}
+  <div
+    class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+    style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+    data-style="{{ s.style }}"
+  >
+    <div class="{% render 'width-classes', width: s.width %} flex flex-col gap-8 md:gap-10">
+      {%- render 'section-heading',
+        eyebrow: s.eyebrow,
+        heading: s.heading,
+        text: s.description,
+        alignment: s.heading_alignment,
+        link_label: s.link_label,
+        link: s.link,
+        heading_id: heading_id
+      -%}
+      {{ group_nav }}
+      <div class="{{ layout_class }}">
+        <div class="flex min-w-0 flex-col in-data-[style=cards]:gap-3{% if group_cards %} gap-6 md:gap-8{% endif %}">
+          {{ faq_items }}
+        </div>
+        {%- if has_contact -%}
+          <aside class="{{ contact_surface }} {{ contact_padding }} flex h-max flex-col items-start gap-4 lg:sticky lg:top-[calc(var(--header-h,0px)+1.5rem)]">
+            {{ contact_inner }}
+          </aside>
+        {%- endif -%}
+      </div>
+    </div>
+  </div>
+{%- endif -%}
+
+{%- if s.structured_data -%}
+  {%- liquid
+    assign separator = ''
+    assign faq_count = 0
+  -%}
+  {%- capture faq_entities -%}
+    {%- for faq_block in section.blocks -%}
+      {%- if faq_block.type == 'item' -%}
+        {%- assign faq_question = faq_block.settings.question | strip_html | strip -%}
+        {%- comment -%} Never publish the untouched preset placeholder as structured data. {%- endcomment -%}
+        {%- if faq_question == 'Add a question customers often ask' -%}
+          {%- assign faq_question = '' -%}
+        {%- endif -%}
+        {%- if faq_question != blank and faq_block.settings.answer != blank -%}
+          {{- separator -}}{"@type":"Question","name":{{ faq_question | json }},"acceptedAnswer":{"@type":"Answer","text":{{ faq_block.settings.answer | json }}}}
+          {%- assign separator = ',' -%}
+          {%- assign faq_count = faq_count | plus: 1 -%}
+        {%- endif -%}
+      {%- endif -%}
+    {%- endfor -%}
+  {%- endcapture -%}
+  {%- if faq_count > 0 -%}
+    <script type="application/ld+json">
+      {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{{ faq_entities }}]}
+    </script>
+  {%- endif -%}
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.faq.name",
+  "tag": "section",
+  "class": "section-faq",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "blocks": [
+    {
+      "type": "item",
+      "name": "t:blocks.faq_item.name",
+      "settings": [
+        {
+          "type": "text",
+          "id": "question",
+          "label": "t:blocks.faq_item.settings.question.label",
+          "default": "Add a question customers often ask"
+        },
+        {
+          "type": "richtext",
+          "id": "answer",
+          "label": "t:blocks.faq_item.settings.answer.label",
+          "info": "t:blocks.faq_item.settings.answer.info",
+          "default": "<p>Write a short, accurate answer. Link to a policy page when the full details live there.</p>"
+        }
+      ]
+    },
+    {
+      "type": "group",
+      "name": "t:blocks.faq_group.name",
+      "settings": [
+        {
+          "type": "inline_richtext",
+          "id": "heading",
+          "label": "t:shared.section_heading.heading",
+          "default": "Category"
+        },
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "t:blocks.text.settings.text.label"
+        }
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:shared.section_heading.header"
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:shared.section_heading.eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:shared.section_heading.heading",
+      "default": "Frequently asked questions"
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "t:shared.section_heading.description"
+    },
+    {
+      "type": "select",
+      "id": "heading_alignment",
+      "label": "t:shared.section_heading.alignment",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        }
+      ],
+      "default": "start"
+    },
+    {
+      "type": "text",
+      "id": "link_label",
+      "label": "t:shared.section_heading.link_label"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "t:shared.section_heading.link",
+      "visible_if": "{{ section.settings.link_label != blank }}"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.faq.settings.accordion_header"
+    },
+    {
+      "type": "select",
+      "id": "open_mode",
+      "label": "t:sections.faq.settings.open_mode.label",
+      "options": [
+        {
+          "value": "multiple",
+          "label": "t:sections.faq.settings.open_mode.options.multiple"
+        },
+        {
+          "value": "single",
+          "label": "t:sections.faq.settings.open_mode.options.single"
+        }
+      ],
+      "default": "multiple"
+    },
+    {
+      "type": "checkbox",
+      "id": "open_first",
+      "label": "t:sections.faq.settings.open_first.label",
+      "default": false
+    },
+    {
+      "type": "select",
+      "id": "style",
+      "label": "t:sections.faq.settings.style.label",
+      "options": [
+        {
+          "value": "lines",
+          "label": "t:sections.faq.settings.style.options.lines"
+        },
+        {
+          "value": "cards",
+          "label": "t:sections.faq.settings.style.options.cards"
+        }
+      ],
+      "default": "lines"
+    },
+    {
+      "type": "select",
+      "id": "group_style",
+      "label": "t:sections.faq.settings.group_style.label",
+      "info": "t:sections.faq.settings.group_style.info",
+      "options": [
+        {
+          "value": "headings",
+          "label": "t:sections.faq.settings.group_style.options.headings"
+        },
+        {
+          "value": "cards",
+          "label": "t:sections.faq.settings.group_style.options.cards"
+        }
+      ],
+      "default": "headings"
+    },
+    {
+      "type": "checkbox",
+      "id": "group_links",
+      "label": "t:sections.faq.settings.group_links.label",
+      "info": "t:sections.faq.settings.group_links.info",
+      "default": false
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "t:sections.faq.settings.layout.label",
+      "info": "t:sections.faq.settings.layout.info",
+      "options": [
+        {
+          "value": "standard",
+          "label": "t:sections.faq.settings.layout.options.standard"
+        },
+        {
+          "value": "card",
+          "label": "t:sections.faq.settings.layout.options.card"
+        }
+      ],
+      "default": "standard"
+    },
+    {
+      "type": "select",
+      "id": "width",
+      "label": "t:shared.width.label",
+      "options": [
+        {
+          "value": "narrow",
+          "label": "t:shared.width.options.narrow"
+        },
+        {
+          "value": "page",
+          "label": "t:shared.width.options.page"
+        }
+      ],
+      "default": "page"
+    },
+    {
+      "type": "checkbox",
+      "id": "structured_data",
+      "label": "t:sections.faq.settings.structured_data.label",
+      "info": "t:sections.faq.settings.structured_data.info",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:sections.faq.settings.contact_header"
+    },
+    {
+      "type": "text",
+      "id": "contact_heading",
+      "label": "t:sections.faq.settings.contact_heading.label"
+    },
+    {
+      "type": "richtext",
+      "id": "contact_text",
+      "label": "t:sections.faq.settings.contact_text.label"
+    },
+    {
+      "type": "text",
+      "id": "contact_link_label",
+      "label": "t:sections.faq.settings.contact_link_label.label"
+    },
+    {
+      "type": "url",
+      "id": "contact_link",
+      "label": "t:sections.faq.settings.contact_link.label",
+      "visible_if": "{{ section.settings.contact_link_label != blank }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "contact_form",
+      "label": "t:sections.faq.settings.contact_form.label",
+      "info": "t:sections.faq.settings.contact_form.info",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "contact_show_phone",
+      "label": "t:sections.faq.settings.contact_show_phone.label",
+      "default": false,
+      "visible_if": "{{ section.settings.contact_form }}"
+    },
+    {
+      "type": "select",
+      "id": "contact_field_labels",
+      "label": "t:sections.contact_form.settings.field_labels.label",
+      "info": "t:sections.contact_form.settings.field_labels.info",
+      "options": [
+        {
+          "value": "above",
+          "label": "t:sections.contact_form.settings.field_labels.options.above"
+        },
+        {
+          "value": "inside",
+          "label": "t:sections.contact_form.settings.field_labels.options.inside"
+        }
+      ],
+      "default": "above",
+      "visible_if": "{{ section.settings.contact_form }}"
+    },
+    {
+      "type": "text",
+      "id": "contact_button_label",
+      "label": "t:sections.faq.settings.contact_button_label.label",
+      "default": "Send message",
+      "visible_if": "{{ section.settings.contact_form }}"
+    },
+    {
+      "type": "select",
+      "id": "contact_style",
+      "label": "t:sections.faq.settings.contact_style.label",
+      "options": [
+        {
+          "value": "tinted",
+          "label": "t:sections.faq.settings.contact_style.options.tinted"
+        },
+        {
+          "value": "scheme",
+          "label": "t:sections.faq.settings.contact_style.options.scheme"
+        },
+        {
+          "value": "plain",
+          "label": "t:sections.faq.settings.contact_style.options.plain"
+        }
+      ],
+      "default": "tinted"
+    },
+    {
+      "type": "color_scheme",
+      "id": "contact_color_scheme",
+      "label": "t:sections.faq.settings.contact_color_scheme.label",
+      "default": "scheme-2",
+      "visible_if": "{{ section.settings.contact_style == 'scheme' }}"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.faq.name",
+      "blocks": [
+        {
+          "type": "item",
+          "settings": {
+            "question": "Add a question customers often ask",
+            "answer": "<p>Write a short, accurate answer. Link to a policy page when the full details live there.</p>"
+          }
+        },
+        {
+          "type": "item",
+          "settings": {
+            "question": "Add a question customers often ask",
+            "answer": "<p>Write a short, accurate answer. Link to a policy page when the full details live there.</p>"
+          }
+        },
+        {
+          "type": "item",
+          "settings": {
+            "question": "Add a question customers often ask",
+            "answer": "<p>Write a short, accurate answer. Link to a policy page when the full details live there.</p>"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

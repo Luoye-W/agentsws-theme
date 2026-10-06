@@ -1,0 +1,170 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-collection",
+      "settings": {
+        "header_style": "plain",
+        "show_breadcrumb": true,
+        "show_description": false,
+        "heading_size": "display",
+        "header_alignment": "start",
+        "subcollection_source": "list",
+        "subcollections": [
+          "demo-inova-all",
+          "quiet-living-spaces",
+          "the-communal-hearth",
+          "luminous-intervals",
+          "sculptural-foundations"
+        ],
+        "subcollection_style": "tabs",
+        "subcollection_placement": "toolbar",
+        "subcollection_show_count": true,
+        "products_per_page": 12,
+        "columns_desktop": 3,
+        "columns_mobile": "2",
+        "pagination": "load_more",
+        "card_quick_add": true,
+        "enable_filters": true,
+        "filter_layout": "sidebar",
+        "enable_sorting": true,
+        "padding_top": 32,
+        "padding_bottom": 96
+      },
+      "blocks": {
+        "promo": {
+          "type": "promo",
+          "settings": {
+            "position": 5,
+            "column_span": "2",
+            "row_span": "2",
+            "image": "shopify://shop_images/4abef0c7-ac75-481b-afbd-41096b7f0f0f.png",
+            "overlay_opacity": 30,
+            "heading": "Discover the ideal chair",
+            "button_label": "View seating",
+            "link": "shopify://collections/quiet-living-spaces",
+            "content_position": "bottom",
+            "content_alignment": "end",
+            "color_scheme": "scheme-3"
+          }
+        }
+      },
+      "block_order": [
+        "promo"
+      ]
+    },
+    "story": {
+      "type": "rich-text",
+      "settings": {
+        "width": "narrow",
+        "alignment": "start",
+        "color_scheme": "scheme-3",
+        "padding_top": 96,
+        "padding_bottom": 96
+      },
+      "blocks": {
+        "i": {
+          "type": "icon",
+          "settings": {
+            "icon": "leaf"
+          }
+        },
+        "e": {
+          "type": "heading",
+          "settings": {
+            "text": "Living",
+            "size": "eyebrow",
+            "tag": "p",
+            "alignment": "left"
+          }
+        },
+        "h": {
+          "type": "heading",
+          "settings": {
+            "text": "Elegance and comfort",
+            "size": "h2",
+            "tag": "h2",
+            "alignment": "left"
+          }
+        },
+        "t": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Demo copy \u2014 describe the collection here: shapes, materials and the feeling you want the room to have.</p>",
+            "size": "body",
+            "muted": false,
+            "alignment": "left"
+          }
+        }
+      },
+      "block_order": [
+        "i",
+        "e",
+        "h",
+        "t"
+      ]
+    },
+    "services": {
+      "type": "multicolumn",
+      "settings": {
+        "heading": "",
+        "columns": 4,
+        "columns_mobile": "2",
+        "mobile_layout": "stack",
+        "card_style": "filled",
+        "icon_position": "start",
+        "icon_size": 28,
+        "padding_top": 56,
+        "padding_bottom": 56
+      },
+      "blocks": {
+        "c1": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "chat",
+            "heading": "Customer service",
+            "text": "<p>Real people answer within one business day.</p>"
+          }
+        },
+        "c2": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "truck",
+            "heading": "Delivery",
+            "text": "<p>Describe your delivery promise here.</p>"
+          }
+        },
+        "c3": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "gift",
+            "heading": "Refer a friend",
+            "text": "<p>Explain your referral offer here.</p>"
+          }
+        },
+        "c4": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "lock",
+            "heading": "Secure payment",
+            "text": "<p>Payments are processed by Shopify.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "c1",
+        "c2",
+        "c3",
+        "c4"
+      ]
+    }
+  },
+  "order": [
+    "main",
+    "story",
+    "services"
+  ]
+}

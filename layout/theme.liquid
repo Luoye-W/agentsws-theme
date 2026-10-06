@@ -1,0 +1,90 @@
+<!doctype html>
+{%- liquid
+  assign locale_root = request.locale.iso_code | split: '-' | first
+  assign rtl_locales = 'ar,he,fa,ur,ps,sd,yi,ug,ku' | split: ','
+  assign text_direction = 'ltr'
+  if rtl_locales contains locale_root
+    assign text_direction = 'rtl'
+  endif
+-%}
+<html lang="{{ request.locale.iso_code }}" dir="{{ text_direction }}">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    {%- assign body_scheme = settings.color_schemes[settings.body_color_scheme] %}
+    <meta name="theme-color" content="{{ body_scheme.settings.background }}">
+    <link rel="canonical" href="{{ canonical_url }}">
+    {%- if settings.favicon != blank %}
+      <link rel="icon" type="image/png" href="{{ settings.favicon | image_url: width: 32, height: 32 }}">
+      <link rel="apple-touch-icon" href="{{ settings.favicon | image_url: width: 180, height: 180 }}">
+    {%- endif %}
+    <link rel="preconnect" href="https://cdn.shopify.com" crossorigin>
+
+    <title>
+      {{- page_title -}}
+      {%- if current_tags %} &ndash; {{ current_tags | join: ', ' }}{% endif -%}
+      {%- if current_page != 1 %} &ndash; {{ 'general.pagination.page' | t: page: current_page }}{% endif -%}
+      {%- unless page_title contains shop.name %} &ndash; {{ shop.name }}{% endunless -%}
+    </title>
+    {%- if page_description %}
+      <meta name="description" content="{{ page_description | escape }}">
+    {%- endif %}
+
+    {% render 'meta-tags' %}
+    {% render 'theme-tokens' %}
+    {%- unless settings.page_transitions %}
+      <style>@view-transition { navigation: none; }</style>
+    {%- endunless %}
+    {{ 'app.css' | asset_url | stylesheet_tag }}
+
+    <script type="importmap">
+      {
+        "imports": {
+          "@aw/component": "{{ 'component.js' | asset_url }}",
+          "@aw/events": "{{ 'events.js' | asset_url }}",
+          "@aw/cart": "{{ 'cart.js' | asset_url }}"
+        }
+      }
+    </script>
+    <script src="{{ 'theme.js' | asset_url }}" type="module"></script>
+    {%- if settings.prefetch_links %}
+      <script type="speculationrules">
+        { "prefetch": [{ "where": { "and": [{ "href_matches": "/*" }, { "not": { "href_matches": ["/cart*", "/checkout*", "/account*", "*/logout*"] } }] }, "eagerness": "moderate" }] }
+      </script>
+    {%- endif %}
+
+    {{ content_for_header }}
+  </head>
+
+  <body
+    class="surface-{{ settings.body_color_scheme }} font-body"
+    data-button-style="{{ settings.button_style }}"
+    data-button-hover="{{ settings.button_hover }}"
+    {% if settings.animate_reveal %}
+      data-animate-reveal
+    {% endif %}
+    {% if settings.animate_images %}
+      data-animate-images
+    {% endif %}
+  >
+    <a class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:start-2 focus:z-50 btn btn-primary" href="#MainContent">{{ 'general.accessibility.skip_to_content' | t }}</a>
+
+    {% sections 'header-group' %}
+
+    <main id="MainContent" tabindex="-1">
+      {{ content_for_layout }}
+    </main>
+
+    {% sections 'footer-group' %}
+
+    {%- if settings.cart_type == 'drawer' -%}
+      {% section 'cart-drawer' %}
+    {%- endif -%}
+    {%- if settings.search_type == 'drawer' -%}
+      {% section 'search-drawer' %}
+    {%- endif -%}
+
+    {% sections 'overlay-group' %}
+  </body>
+</html>

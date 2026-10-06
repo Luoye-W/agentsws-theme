@@ -1,0 +1,493 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-product",
+      "blocks": {
+        "vendor": {
+          "type": "product-vendor",
+          "settings": {
+            "style": "eyebrow",
+            "link": true
+          }
+        },
+        "title": {
+          "type": "product-title",
+          "settings": {
+            "size": "h2",
+            "show_vendor": false,
+            "inline_price": true
+          }
+        },
+        "rating": {
+          "type": "product-rating",
+          "settings": {
+            "anchor": "reviews"
+          }
+        },
+        "description": {
+          "type": "product-description",
+          "settings": {}
+        },
+        "picker": {
+          "type": "product-variant-picker",
+          "settings": {
+            "style": "buttons",
+            "swatches": true,
+            "image_swatches": true,
+            "image_swatch_options": "Color, Colour"
+          }
+        },
+        "addons": {
+          "type": "product-addons",
+          "settings": {
+            "heading": "Popular upgrades",
+            "products": [
+              "premium-audio-cable",
+              "set-of-coiled-audio-cables",
+              "high-end-audio-cable"
+            ],
+            "include_current": false,
+            "preselect": false,
+            "style": "card",
+            "icon": "gift",
+            "start_open": true
+          }
+        },
+        "inventory": {
+          "type": "product-inventory",
+          "settings": {
+            "low_stock_threshold": 10,
+            "show_bar": true,
+            "show_count": "low",
+            "show_incoming": true
+          }
+        },
+        "buy": {
+          "type": "product-buy-buttons",
+          "settings": {
+            "show_quantity": true,
+            "show_price": true,
+            "show_dynamic_checkout": true
+          }
+        },
+        "pickup": {
+          "type": "product-pickup",
+          "settings": {}
+        },
+        "share": {
+          "type": "product-share",
+          "settings": {
+            "label": "Share:",
+            "show_copy": true,
+            "native_share": false,
+            "help_label": "Need help?",
+            "help_link": "shopify://pages/contact"
+          }
+        },
+        "complementary": {
+          "type": "product-complementary",
+          "settings": {
+            "heading": "Pairs well with",
+            "products_to_show": 3,
+            "card_quick_add": true
+          }
+        },
+        "trust": {
+          "type": "product-trust",
+          "settings": {
+            "style": "card",
+            "icon_size": 20,
+            "text_size": "sm"
+          },
+          "blocks": {
+            "shipping": {
+              "type": "_product-icon-item",
+              "settings": {
+                "icon": "truck",
+                "text": "Add your delivery promise"
+              }
+            },
+            "returns": {
+              "type": "_product-icon-item",
+              "settings": {
+                "icon": "return",
+                "text": "Add your returns policy"
+              }
+            },
+            "warranty": {
+              "type": "_product-icon-item",
+              "settings": {
+                "icon": "shield",
+                "text": "Add your warranty terms"
+              }
+            },
+            "checkout": {
+              "type": "_product-icon-item",
+              "settings": {
+                "icon": "lock",
+                "text": "Secure checkout"
+              }
+            }
+          },
+          "block_order": [
+            "shipping",
+            "returns",
+            "warranty",
+            "checkout"
+          ]
+        },
+        "spec-tiles": {
+          "type": "product-spec-tiles",
+          "settings": {
+            "heading": "Product highlights",
+            "source": "metafield",
+            "metafield": "custom.spec_tiles",
+            "placement": "below_media",
+            "card": true,
+            "tile_style": "filled",
+            "columns": "auto",
+            "icon_size": 24
+          }
+        }
+      },
+      "block_order": [
+        "vendor",
+        "title",
+        "rating",
+        "description",
+        "picker",
+        "addons",
+        "inventory",
+        "buy",
+        "pickup",
+        "share",
+        "complementary",
+        "trust",
+        "spec-tiles"
+      ],
+      "settings": {
+        "gallery_layout": "featured",
+        "thumbnail_position": "below",
+        "media_width": "large",
+        "media_ratio": "square",
+        "media_fit": "cover",
+        "enable_zoom": true,
+        "variant_media_only": false,
+        "video_autoplay": false,
+        "video_loop": false,
+        "sticky_cart": "all",
+        "color_scheme": "scheme-1",
+        "padding_top": 32,
+        "padding_bottom": 48
+      }
+    },
+    "anchors": {
+      "type": "anchor-nav",
+      "blocks": {
+        "highlights": {
+          "type": "link",
+          "settings": {
+            "label": "Highlights",
+            "target": "story,feature"
+          }
+        },
+        "specs": {
+          "type": "link",
+          "settings": {
+            "label": "Tech specs",
+            "target": "tech_specs"
+          }
+        },
+        "faqs": {
+          "type": "link",
+          "settings": {
+            "label": "FAQs",
+            "target": "faq"
+          }
+        }
+      },
+      "block_order": [
+        "highlights",
+        "specs",
+        "faqs"
+      ],
+      "settings": {
+        "nav_label": "",
+        "show_back_to_top": true,
+        "highlight_active": true,
+        "sticky": true,
+        "align_desktop": "start",
+        "align_mobile": "start",
+        "color_scheme": "scheme-2",
+        "padding_top": 16,
+        "padding_bottom": 16
+      }
+    },
+    "story": {
+      "type": "scroll-story",
+      "blocks": {
+        "step-1": {
+          "type": "step",
+          "settings": {
+            "eyebrow": "Step 1",
+            "heading": "Tell the first part of your story",
+            "text": "<p>Use each step for one idea: how the product is made, one key feature, or how to set it up. Add an image to swap the picture as shoppers scroll.</p>",
+            "image": "shopify://shop_images/16300863-4570-4a7c-b43e-b8c3a49f96ad.png"
+          }
+        },
+        "step-2": {
+          "type": "step",
+          "settings": {
+            "eyebrow": "Step 2",
+            "heading": "Show the next detail",
+            "text": "<p>Keep it short \u2014 two or three sentences read best beside a large image.</p>",
+            "image": "shopify://shop_images/565c5d31-1dc6-4bbf-aa43-6fd4f9f72b75.png"
+          }
+        },
+        "step-3": {
+          "type": "step",
+          "settings": {
+            "eyebrow": "Step 3",
+            "heading": "Finish with the result",
+            "text": "<p>End with what the shopper gets, and link to the specs or the buy button.</p>",
+            "image": "shopify://shop_images/42fd740c-5025-43b4-8c32-a9290ae1f762.png"
+          }
+        }
+      },
+      "block_order": [
+        "step-1",
+        "step-2",
+        "step-3"
+      ],
+      "settings": {
+        "eyebrow": "",
+        "heading": "Designed around the details",
+        "description": "",
+        "media_position": "start",
+        "media_height": 600,
+        "show_progress": true,
+        "color_scheme": "scheme-1",
+        "padding_top": 64,
+        "padding_bottom": 64,
+        "image": "shopify://shop_images/c55ba300-0e09-4129-8ee7-ceb34f774469.png"
+      }
+    },
+    "tech_specs": {
+      "type": "tech-specs",
+      "blocks": {
+        "sound": {
+          "type": "group",
+          "settings": {
+            "title": "Sound",
+            "icon": "none",
+            "specs": "Feature:\n- Describe the first detail\n- Describe another detail\nSecond feature: Add a value\nThird feature: Add a value\nFourth feature: Add a value",
+            "metafield": "custom.specs_sound"
+          }
+        },
+        "design": {
+          "type": "group",
+          "settings": {
+            "title": "Design",
+            "icon": "none",
+            "specs": "Material: Add a value\nDimensions: Add a value\nWeight: Add a value",
+            "metafield": "custom.specs_design"
+          }
+        },
+        "battery": {
+          "type": "group",
+          "settings": {
+            "title": "Battery",
+            "icon": "none",
+            "specs": "Battery life: Add a value\nCharging time: Add a value",
+            "metafield": "custom.specs_battery"
+          }
+        },
+        "connectivity": {
+          "type": "group",
+          "settings": {
+            "title": "Connectivity",
+            "icon": "none",
+            "specs": "Wireless: Add a value\nWired: Add a value",
+            "metafield": "custom.specs_connectivity"
+          }
+        },
+        "box-1": {
+          "type": "box_item",
+          "settings": {
+            "label": "Product"
+          }
+        },
+        "box-2": {
+          "type": "box_item",
+          "settings": {
+            "label": "Cable"
+          }
+        },
+        "box-3": {
+          "type": "box_item",
+          "settings": {
+            "label": "Quick start guide"
+          }
+        }
+      },
+      "block_order": [
+        "sound",
+        "design",
+        "battery",
+        "connectivity",
+        "box-1",
+        "box-2",
+        "box-3"
+      ],
+      "settings": {
+        "heading": "Tech specs",
+        "description": "",
+        "single_open": true,
+        "open_first": true,
+        "style": "lines",
+        "columns": "2",
+        "box_heading": "In the box",
+        "box_image_shape": "circle",
+        "box_sticky": true,
+        "box_color_scheme": "scheme-2",
+        "width": "page",
+        "color_scheme": "scheme-1",
+        "padding_top": 64,
+        "padding_bottom": 64
+      }
+    },
+    "faq": {
+      "type": "faq",
+      "blocks": {
+        "q1": {
+          "type": "item",
+          "settings": {
+            "question": "How long does delivery take?",
+            "answer": "<p>Add your delivery times here, and link to your shipping policy for the details.</p>"
+          }
+        },
+        "q2": {
+          "type": "item",
+          "settings": {
+            "question": "What is your return policy?",
+            "answer": "<p>Summarize your return window and conditions, and link to the full policy.</p>"
+          }
+        },
+        "q3": {
+          "type": "item",
+          "settings": {
+            "question": "Is this product covered by a warranty?",
+            "answer": "<p>Describe your warranty terms, or remove this question if you do not offer one.</p>"
+          }
+        },
+        "q4": {
+          "type": "item",
+          "settings": {
+            "question": "How do I care for this product?",
+            "answer": "<p>Add short care instructions.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "q1",
+        "q2",
+        "q3",
+        "q4"
+      ],
+      "settings": {
+        "eyebrow": "",
+        "heading": "FAQs",
+        "description": "<p>Please read our <a href=\"/pages/contact\">help page</a> to find out more.</p>",
+        "heading_alignment": "start",
+        "link_label": "",
+        "open_mode": "single",
+        "open_first": false,
+        "style": "lines",
+        "layout": "card",
+        "width": "page",
+        "structured_data": false,
+        "contact_heading": "Didn't find your answer?",
+        "contact_text": "<p>Don't hesitate to contact us.</p>",
+        "contact_link_label": "",
+        "contact_form": true,
+        "contact_show_phone": false,
+        "contact_button_label": "Send message",
+        "contact_style": "tinted",
+        "contact_color_scheme": "scheme-2",
+        "color_scheme": "scheme-3",
+        "padding_top": 48,
+        "padding_bottom": 64
+      }
+    },
+    "related": {
+      "type": "product-recommendations",
+      "settings": {
+        "heading": "You may also like",
+        "products_to_show": 4,
+        "card_quick_add": true
+      }
+    },
+    "recently_viewed": {
+      "type": "recently-viewed",
+      "settings": {
+        "heading": "Recently viewed",
+        "products_to_show": 4,
+        "columns_desktop": 4,
+        "mobile_layout": "slider",
+        "card_quick_add": true,
+        "color_scheme": "scheme-1",
+        "padding_top": 48,
+        "padding_bottom": 64
+      }
+    },
+    "feature": {
+      "type": "image-with-text",
+      "settings": {
+        "image": "shopify://shop_images/36d36cf1-604f-4dd8-a87d-08d4cc371098.png",
+        "image_position": "start",
+        "image_width": "half",
+        "image_ratio": "landscape",
+        "color_scheme": "scheme-2",
+        "padding_top": 48,
+        "padding_bottom": 48
+      },
+      "blocks": {
+        "i": {
+          "type": "icon",
+          "settings": {
+            "icon": "headphones"
+          }
+        },
+        "h": {
+          "type": "heading",
+          "settings": {
+            "text": "Precision audio excellence",
+            "size": "h2",
+            "tag": "h2"
+          }
+        },
+        "t": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Demo copy \u2014 use this block for one standout feature, with a close-up image.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "i",
+        "h",
+        "t"
+      ]
+    }
+  },
+  "order": [
+    "main",
+    "anchors",
+    "story",
+    "feature",
+    "tech_specs",
+    "faq",
+    "related",
+    "recently_viewed"
+  ]
+}

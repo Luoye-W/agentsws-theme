@@ -1,0 +1,113 @@
+{% doc %}
+  @description "Share" button for the current page (product, article, collection…). Opens the device's own share sheet when the browser supports it; otherwise (and without JavaScript) a small panel lists the channels switched on in Theme settings → Social media → Share buttons (Facebook, X, Pinterest, WhatsApp, Telegram, email) plus "Copy link", which confirms with a status message.
+  Use when: product info column, blog articles, gift or wish-list pages — anywhere shoppers may want to send the page to someone.
+
+  @example
+  {% content_for 'block', type: 'share', id: 'share' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  assign share_url = request.origin | append: request.path
+  assign share_title = page_title | default: shop.name
+  if product
+    assign share_title = product.title
+    assign share_image = product.featured_image
+  elsif article
+    assign share_title = article.title
+    assign share_image = article.image
+  else
+    assign share_image = page_image
+  endif
+  assign encoded_url = share_url | url_encode
+  assign encoded_title = share_title | url_encode
+  assign title_and_url = share_title | append: ' ' | append: share_url | url_encode
+  assign panel_id = 'Share-' | append: block.id
+
+  case s.style
+    when 'button'
+      assign trigger_class = 'btn btn-secondary'
+    else
+      assign trigger_class = 'inline-flex min-h-11 items-center gap-2 type-sm underline-offset-4 hover:underline'
+  endcase
+-%}
+<aw-share
+  class="relative inline-block"
+  data-share-block
+  data-url="{{ share_url | escape }}"
+  data-title="{{ share_title | escape }}"
+  data-copied="{{ 'blocks.share.copied' | t | escape }}"
+  {{ block.shopify_attributes }}
+>
+  <details data-ref="details">
+    <summary class="cursor-pointer list-none [&::-webkit-details-marker]:hidden {{ trigger_class }}" aria-controls="{{ panel_id }}">
+      {%- render 'icon', name: 'share', class: 'size-5' -%}
+      {{- s.label | escape -}}
+    </summary>
+    <div id="{{ panel_id }}" class="absolute start-0 top-full z-20 mt-2 min-w-56 rounded-card border border-border surface-{{ settings.drawer_color_scheme }} p-2 shadow-lg">
+      <ul class="flex flex-col" role="list">
+        {%- if settings.share_facebook -%}
+          <li><a href="https://www.facebook.com/sharer/sharer.php?u={{ encoded_url }}" target="_blank" rel="noopener" class="flex min-h-11 items-center rounded-btn px-3 type-sm no-underline hover:bg-fg/5">Facebook</a></li>
+        {%- endif -%}
+        {%- if settings.share_x -%}
+          <li><a href="https://x.com/intent/post?url={{ encoded_url }}&amp;text={{ encoded_title }}" target="_blank" rel="noopener" class="flex min-h-11 items-center rounded-btn px-3 type-sm no-underline hover:bg-fg/5">X</a></li>
+        {%- endif -%}
+        {%- if settings.share_pinterest -%}
+          {%- liquid
+            assign media = ''
+            if share_image
+              assign media = share_image | image_url: width: 1200 | prepend: 'https:' | url_encode
+            endif
+          -%}
+          <li><a href="https://pinterest.com/pin/create/button/?url={{ encoded_url }}&amp;media={{ media }}&amp;description={{ encoded_title }}" target="_blank" rel="noopener" class="flex min-h-11 items-center rounded-btn px-3 type-sm no-underline hover:bg-fg/5">Pinterest</a></li>
+        {%- endif -%}
+        {%- if settings.share_whatsapp -%}
+          <li><a href="https://wa.me/?text={{ title_and_url }}" target="_blank" rel="noopener" class="flex min-h-11 items-center rounded-btn px-3 type-sm no-underline hover:bg-fg/5">WhatsApp</a></li>
+        {%- endif -%}
+        {%- if settings.share_telegram -%}
+          <li><a href="https://t.me/share/url?url={{ encoded_url }}&amp;text={{ encoded_title }}" target="_blank" rel="noopener" class="flex min-h-11 items-center rounded-btn px-3 type-sm no-underline hover:bg-fg/5">Telegram</a></li>
+        {%- endif -%}
+        {%- if settings.share_email -%}
+          <li><a href="mailto:?subject={{ encoded_title }}&amp;body={{ encoded_url }}" class="flex min-h-11 items-center rounded-btn px-3 type-sm no-underline hover:bg-fg/5">{{ 'blocks.share.email' | t }}</a></li>
+        {%- endif -%}
+        <li>
+          <button type="button" class="flex min-h-11 w-full items-center gap-2 rounded-btn px-3 text-start type-sm hover:bg-fg/5" data-ref="copy" hidden>
+            {%- render 'icon', name: 'link', class: 'size-4' -%}
+            {{- 'blocks.share.copy_link' | t -}}
+          </button>
+        </li>
+      </ul>
+      <p class="px-3 pt-1 type-xs text-success empty:hidden" role="status" data-ref="status"></p>
+    </div>
+  </details>
+</aw-share>
+<script src="{{ 'c-share.js' | asset_url }}" type="module"></script>
+
+{% schema %}
+{
+  "name": "t:blocks.share.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:blocks.share.settings.hint"
+    },
+    {
+      "type": "text",
+      "id": "label",
+      "label": "t:blocks.share.settings.label.label",
+      "default": "Share"
+    },
+    {
+      "type": "select",
+      "id": "style",
+      "label": "t:blocks.share.settings.style.label",
+      "options": [
+        { "value": "link", "label": "t:blocks.share.settings.style.options.link" },
+        { "value": "button", "label": "t:blocks.share.settings.style.options.button" }
+      ],
+      "default": "link"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.share.name" }]
+}
+{% endschema %}

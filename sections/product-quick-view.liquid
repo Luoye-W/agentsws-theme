@@ -1,0 +1,76 @@
+{% comment %}
+  @description Quick view window content: gallery, vendor, title, price, variant picker, quantity + Add to cart and a "View full details" link, wrapped in a modal <dialog>. Product cards fetch it through the Section Rendering API (/products/<handle>?section_id=product-quick-view) when the shopper presses "+" on a product with options; variant switching and adding to cart reuse the product page components. Full screen on phones, centred window on desktop.
+  Use when: never add to templates — c-quick-add.js loads it by file name.
+{% endcomment %}
+{%- liquid
+  assign selected_variant = product.selected_or_first_available_variant
+  assign featured = selected_variant.featured_media | default: product.featured_media
+  assign title_id = 'QuickViewTitle-' | append: product.id
+-%}
+{%- if product -%}
+  <dialog
+    data-quick-view
+    class="m-0 h-dvh max-h-dvh w-full max-w-none overflow-hidden surface-{{ settings.drawer_color_scheme }} p-0 backdrop:bg-overlay md:m-auto md:h-[min(90dvh,44rem)] md:w-[min(64rem,calc(100%-4rem))] md:rounded-card"
+    aria-labelledby="{{ title_id }}"
+  >
+    <aw-product
+      class="relative grid h-full grid-cols-1 overflow-y-auto md:grid-cols-2 md:grid-rows-[minmax(0,1fr)] md:overflow-hidden"
+      data-section="{{ section.id }}"
+      data-url="{{ product.url }}"
+      data-update-url="false"
+    >
+      <button
+        type="button"
+        class="fixed top-2 end-2 z-20 flex size-11 items-center justify-center rounded-full bg-bg/80 md:absolute"
+        data-quick-view-close
+        aria-label="{{ 'general.accessibility.close' | t }}"
+      >
+        {%- render 'icon', name: 'close', class: 'size-6' -%}
+      </button>
+      {%- if product.media.size > 0 -%}
+        <div class="min-w-0 p-4 md:overflow-y-auto md:p-6">
+          {% render 'product-gallery',
+            product: product,
+            section_id: section.id,
+            featured: featured,
+            variant: selected_variant,
+            ratio: 'square',
+            fit: settings.card_image_fit,
+            layout: 'slider',
+            thumbnail_position: 'below',
+            mobile_nav: 'thumbnails',
+            zoom: true,
+            sizes: '(min-width: 750px) 32rem, 100vw'
+          %}
+        </div>
+      {%- endif -%}
+      <div class="flex min-w-0 flex-col gap-5 p-4 pt-0 md:overflow-y-auto md:p-8 md:pe-14{% if product.media.size == 0 %} md:col-span-2{% endif %}">
+        <div class="flex flex-col gap-2">
+          {%- if product.vendor != blank -%}
+            <p class="type-eyebrow text-muted">{{ product.vendor | escape }}</p>
+          {%- endif -%}
+          <h2 id="{{ title_id }}" class="type-h3">{{ product.title | escape }}</h2>
+        </div>
+        <div data-swap="quick-view-price">
+          {% render 'price', product: product, variant: selected_variant, size: 'lg' %}
+        </div>
+        {% content_for 'block', type: 'product-variant-picker', id: 'quick-view-picker' %}
+        {% content_for 'block', type: 'product-buy-buttons', id: 'quick-view-buy' %}
+        <a href="{{ product.url }}" class="btn btn-link self-start">
+          {{- 'products.product.view_details' | t -}}
+          {%- render 'icon', name: 'arrow-right', class: 'size-4 rtl:rotate-180' -%}
+        </a>
+      </div>
+      <span hidden data-variant-state data-variant-id="{{ selected_variant.id }}" data-media-id="{{ selected_variant.featured_media.id }}"></span>
+    </aw-product>
+  </dialog>
+  <script src="{{ 'c-product.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.product_quick_view.name",
+  "class": "section-product-quick-view",
+  "settings": []
+}
+{% endschema %}

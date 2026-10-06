@@ -1,0 +1,123 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-article",
+      "settings": {
+        "header_alignment": "start",
+        "title_size": "h1",
+        "show_tags": true,
+        "show_date": true,
+        "show_author": true,
+        "show_reading_time": false,
+        "show_comments_count": false,
+        "meta_icons": true,
+        "image_style": "banner",
+        "banner_height": "large",
+        "overlay_opacity": 35,
+        "banner_color_scheme": "scheme-3",
+        "transparent_header": true,
+        "content_overlap": true,
+        "content_width": "narrow",
+        "toc": "top",
+        "show_progress": true,
+        "quote_style": "large",
+        "show_author_box": false,
+        "footer_style": "panel",
+        "show_share": true,
+        "share_style": "icons",
+        "share_comments_count": true,
+        "show_prev_next": true,
+        "prev_next_meta": true,
+        "padding_top": 48,
+        "padding_bottom": 0
+      }
+    },
+    "related": {
+      "type": "blog-posts",
+      "settings": {
+        "heading": "Latest stories",
+        "blog": "",
+        "post_count": 3,
+        "exclude_current": true,
+        "related_first": false,
+        "show_view_all": true,
+        "layout": "grid",
+        "columns_desktop": 3,
+        "mobile_layout": "slider",
+        "columns_mobile": "1",
+        "image_ratio": "landscape",
+        "show_tags": true,
+        "tags_on_image": true,
+        "show_date": true,
+        "meta_icons": true,
+        "show_comments": true,
+        "show_excerpt": true,
+        "padding_top": 72,
+        "padding_bottom": 72
+      }
+    },
+    "services": {
+      "type": "multicolumn",
+      "settings": {
+        "heading": "",
+        "columns": 4,
+        "columns_mobile": "2",
+        "mobile_layout": "stack",
+        "card_style": "filled",
+        "icon_position": "start",
+        "icon_size": 28,
+        "padding_top": 56,
+        "padding_bottom": 56
+      },
+      "blocks": {
+        "c1": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "chat",
+            "heading": "Customer service",
+            "text": "<p>Real people answer within one business day.</p>"
+          }
+        },
+        "c2": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "truck",
+            "heading": "Delivery",
+            "text": "<p>Describe your delivery promise here.</p>"
+          }
+        },
+        "c3": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "gift",
+            "heading": "Refer a friend",
+            "text": "<p>Explain your referral offer here.</p>"
+          }
+        },
+        "c4": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "lock",
+            "heading": "Secure payment",
+            "text": "<p>Payments are processed by Shopify.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "c1",
+        "c2",
+        "c3",
+        "c4"
+      ]
+    }
+  },
+  "order": [
+    "main",
+    "related",
+    "services"
+  ]
+}

@@ -1,0 +1,107 @@
+{% comment %}
+  @description Predictive search results, fetched by the search drawer through Shopify's predictive search endpoint (routes.predictive_search_url + section_id=predictive-search). Groups: query suggestions (matching part highlighted), products (image, title, optional vendor and price — Theme settings → Search), collections, pages, articles, then a "View all results" link; or a no-results message. Every result is an option for keyboard navigation.
+  Use when: never add to templates — requested by c-predictive-search.js only.
+{% endcomment %}
+{%- if predictive_search.performed -%}
+  {%- liquid
+    assign r = predictive_search.resources
+    assign terms = predictive_search.terms
+    assign total = r.queries.size | plus: r.products.size | plus: r.collections.size | plus: r.pages.size | plus: r.articles.size
+    if total > 0
+      assign status = 'general.search.results' | t: count: total, terms: terms
+    else
+      assign status = 'general.search.no_results' | t: terms: terms
+    endif
+    assign option_class = 'flex min-h-11 items-center gap-3 rounded-btn px-2 py-1.5 no-underline hover:bg-fg/5 aria-selected:bg-fg/10'
+  -%}
+  <div id="PredictiveSearchResults" data-count="{{ total }}" data-status="{{ status | escape }}" class="flex flex-col gap-6">
+    {%- if total > 0 -%}
+      {%- if r.queries.size > 0 -%}
+        <div role="group" aria-labelledby="PredictiveSearch-queries" class="flex flex-col gap-1">
+          <p id="PredictiveSearch-queries" class="px-2 type-eyebrow text-muted">{{ 'general.search.suggestions' | t }}</p>
+          {%- for query in r.queries -%}
+            <a href="{{ query.url }}" id="PredictiveSearch-query-{{ forloop.index }}" role="option" aria-selected="false" class="{{ option_class }} [&_mark]:bg-transparent [&_mark]:font-semibold [&_mark]:text-fg">
+              {{- query.styled_text -}}
+            </a>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+
+      {%- if r.products.size > 0 -%}
+        <div role="group" aria-labelledby="PredictiveSearch-products" class="flex flex-col gap-1">
+          <p id="PredictiveSearch-products" class="px-2 type-eyebrow text-muted">{{ 'general.search.products' | t }}</p>
+          {%- for product in r.products -%}
+            <a href="{{ product.url }}" id="PredictiveSearch-product-{{ forloop.index }}" role="option" aria-selected="false" class="{{ option_class }}">
+              <span class="block size-14 shrink-0 overflow-hidden rounded-media bg-placeholder">
+                {%- if product.featured_image -%}
+                  {{ product.featured_image | image_url: width: 160 | image_tag: widths: '56, 112, 160', sizes: '56px', class: 'size-full object-contain', alt: '', loading: 'lazy' }}
+                {%- else -%}
+                  {{ 'product-1' | placeholder_svg_tag: 'size-full' }}
+                {%- endif -%}
+              </span>
+              <span class="flex min-w-0 flex-col gap-0.5">
+                {%- if settings.search_show_vendor and product.vendor != blank -%}
+                  <span class="type-xs text-muted">{{ product.vendor | escape }}</span>
+                {%- endif -%}
+                <span class="line-clamp-2 type-card">{{ product.title | escape }}</span>
+                {%- if settings.search_show_price -%}
+                  <span class="type-sm">{% render 'price', product: product, size: 'sm' %}</span>
+                {%- endif -%}
+              </span>
+            </a>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+
+      {%- if r.collections.size > 0 -%}
+        <div role="group" aria-labelledby="PredictiveSearch-collections" class="flex flex-col gap-1">
+          <p id="PredictiveSearch-collections" class="px-2 type-eyebrow text-muted">{{ 'general.search.collections' | t }}</p>
+          {%- for collection in r.collections -%}
+            <a href="{{ collection.url }}" id="PredictiveSearch-collection-{{ forloop.index }}" role="option" aria-selected="false" class="{{ option_class }}">{{ collection.title | escape }}</a>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+
+      {%- if r.pages.size > 0 -%}
+        <div role="group" aria-labelledby="PredictiveSearch-pages" class="flex flex-col gap-1">
+          <p id="PredictiveSearch-pages" class="px-2 type-eyebrow text-muted">{{ 'general.search.pages' | t }}</p>
+          {%- for page in r.pages -%}
+            <a href="{{ page.url }}" id="PredictiveSearch-page-{{ forloop.index }}" role="option" aria-selected="false" class="{{ option_class }}">{{ page.title | escape }}</a>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+
+      {%- if r.articles.size > 0 -%}
+        <div role="group" aria-labelledby="PredictiveSearch-articles" class="flex flex-col gap-1">
+          <p id="PredictiveSearch-articles" class="px-2 type-eyebrow text-muted">{{ 'general.search.articles' | t }}</p>
+          {%- for article in r.articles -%}
+            <a href="{{ article.url }}" id="PredictiveSearch-article-{{ forloop.index }}" role="option" aria-selected="false" class="{{ option_class }}">{{ article.title | escape }}</a>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+
+      <a
+        href="{{ routes.search_url }}?q={{ terms | url_encode }}&amp;options%5Bprefix%5D=last"
+        id="PredictiveSearch-all"
+        role="option"
+        aria-selected="false"
+        class="btn btn-secondary sticky bottom-0 w-full aria-selected:outline-2"
+      >
+        {{- 'general.search.view_all' | t: terms: terms -}}
+      </a>
+    {%- else -%}
+      <div class="flex flex-col gap-2 py-6 text-center">
+        <p class="type-h5">{{ status }}</p>
+        <p class="type-sm text-muted">{{ 'general.search.no_results_hint' | t }}</p>
+      </div>
+    {%- endif -%}
+  </div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.predictive_search.name",
+  "class": "section-predictive-search",
+  "settings": []
+}
+{% endschema %}

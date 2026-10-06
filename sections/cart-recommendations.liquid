@@ -1,0 +1,82 @@
+{% comment %}
+  @description Product recommendations inside the cart drawer: Shopify recommendations for the first cart item (related or complementary — Theme settings → Cart), skipping products already in the cart, as compact rows with image, title, price and a quick "Add" button for products with one variant (including a single named option such as one colour) ("Choose" links to the product otherwise). Loaded by the cart drawer when it opens; empty when there is nothing to recommend.
+  Use when: never add to templates — requested by the cart drawer through routes.product_recommendations_url.
+{% endcomment %}
+<aw-recommendations class="block min-h-px">
+  {%- if recommendations.performed and recommendations.products_count > 0 -%}
+    {%- liquid
+      assign in_cart = cart.items | map: 'product_id'
+      assign shown = 0
+      assign limit = settings.cart_recommendations_limit
+    -%}
+    {%- capture items -%}
+        {%- for product in recommendations.products -%}
+          {%- if in_cart contains product.id -%}
+            {%- continue -%}
+          {%- endif -%}
+          {%- if shown >= limit -%}
+            {%- break -%}
+          {%- endif -%}
+          {%- assign shown = shown | plus: 1 -%}
+          {%- liquid
+            assign single_variant = false
+            if product.has_only_default_variant or product.variants.size == 1
+              assign single_variant = true
+            endif
+          -%}
+          <li class="flex items-center gap-3 py-3">
+            <a href="{{ product.url }}" class="block size-16 shrink-0 overflow-hidden rounded-media bg-placeholder" tabindex="-1" aria-hidden="true">
+              {%- if product.featured_image -%}
+                {{ product.featured_image | image_url: width: 192 | image_tag: widths: '64, 128, 192', sizes: '64px', class: 'size-full object-contain', alt: '', loading: 'lazy' }}
+              {%- else -%}
+                {{ 'product-1' | placeholder_svg_tag: 'size-full' }}
+              {%- endif -%}
+            </a>
+            <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+              <a href="{{ product.url }}" class="line-clamp-2 type-sm font-medium no-underline hover:underline">{{ product.title | escape }}</a>
+              <span class="type-sm">{% render 'price', product: product, size: 'sm' %}</span>
+            </div>
+            {%- if single_variant and product.available -%}
+              <aw-product-form
+                class="shrink-0"
+                data-cart-add-url="{{ routes.cart_add_url }}"
+                data-cart-url="{{ routes.cart_url }}"
+                data-cart-type="{{ settings.cart_type }}"
+              >
+                {%- form 'product', product -%}
+                  <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
+                  <button type="submit" class="btn btn-secondary min-h-9 px-3 type-sm">
+                    {{- 'general.cart.quick_add' | t -}}
+                    <span class="sr-only">{{ product.title | escape }}</span>
+                  </button>
+                {%- endform -%}
+              </aw-product-form>
+            {%- elsif product.available -%}
+              <a href="{{ product.url }}" class="btn btn-secondary min-h-9 shrink-0 px-3 type-sm">
+                {{- 'general.cart.choose_options' | t -}}
+                <span class="sr-only">{{ product.title | escape }}</span>
+              </a>
+            {%- endif -%}
+          </li>
+        {%- endfor -%}
+    {%- endcapture -%}
+    {%- if shown > 0 -%}
+      <div class="flex flex-col gap-2 border-t border-border py-4">
+        {%- if settings.cart_recommendations_heading != blank -%}
+          <h3 class="type-h6">{{ settings.cart_recommendations_heading | escape }}</h3>
+        {%- endif -%}
+        <ul class="flex flex-col divide-y divide-border" role="list">
+          {{- items -}}
+        </ul>
+      </div>
+    {%- endif -%}
+  {%- endif -%}
+</aw-recommendations>
+
+{% schema %}
+{
+  "name": "t:sections.cart_recommendations.name",
+  "class": "section-cart-recommendations",
+  "settings": []
+}
+{% endschema %}

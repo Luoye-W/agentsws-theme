@@ -1,0 +1,93 @@
+{% doc %}
+  @description Up to three promo cards (image, heading, link) from one "Mega menu" block of the header section, shown beside the link columns of a desktop mega menu or below the links of a mobile sub-menu. Outputs nothing when the block has no image or heading.
+  Use when: only inside the header (header-nav snippet and the menu drawer).
+
+  @param {object} mega - A "mega_menu" block of the header section (from section.blocks)
+  @param {boolean} [mobile] - Compact two-column layout for the menu drawer
+  @param {boolean} [editor_attributes] - Output the block's editor attributes (only once per page)
+
+  @example
+  {% render 'header-mega-promos', mega: mega_block, editor_attributes: true %}
+{% enddoc %}
+{%- liquid
+  assign ms = mega.settings
+  assign promo_count = 0
+  for i in (1..3)
+    assign image_key = 'image_' | append: i
+    assign heading_key = 'heading_' | append: i
+    if ms[image_key] != blank or ms[heading_key] != blank
+      assign promo_count = promo_count | plus: 1
+    endif
+  endfor
+
+  case ms.promo_ratio
+    when 'square'
+      assign promo_ratio = '1 / 1'
+    when 'landscape'
+      assign promo_ratio = '4 / 3'
+    else
+      assign promo_ratio = '4 / 5'
+  endcase
+
+  if mobile
+    assign grid_class = 'grid grid-cols-2 gap-3'
+    assign image_sizes = '45vw'
+  else
+    case promo_count
+      when 1
+        assign grid_class = 'grid w-72 shrink-0 grid-cols-1 gap-5'
+      when 2
+        assign grid_class = 'grid w-[36rem] max-w-[45%] shrink-0 grid-cols-2 gap-5'
+      else
+        assign grid_class = 'grid w-[48rem] max-w-[55%] shrink-0 grid-cols-3 gap-5'
+    endcase
+    assign image_sizes = '(min-width: 1280px) 280px, 22vw'
+  endif
+-%}
+{%- if promo_count > 0 -%}
+  <ul
+    class="{{ grid_class }}"
+    role="list"
+    style="--promo-ratio: {{ promo_ratio }};"
+    {% if editor_attributes %}
+      {{ mega.shopify_attributes }}
+    {% endif %}
+  >
+    {%- for i in (1..3) -%}
+      {%- liquid
+        assign image_key = 'image_' | append: i
+        assign heading_key = 'heading_' | append: i
+        assign link_key = 'link_' | append: i
+        assign promo_image = ms[image_key]
+        assign promo_heading = ms[heading_key]
+        assign promo_link = ms[link_key]
+      -%}
+      {%- if promo_image != blank or promo_heading != blank -%}
+        <li class="group/promo relative flex flex-col gap-2">
+          <div class="aspect-(--promo-ratio) overflow-hidden rounded-media bg-placeholder">
+            {%- if promo_image != blank -%}
+              {{
+                promo_image
+                | image_url: width: 800
+                | image_tag: widths: '240, 360, 480, 640, 800', sizes: image_sizes, class: 'size-full object-cover transition duration-500 group-hover/promo:scale-[1.03]', alt: '', loading: 'lazy'
+              }}
+            {%- else -%}
+              {{ 'collection-1' | placeholder_svg_tag: 'size-full' }}
+            {%- endif -%}
+          </div>
+          {%- if promo_heading != blank -%}
+            <p class="type-sm font-semibold">
+              {%- if promo_link != blank -%}
+                <a href="{{ promo_link }}" class="no-underline after:absolute after:inset-0 hover:underline">{{ promo_heading | escape }}</a>
+              {%- else -%}
+                {{ promo_heading | escape }}
+              {%- endif -%}
+            </p>
+          {%- elsif promo_link != blank -%}
+            <a href="{{ promo_link }}" class="absolute inset-0" aria-label="{{ promo_image.alt | default: mega.settings.menu_item | escape }}"></a>
+          {%- endif -%}
+        </li>
+      {%- endif -%}
+    {%- endfor -%}
+  </ul>
+{%- endif -%}

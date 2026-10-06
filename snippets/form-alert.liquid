@@ -1,0 +1,40 @@
+{% doc %}
+  @description Message box above or below a form: success (check icon, announced politely), error (announced at once, lists the form's errors) or info. The message may contain HTML such as the list from the default_errors filter.
+  Use when: showing the result of a Shopify form (account, address, comment, newsletter, contact) after it was submitted.
+
+  @param {string} tone - success, error or info
+  @param {string} message - Text or HTML to show
+  @param {string} [id] - Element id, so fields can point to it with aria-describedby
+  @param {boolean} [focus] - Move keyboard focus to the message when the page loads (use for errors after a submit)
+
+  @example
+  {% render 'form-alert', tone: 'error', message: form_errors, id: 'LoginErrors', focus: true %}
+{% enddoc %}
+{%- liquid
+  case tone
+    when 'success'
+      assign tone_class = 'border-success text-success'
+      assign role = 'status'
+    when 'error'
+      assign tone_class = 'border-error text-error'
+      assign role = 'alert'
+    else
+      assign tone_class = 'border-border text-fg'
+      assign role = 'status'
+  endcase
+-%}
+<div
+  class="flex items-start gap-3 rounded-card border bg-bg p-4 type-sm {{ tone_class }}"
+  role="{{ role }}"
+  {% if id != blank %}
+    id="{{ id }}"
+  {% endif %}
+  {% if focus %}
+    tabindex="-1" autofocus
+  {% endif %}
+>
+  {%- if tone == 'success' -%}
+    {%- render 'icon', name: 'check', class: 'mt-0.5 size-5' -%}
+  {%- endif -%}
+  <div class="rte min-w-0 flex-1 [&_ul]:mt-1">{{ message }}</div>
+</div>

@@ -1,0 +1,143 @@
+{% doc %}
+  @description Lazy video player (<aw-video>, assets/c-video.js): shows only the cover image until the video is needed, then inserts a Shopify-hosted <video> or a privacy-friendly YouTube / Vimeo embed. Autoplay mode plays muted while in view (after page load, never on Save-Data / 2G / reduced motion) with an always-visible pause button; click mode starts the video with sound and native controls. Fills its parent: give it a size or aspect ratio through `class`.
+  Use when: any section or block that shows a video (video section, collage item). For a decorative looping background use the same snippet with autoplay: true.
+
+  @param {object} [video] - Shopify-hosted video (video setting); wins over video_url
+  @param {object} [video_url] - YouTube or Vimeo link (video_url setting)
+  @param {object} [cover] - Cover image; defaults to the hosted video's preview image
+  @param {boolean} [autoplay] - Background mode: muted, no native controls, plays while in view
+  @param {boolean} [loop] - Loop playback
+  @param {string} [description] - Accessible description of the video (screen readers, iframe title)
+  @param {string} [sizes] - sizes attribute for the cover image, default "100vw"
+  @param {boolean} [eager] - Load the cover eagerly with high priority (first section on the page)
+  @param {string} [class] - Classes for the root element (size / aspect ratio / radius)
+  @param {string} [button] - 'center' (default for click mode) or 'corner' (default for autoplay)
+
+  @example
+  {% render 'video-player', video: s.video, video_url: s.video_url, cover: s.cover_image, autoplay: s.autoplay, loop: s.loop, description: s.description, class: 'aspect-video w-full' %}
+{% enddoc %}
+{%- liquid
+  assign provider = blank
+  if video != blank
+    assign provider = 'hosted'
+  elsif video_url != blank
+    if video_url.type == 'youtube'
+      assign provider = 'youtube'
+    elsif video_url.type == 'vimeo'
+      assign provider = 'vimeo'
+    endif
+  endif
+
+  assign cover_image = cover
+  if cover_image == blank and video != blank
+    assign cover_image = video.preview_image
+  endif
+  assign cover_sizes = sizes | default: '100vw'
+  assign cover_loading = 'lazy'
+  assign cover_priority = 'auto'
+  if eager
+    assign cover_loading = 'eager'
+    assign cover_priority = 'high'
+  endif
+  assign cover_alt = cover_image.alt | default: description | escape
+
+  assign button_place = button
+  if button_place == blank
+    if autoplay
+      assign button_place = 'corner'
+    else
+      assign button_place = 'center'
+    endif
+  endif
+
+  assign video_label = description | default: video.alt | escape
+  if video_label == blank
+    assign video_label = 'sections.video.default_description' | t
+  endif
+-%}
+<aw-video
+  class="group/video relative block overflow-hidden bg-placeholder {{ class }}"
+  data-state="idle"
+  {% if provider != blank %}
+    data-provider="{{ provider }}"
+    data-description="{{ video_label }}"
+    data-label-play="{{ 'sections.video.play' | t: title: video_label }}"
+    data-label-pause="{{ 'sections.video.pause' | t: title: video_label }}"
+  {% endif %}
+  {% if autoplay %}
+    data-autoplay
+  {% endif %}
+  {% if loop %}
+    data-loop
+  {% endif %}
+>
+  <div data-ref="cover" class="absolute inset-0 transition-opacity duration-500 group-data-revealed/video:opacity-0">
+    {%- if cover_image != blank -%}
+      {{
+        cover_image
+        | image_url: width: 2400
+        | image_tag:
+          widths: '500, 750, 1000, 1500, 2000, 2400',
+          sizes: cover_sizes,
+          loading: cover_loading,
+          fetchpriority: cover_priority,
+          alt: cover_alt,
+          class: 'size-full object-cover'
+      }}
+    {%- else -%}
+      {{ 'lifestyle-2' | placeholder_svg_tag: 'size-full object-cover opacity-60' }}
+    {%- endif -%}
+  </div>
+
+  {%- if provider != blank -%}
+    <div
+      data-ref="stage"
+      class="absolute inset-0 opacity-0 transition-opacity duration-500 group-data-revealed/video:opacity-100 [&>iframe]:size-full [&>video]:size-full [&>video]:object-cover"
+    ></div>
+    <template data-ref="template">
+      {%- case provider -%}
+        {%- when 'hosted' -%}
+          {{ video | video_tag: image_size: '1600x', playsinline: true, preload: 'metadata' }}
+        {%- when 'youtube' -%}
+          <iframe
+            data-src="https://www.youtube-nocookie.com/embed/{{ video_url.id }}?rel=0&amp;playsinline=1&amp;enablejsapi=1&amp;modestbranding=1{% if loop %}&amp;loop=1&amp;playlist={{ video_url.id }}{% endif %}"
+            title="{{ video_label }}"
+            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+            allowfullscreen
+          ></iframe>
+        {%- when 'vimeo' -%}
+          <iframe
+            data-src="https://player.vimeo.com/video/{{ video_url.id }}?title=0&amp;byline=0&amp;portrait=0&amp;dnt=1{% if loop %}&amp;loop=1{% endif %}"
+            title="{{ video_label }}"
+            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+            allowfullscreen
+          ></iframe>
+      {%- endcase -%}
+    </template>
+
+    {%- if button_place == 'corner' -%}
+      <button
+        type="button"
+        data-ref="toggle"
+        class="absolute end-3 bottom-3 z-10 flex size-11 items-center justify-center rounded-full bg-bg/80 text-fg shadow-sm backdrop-blur-sm transition hover:bg-bg md:end-5 md:bottom-5"
+        aria-label="{{ 'sections.video.play' | t: title: video_label }}"
+      >
+        {%- render 'play-pause-icon', class: 'size-5' -%}
+      </button>
+    {%- else -%}
+      <button
+        type="button"
+        data-ref="toggle"
+        class="group/play absolute inset-0 z-10 flex cursor-pointer items-center justify-center focus-visible:-outline-offset-4"
+        aria-label="{{ 'sections.video.play' | t: title: video_label }}"
+      >
+        <span class="flex size-16 items-center justify-center rounded-full bg-bg/85 text-fg shadow-md backdrop-blur-sm transition group-hover/play:scale-105 md:size-20">
+          {%- render 'play-pause-icon', class: 'size-7' -%}
+        </span>
+      </button>
+    {%- endif -%}
+  {%- endif -%}
+</aw-video>
+{%- if provider != blank -%}
+  <script src="{{ 'c-video.js' | asset_url }}" type="module"></script>
+{%- endif -%}

@@ -1,0 +1,76 @@
+{% doc %}
+  @description Specification table read from a product metafield (multi-line text, one "Label: Value" per line — e.g. "Battery capacity: 250mAh"). Lines without a colon span the full row. Merchants edit specs per product in admin, no code needed.
+  Use when: technical specifications, dimensions, materials, "what's in the box". Often placed inside a collapsible row.
+
+  @example
+  {% content_for 'block', type: 'product-specs', id: 'specs' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  assign product = closest.product
+  assign namespace = s.namespace | default: 'custom'
+  assign key = s.key | default: 'specifications'
+  assign field = product.metafields[namespace][key]
+  assign raw = field.value | default: field
+  assign lines = raw | newline_to_br | split: '<br />'
+-%}
+<div class="flex flex-col gap-3" {{ block.shopify_attributes }}>
+  {%- if s.heading != blank -%}
+    <h2 class="type-h5">{{ s.heading | escape }}</h2>
+  {%- endif -%}
+  {%- if raw != blank -%}
+    <dl class="divide-y divide-border border-y border-border type-sm">
+      {%- for line in lines -%}
+        {%- assign text = line | strip -%}
+        {%- if text == blank -%}{%- continue -%}{%- endif -%}
+        {%- assign label = text -%}
+        {%- assign value = '' -%}
+        {%- if text contains ':' -%}
+          {%- assign label = text | split: ':' | first -%}
+          {%- assign value = text | remove_first: label | remove_first: ':' | strip -%}
+        {%- endif -%}
+        {%- if value != blank -%}
+          <div class="grid grid-cols-5 gap-4 py-2.5">
+            <dt class="col-span-2 text-muted">{{ label | strip | escape }}</dt>
+            <dd class="col-span-3">{{ value | escape }}</dd>
+          </div>
+        {%- else -%}
+          <div class="pt-4 pb-2">
+            <dt class="font-semibold">{{ label | strip | escape }}</dt>
+            <dd></dd>
+          </div>
+        {%- endif -%}
+      {%- endfor -%}
+    </dl>
+  {%- elsif request.design_mode -%}
+    <p class="type-sm text-muted">{{ 'blocks.product_specs.empty' | t: field: namespace, key: key }}</p>
+  {%- endif -%}
+</div>
+
+{% schema %}
+{
+  "name": "t:blocks.product_specs.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "t:blocks.product_specs.settings.heading.label"
+    },
+    {
+      "type": "text",
+      "id": "namespace",
+      "label": "t:blocks.product_specs.settings.namespace.label",
+      "default": "custom"
+    },
+    {
+      "type": "text",
+      "id": "key",
+      "label": "t:blocks.product_specs.settings.key.label",
+      "info": "t:blocks.product_specs.settings.key.info",
+      "default": "specifications"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.product_specs.name" }]
+}
+{% endschema %}

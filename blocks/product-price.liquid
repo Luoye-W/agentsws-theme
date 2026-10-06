@@ -1,0 +1,45 @@
+{% doc %}
+  @description Selected variant's price with compare-at price and unit price, plus the store's tax / shipping note. Updates when the variant changes.
+  Use when: product info column; any section that has a product.
+
+  @example
+  {% content_for 'block', type: 'product-price', id: 'price' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  assign product = closest.product
+  assign variant = product.selected_or_first_available_variant
+-%}
+<div class="flex flex-col gap-1" data-swap="price-{{ block.id }}" {{ block.shopify_attributes }}>
+  {%- if product -%}
+    {% render 'price', product: product, variant: variant, size: 'lg' %}
+  {%- endif -%}
+  {%- if s.show_tax_note -%}
+    <p class="type-xs text-muted">
+      {%- if cart.taxes_included -%}
+        {{ 'products.product.taxes_included' | t }}
+      {%- else -%}
+        {{ 'products.product.taxes_excluded' | t }}
+      {%- endif -%}
+      {%- if shop.shipping_policy.body != blank %}
+        <a href="{{ shop.shipping_policy.url }}" class="underline">{{ 'products.product.shipping_policy' | t }}</a>
+      {%- endif -%}
+    </p>
+  {%- endif -%}
+</div>
+
+{% schema %}
+{
+  "name": "t:blocks.product_price.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_tax_note",
+      "label": "t:blocks.product_price.settings.show_tax_note.label",
+      "default": true
+    }
+  ],
+  "presets": [{ "name": "t:blocks.product_price.name" }]
+}
+{% endschema %}

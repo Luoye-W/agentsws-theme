@@ -1,0 +1,209 @@
+{% doc %}
+  @description Heading whose italic words (the editor's I button, stored as <em>) get a highlight style: accent color, marker, underline, outline letters, a hand-drawn circle or a hand-drawn wavy underline ("squiggle"; both inline SVG in the accent color). Nothing is split into words, so Chinese and Japanese headings work too. The highlight draws in as it scrolls into view (CSS only) and is shown at once with reduced motion.
+  Use when: a section heading with a "heading_highlight" setting. To style headings rendered by child blocks (heading block inside a slide or banner), put data-heading-highlight="<style>" on the wrapper instead.
+
+  @param {string} text - Inline rich text (HTML from an inline_richtext setting)
+  @param {string} [style] - none (default), color, marker, underline, outline, circle or squiggle
+  @param {string} [tag] - Element to render, default "h2"
+  @param {string} [class] - Classes for the element (type preset, alignment…)
+  @param {string} [id] - Element id (for aria-labelledby)
+
+  @example
+  {% render 'highlight-text', text: section.settings.heading, style: section.settings.heading_highlight, class: 'type-h2' %}
+{% enddoc %}
+{%- liquid
+  assign highlight_tag = tag | default: 'h2'
+  assign highlight_style = style | default: 'none'
+  assign highlight_html = text
+  if highlight_style == 'circle'
+    capture circle_svg
+      echo '<svg class="highlight-text__circle" viewBox="0 0 200 60" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path pathLength="1" d="M170 11C135 1 42 2 15 19c-22 14 4 37 86 38 74 1 104-16 91-32-9-11-44-18-86-17"/></svg></em>'
+    endcapture
+    assign highlight_html = text | replace: '</em>', circle_svg
+  elsif highlight_style == 'squiggle'
+    capture squiggle_svg
+      echo '<svg class="highlight-text__squiggle" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M1 6.5C7 2 11 2 16 5.5S25 9.5 31 5.5 40 1.5 46 5s9 4.5 15 .5 10-3.5 15 0 9 4 15 .5 6-2.5 8-2"/></svg></em>'
+    endcapture
+    assign highlight_html = text | replace: '</em>', squiggle_svg
+  endif
+-%}
+{%- if text != blank -%}
+  <{{ highlight_tag }}
+    {% if id != blank %}
+      id="{{ id }}"
+    {% endif %}
+    class="highlight-text {{ class }}"
+    data-heading-highlight="{{ highlight_style }}"
+  >
+    {{- highlight_html -}}
+  </{{ highlight_tag }}>
+{%- endif -%}
+
+{% stylesheet %}
+  /* Only headings are styled: an h1–h6 inside a [data-heading-highlight] wrapper, or the element carrying it.
+     Italic words are the highlight markers; once a style is chosen they lose the slant. */
+  :is([data-heading-highlight='color'] :is(h1, h2, h3, h4, h5, h6), [data-heading-highlight='color']:is(h1, h2, h3, h4, h5, h6, p)) em,
+  :is([data-heading-highlight='marker'] :is(h1, h2, h3, h4, h5, h6), [data-heading-highlight='marker']:is(h1, h2, h3, h4, h5, h6, p)) em,
+  :is([data-heading-highlight='underline'] :is(h1, h2, h3, h4, h5, h6), [data-heading-highlight='underline']:is(h1, h2, h3, h4, h5, h6, p)) em,
+  :is([data-heading-highlight='outline'] :is(h1, h2, h3, h4, h5, h6), [data-heading-highlight='outline']:is(h1, h2, h3, h4, h5, h6, p)) em,
+  :is([data-heading-highlight='circle'] :is(h1, h2, h3, h4, h5, h6), [data-heading-highlight='circle']:is(h1, h2, h3, h4, h5, h6, p)) em,
+  :is([data-heading-highlight='squiggle'] :is(h1, h2, h3, h4, h5, h6), [data-heading-highlight='squiggle']:is(h1, h2, h3, h4, h5, h6, p)) em {
+    font-style: normal;
+  }
+  :is([data-heading-highlight='color'] :is(h1, h2, h3, h4, h5, h6), [data-heading-highlight='color']:is(h1, h2, h3, h4, h5, h6, p)) em {
+    color: var(--c-accent);
+  }
+  :is([data-heading-highlight='marker'] :is(h1, h2, h3, h4, h5, h6), [data-heading-highlight='marker']:is(h1, h2, h3, h4, h5, h6, p)) em {
+    padding-inline: 0.12em;
+    border-radius: 0.12em;
+    background-image: linear-gradient(var(--c-accent), var(--c-accent));
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    color: var(--c-on-accent);
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+  :is([data-heading-highlight='underline'] :is(h1, h2, h3, h4, h5, h6), [data-heading-highlight='underline']:is(h1, h2, h3, h4, h5, h6, p)) em {
+    --highlight-text-bar: 0.14em;
+    background-image: linear-gradient(var(--c-accent), var(--c-accent));
+    background-repeat: no-repeat;
+    background-position: 0 92%;
+    background-size: 100% 0.14em;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+  [dir='rtl'] :is([data-heading-highlight='marker'] :is(h1, h2, h3, h4, h5, h6), [data-heading-highlight='marker']:is(h1, h2, h3, h4, h5, h6, p)) em,
+  [dir='rtl'] :is([data-heading-highlight='underline'] :is(h1, h2, h3, h4, h5, h6), [data-heading-highlight='underline']:is(h1, h2, h3, h4, h5, h6, p)) em {
+    background-position-x: 100%;
+  }
+  :is([data-heading-highlight='outline'] :is(h1, h2, h3, h4, h5, h6), [data-heading-highlight='outline']:is(h1, h2, h3, h4, h5, h6, p)) em {
+    -webkit-text-stroke: max(1px, 0.025em) currentColor;
+    color: transparent;
+  }
+  @supports not (-webkit-text-stroke: 1px black) {
+    :is([data-heading-highlight='outline'] :is(h1, h2, h3, h4, h5, h6), [data-heading-highlight='outline']:is(h1, h2, h3, h4, h5, h6, p)) em {
+      color: inherit;
+    }
+  }
+  :is([data-heading-highlight='circle'] :is(h1, h2, h3, h4, h5, h6), [data-heading-highlight='circle']:is(h1, h2, h3, h4, h5, h6, p)) em {
+    position: relative;
+    display: inline-block;
+    padding-inline: 0.1em;
+  }
+  .highlight-text__circle {
+    position: absolute;
+    inset: -0.18em -0.22em;
+    width: calc(100% + 0.44em);
+    height: calc(100% + 0.36em);
+    overflow: visible;
+    pointer-events: none;
+    fill: none;
+    stroke: var(--c-accent);
+    stroke-width: 3px;
+    stroke-linecap: round;
+  }
+  [dir='rtl'] .highlight-text__circle {
+    transform: scaleX(-1);
+  }
+  /* Headings rendered by child blocks have no inline SVG: draw the same circle with a masked pseudo-element. */
+  :is([data-heading-highlight='circle'] :is(h1, h2, h3, h4, h5, h6), [data-heading-highlight='circle']:is(h1, h2, h3, h4, h5, h6, p)) em:not(:has(> .highlight-text__circle))::after {
+    content: '';
+    position: absolute;
+    inset: -0.18em -0.22em;
+    background-color: var(--c-accent);
+    pointer-events: none;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 60' preserveAspectRatio='none'%3E%3Cpath d='M170 11C135 1 42 2 15 19c-22 14 4 37 86 38 74 1 104-16 91-32-9-11-44-18-86-17' fill='none' stroke='black' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  }
+
+  /* Squiggle: a hand-drawn wavy line under the italic words. Inline SVG from this snippet; headings rendered by child
+     blocks get the same wave as a masked pseudo-element. The line keeps its thickness however wide the words are. */
+  :is([data-heading-highlight='squiggle'] :is(h1, h2, h3, h4, h5, h6), [data-heading-highlight='squiggle']:is(h1, h2, h3, h4, h5, h6, p)) em {
+    position: relative;
+    display: inline-block;
+  }
+  .highlight-text__squiggle {
+    position: absolute;
+    inset-inline: -0.04em;
+    bottom: -0.22em;
+    width: calc(100% + 0.08em);
+    height: 0.36em;
+    overflow: visible;
+    pointer-events: none;
+    fill: none;
+    stroke: var(--c-accent);
+    stroke-width: max(2px, 0.075em);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .highlight-text__squiggle path {
+    vector-effect: non-scaling-stroke;
+  }
+  :is([data-heading-highlight='squiggle'] :is(h1, h2, h3, h4, h5, h6), [data-heading-highlight='squiggle']:is(h1, h2, h3, h4, h5, h6, p)) em:not(:has(> .highlight-text__squiggle))::after {
+    content: '';
+    position: absolute;
+    inset-inline: -0.04em;
+    bottom: -0.22em;
+    height: 0.36em;
+    background-color: var(--c-accent);
+    pointer-events: none;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 10' preserveAspectRatio='none'%3E%3Cpath d='M1 6.5C7 2 11 2 16 5.5S25 9.5 31 5.5 40 1.5 46 5s9 4.5 15 .5 10-3.5 15 0 9 4 15 .5 6-2.5 8-2' fill='none' stroke='black' stroke-width='2.8' stroke-linecap='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  }
+
+  /* Draw-in as the heading scrolls into view. Without scroll-driven animations (or with reduced motion) the end state shows. */
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      :is([data-heading-highlight='marker'] :is(h1, h2, h3, h4, h5, h6), [data-heading-highlight='marker']:is(h1, h2, h3, h4, h5, h6, p)) em,
+      :is([data-heading-highlight='underline'] :is(h1, h2, h3, h4, h5, h6), [data-heading-highlight='underline']:is(h1, h2, h3, h4, h5, h6, p)) em {
+        animation: highlight-text-sweep linear both;
+        animation-timeline: view();
+        animation-range: entry 40% cover 35%;
+      }
+      .highlight-text__squiggle,
+      :is([data-heading-highlight='squiggle'] :is(h1, h2, h3, h4, h5, h6), [data-heading-highlight='squiggle']:is(h1, h2, h3, h4, h5, h6, p)) em::after {
+        animation: highlight-text-wipe linear both;
+        animation-timeline: view();
+        animation-range: entry 40% cover 40%;
+      }
+      .highlight-text__circle path {
+        stroke-dasharray: 1;
+        animation: highlight-text-draw linear both;
+        animation-timeline: view();
+        animation-range: entry 40% cover 40%;
+      }
+    }
+  }
+  @keyframes highlight-text-sweep {
+    from {
+      background-size: 0% var(--highlight-text-bar, 100%);
+    }
+  }
+  /* Wipe from the start edge (clip-path keeps the stroke width constant, unlike a dash on a stretched path). */
+  @keyframes highlight-text-wipe {
+    from {
+      clip-path: inset(-50% 100% -50% 0);
+    }
+    to {
+      clip-path: inset(-50% 0 -50% 0);
+    }
+  }
+  [dir='rtl'] .highlight-text__squiggle,
+  [dir='rtl'] [data-heading-highlight='squiggle'] em::after {
+    animation-name: highlight-text-wipe-rtl;
+  }
+  @keyframes highlight-text-wipe-rtl {
+    from {
+      clip-path: inset(-50% 0 -50% 100%);
+    }
+    to {
+      clip-path: inset(-50% 0 -50% 0);
+    }
+  }
+  @keyframes highlight-text-draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+{% endstylesheet %}

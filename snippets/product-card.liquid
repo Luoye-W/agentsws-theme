@@ -1,0 +1,239 @@
+{% doc %}
+  @description Product tile: image (second image on hover), badges (sale as percent / amount / text, sold out, automatic "New" for recently published products, labels from the custom.label metafield; "Sold out" can instead sit centred at the bottom of the image), an optional sale countdown pill (real end date from a product metafield, see snippets/card-countdown), vendor, title, rating, price, colour swatches (colour chips or variant pictures, up to a limit plus "+N"; each links to that colour's variant) and an optional quick add button (adds single-variant products at once, opens quick view for products with options). Optional per section: a row of spec icons from the product's custom.highlights metafield ("icon: text" lines, same format as the Product highlights block) and the review rating as a small chip on the image instead of the star row. The whole card is one link. Look is controlled by Theme settings → Product cards and Typography → Product cards.
+  Use when: any product grid or slider (collection, search, featured collection, recommendations).
+
+  @param {object} product - The product
+  @param {string} [sizes] - The image sizes attribute, default "(min-width: 990px) 25vw, 50vw"
+  @param {string} [heading_tag] - Tag for the title, default "h3"
+  @param {boolean} [eager] - Load the image eagerly (first row above the fold)
+  @param {boolean} [quick_add] - Show the quick add / quick view button (the section must load c-quick-add.js)
+  @param {boolean} [show_highlights] - Show up to highlights_limit spec icons from the custom.highlights metafield under the price
+  @param {number} [highlights_limit] - Maximum spec icons, default 3
+  @param {boolean} [rating_chip] - Show the rating as a chip ("★ 4.5") on the top end corner of the image instead of the star row (needs Theme settings → Product cards → Show rating)
+  @param {boolean} [fragment] - Render every optional part (spec icons, rating chip and star row) marked with data-card-highlights / data-card-rating-chip / data-card-rating so a script can remove what its section turned off (product-card-fragment)
+
+  @example
+  {% render 'product-card', product: product, sizes: '(min-width: 990px) 33vw, 50vw', quick_add: section.settings.card_quick_add %}
+{% enddoc %}
+{%- liquid
+  assign image_sizes = sizes | default: '(min-width: 990px) 25vw, 50vw'
+  assign title_tag = heading_tag | default: 'h3'
+  assign loading = 'lazy'
+  if eager
+    assign loading = 'eager'
+  endif
+
+  case settings.card_image_ratio
+    when 'portrait'
+      assign ratio = '4 / 5'
+    when 'landscape'
+      assign ratio = '4 / 3'
+    when 'natural'
+      assign ratio = product.featured_media.aspect_ratio | default: 1
+    else
+      assign ratio = '1 / 1'
+  endcase
+
+  if settings.card_image_fit == 'contain'
+    assign fit_class = 'size-full object-contain p-[8%]'
+  else
+    assign fit_class = 'size-full object-cover'
+  endif
+
+  if settings.card_style == 'card'
+    assign card_class = 'rounded-card border border-border bg-fg/[0.03] p-3'
+    assign media_class = 'rounded-media'
+  else
+    assign card_class = ''
+    assign media_class = 'rounded-media'
+  endif
+
+  if settings.card_text_align == 'center'
+    assign align_class = 'items-center text-center'
+  else
+    assign align_class = 'items-start text-start'
+  endif
+
+  case settings.card_title_lines
+    when 1
+      assign clamp_class = 'line-clamp-1'
+    when 2
+      assign clamp_class = 'line-clamp-2'
+    when 3
+      assign clamp_class = 'line-clamp-3'
+    else
+      assign clamp_class = ''
+  endcase
+
+  assign image_alt = product.featured_media.alt | default: product.title | escape
+  assign second_image = nil
+  if settings.card_show_second_image and product.media.size > 1
+    assign second_image = product.media[1]
+  endif
+
+  assign color_option = nil
+  if settings.card_show_swatches
+    for option in product.options_with_values
+      capture swatch_mode
+        render 'swatch-option', option: option
+      endcapture
+      if swatch_mode contains 'swatch'
+        assign color_option = option
+        break
+      endif
+    endfor
+  endif
+
+  assign rating = product.metafields.reviews.rating.value
+  assign rating_count = product.metafields.reviews.rating_count.value | default: 0
+  assign show_rating_chip = false
+  assign show_rating_row = false
+  if settings.card_show_rating and rating
+    if rating_chip or fragment
+      assign show_rating_chip = true
+    endif
+    if rating_chip != true or fragment
+      assign show_rating_row = true
+    endif
+  endif
+
+  assign highlights_html = ''
+  if show_highlights or fragment
+    assign max_highlights = highlights_limit | default: 3
+    capture highlights_html
+      render 'highlight-items', product: product, limit: max_highlights, item_class: 'flex min-w-0 items-center gap-1.5', icon_class: 'size-4 shrink-0'
+    endcapture
+  endif
+-%}
+<div class="group relative flex flex-col gap-3 {{ card_class }}">
+  <div class="relative overflow-hidden bg-placeholder {{ media_class }}" style="aspect-ratio: {{ ratio }};">
+    {%- if product.featured_media -%}
+      {{
+        product.featured_media
+        | image_url: width: 1200
+        | image_tag:
+          widths: '240, 360, 480, 640, 800, 1000, 1200',
+          sizes: image_sizes,
+          loading: loading,
+          class: fit_class,
+          alt: image_alt
+      }}
+      {%- if second_image -%}
+        {%- if settings.card_image_fit == 'contain' -%}
+          {%- assign second_class = 'absolute inset-0 size-full object-contain p-[8%] bg-placeholder opacity-0 transition duration-300 group-hover:opacity-100' -%}
+        {%- else -%}
+          {%- assign second_class = 'absolute inset-0 size-full object-cover opacity-0 transition duration-300 group-hover:opacity-100' -%}
+        {%- endif -%}
+        {{
+          second_image
+          | image_url: width: 1200
+          | image_tag:
+            widths: '240, 360, 480, 640, 800, 1000, 1200',
+            sizes: image_sizes,
+            loading: 'lazy',
+            class: second_class,
+            alt: ''
+        }}
+      {%- endif -%}
+    {%- else -%}
+      {{ 'product-1' | placeholder_svg_tag: 'size-full' }}
+    {%- endif -%}
+
+    {%- liquid
+      assign corner_sold_out = true
+      if settings.badge_sold_out_position == 'center'
+        assign corner_sold_out = false
+      endif
+    -%}
+    {%- capture badges -%}{% render 'badges', product: product, show_sold_out: corner_sold_out %}{%- endcapture -%}
+    {%- if badges != blank -%}
+      <div class="absolute top-3 start-3 flex flex-wrap gap-1 {% if show_rating_chip %}pe-18{% else %}pe-3{% endif %}">{{ badges }}</div>
+    {%- endif -%}
+    {%- if product.available == false -%}
+      {%- if settings.badge_sold_out and corner_sold_out == false -%}
+        <div class="pointer-events-none absolute inset-x-3 bottom-3 flex justify-center">
+          <span class="rounded-full bg-bg/85 px-3 py-1 type-xs font-semibold text-fg backdrop-blur-sm">{{ 'products.product.sold_out' | t }}</span>
+        </div>
+      {%- endif -%}
+    {%- elsif settings.card_countdown -%}
+      {%- comment -%} Leave room for the quick add button in the bottom end corner. {%- endcomment -%}
+      {%- if quick_add -%}
+        {% render 'card-countdown', product: product, class: 'absolute start-3 end-15 bottom-3 flex justify-center' %}
+      {%- else -%}
+        {% render 'card-countdown', product: product %}
+      {%- endif -%}
+    {%- endif -%}
+    {%- if show_rating_chip -%}
+      {% render 'rating-chip', rating: rating %}
+    {%- endif -%}
+    {%- if quick_add -%}
+      {% render 'quick-add', product: product, class: 'absolute bottom-3 end-3 z-10 transition pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-fine:group-focus-within:opacity-100' %}
+    {%- endif -%}
+  </div>
+
+  <div class="flex flex-col gap-1 {{ align_class }}">
+    {%- if settings.card_show_vendor and product.vendor != blank -%}
+      <p class="type-xs uppercase tracking-wider text-muted">{{ product.vendor | escape }}</p>
+    {%- endif -%}
+    <{{ title_tag }} class="type-card {{ clamp_class }}">
+      <a href="{{ product.url }}" class="no-underline after:absolute after:inset-0 focus-visible:outline-none after:focus-visible:outline-2 after:focus-visible:outline-offset-2 after:rounded-card">
+        {{- product.title | escape -}}
+      </a>
+    </{{ title_tag }}>
+    {%- if show_rating_row -%}
+      <div data-card-rating>{% render 'rating', rating: rating, count: rating_count %}</div>
+    {%- endif -%}
+    {% render 'price', product: product, size: 'sm' %}
+    {%- if color_option and color_option.values.size > 1 -%}
+      {%- liquid
+        assign swatch_limit = settings.card_swatch_limit
+        assign swatch_images = false
+        if settings.card_swatch_type == 'image'
+          assign swatch_images = true
+        endif
+        assign option_field = 'option' | append: color_option.position
+        assign more_count = color_option.values.size | minus: swatch_limit
+      -%}
+      <div class="relative z-[1] flex flex-wrap items-center gap-0.5 pt-1{% if settings.card_text_align == 'center' %} justify-center{% endif %}">
+        <span class="sr-only">{{ 'products.product.colors_available' | t: count: color_option.values.size }}</span>
+        {%- for value in color_option.values limit: swatch_limit -%}
+          {%- liquid
+            assign value_url = value.variant.url | default: value.product_url | default: product.url
+            assign value_image = nil
+            if swatch_images
+              assign value_image = value.variant.featured_image
+              if value_image == nil
+                for candidate in product.variants
+                  if candidate[option_field] == value.name and candidate.featured_image
+                    assign value_image = candidate.featured_image
+                    break
+                  endif
+                endfor
+              endif
+            endif
+          -%}
+          <a
+            href="{{ value_url }}"
+            class="flex rounded-swatch p-0.5 ring-1 ring-transparent transition hover:ring-border focus-visible:outline-2 focus-visible:outline-offset-1 motion-reduce:transition-none"
+            title="{{ value | escape }}"
+            aria-label="{{ product.title | escape }} – {{ value | escape }}"
+          >
+            {%- if value_image -%}
+              {% render 'swatch', value: value, image: value_image, class: 'size-6' %}
+            {%- else -%}
+              {% render 'swatch', value: value, class: 'size-5' %}
+            {%- endif -%}
+          </a>
+        {%- endfor -%}
+        {%- if more_count > 0 -%}
+          <a href="{{ product.url }}" class="ms-1 type-xs text-muted no-underline hover:text-fg" tabindex="-1" aria-hidden="true">+{{ more_count }}</a>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+    {%- if highlights_html != blank -%}
+      <ul class="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 type-xs text-muted{% if settings.card_text_align == 'center' %} justify-center{% endif %}" role="list" data-card-highlights>
+        {{ highlights_html }}
+      </ul>
+    {%- endif -%}
+  </div>
+</div>

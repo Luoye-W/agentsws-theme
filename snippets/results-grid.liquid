@@ -1,0 +1,247 @@
+{% doc %}
+  @description Toolbar (filter button, result count or subcollection links, grid density switch, sort), active filter chips, product grid with optional promo tiles, and pagination (page numbers, a "Load more" button, or infinite scroll with a real link as fallback) for collection and search pages. The part that <aw-facets> re-renders.
+  Use when: inside main-collection and main-search, within a {% paginate %} tag.
+
+  @param {object} results - The collection or search object
+  @param {object} products - The products to show (collection.products or search.results)
+  @param {object} paginate - The paginate object
+  @param {string} section_id - Id of the section (for drawer and form ids)
+  @param {number} count - Total number of results
+  @param {string} [count_text] - Text for the result count instead of "N products" (e.g. "N results" when search mixes posts and pages)
+  @param {string} [columns_class] - Grid column classes
+  @param {boolean} [show_filters] - Whether filters are enabled
+  @param {string} [filter_layout] - 'sidebar' (default), 'drawer' or 'horizontal': drawer shows the filter button on every screen size, the others only below 990px
+  @param {string} [clear_url] - URL that removes all filters
+  @param {string} [sort_by] - Current sort order
+  @param {boolean} [show_sort] - Show the sort dropdown
+  @param {boolean} [quick_add] - Show quick add buttons on product cards (the section loads c-quick-add.js)
+  @param {boolean} [show_highlights] - Show the spec icons row (custom.highlights metafield) on product cards
+  @param {boolean} [rating_chip] - Show the review rating as a chip on the card image
+  @param {string} [card_sizes] - sizes attribute for product card images
+  @param {object} [blocks] - The section's blocks; blocks of type "promo" become promo tiles (see snippets/promo-tile)
+  @param {boolean} [show_promos] - Render promo tiles (the section decides: first page, filters)
+  @param {string} [pagination_style] - 'numbers' (default), 'load_more' or 'infinite' (the section loads c-load-more.js)
+  @param {string} [toolbar_nav] - Rendered HTML (e.g. subcollection links) shown in the toolbar instead of the visible result count
+  @param {boolean} [density_toggle] - Show the desktop column switch (the section loads c-grid-density.js)
+  @param {string} [density_options] - Comma-separated column counts for the switch, e.g. "2,3,4"
+  @param {number} [density_default] - Column count used when the shopper has not chosen one
+  @param {string} [density_key] - Storage key for the shopper's choice (shared by pages of the same kind)
+  @param {boolean} [empty_collection] - The collection has no products at all (shows "continue shopping" instead of "no matches")
+
+  @example
+  {% render 'results-grid', results: collection, products: collection.products, paginate: paginate, section_id: section.id, count: collection.products_count %}
+{% enddoc %}
+{%- liquid
+  assign active_count = 0
+  for filter in results.filters
+    if filter.type == 'price_range'
+      if filter.min_value.value or filter.max_value.value
+        assign active_count = active_count | plus: 1
+      endif
+    else
+      assign active_count = active_count | plus: filter.active_values.size
+    endif
+  endfor
+  assign grid_class = columns_class | default: 'grid-cols-2 lg:grid-cols-4'
+  assign layout = filter_layout | default: 'sidebar'
+  assign paging = pagination_style | default: 'numbers'
+
+  assign filter_button_class = 'lg:hidden'
+  if layout == 'drawer'
+    assign filter_button_class = ''
+  endif
+
+  assign promo_count = 0
+  if show_promos
+    for block in blocks
+      if block.type == 'promo'
+        assign promo_count = promo_count | plus: 1
+      endif
+    endfor
+  endif
+
+  assign shown = paginate.current_offset | plus: products.size
+-%}
+<div class="flex flex-col gap-6" data-swap="results-{{ section_id }}">
+  <div class="flex flex-wrap items-center gap-x-6 gap-y-3 border-b border-border pb-4">
+      {%- if show_filters and results.filters.size > 0 -%}
+        <button type="button" class="btn btn-secondary min-h-10 shrink-0 px-4 {{ filter_button_class }}" data-drawer-open="FacetsDrawer-{{ section_id }}" aria-controls="FacetsDrawer-{{ section_id }}" aria-expanded="false">
+          {%- render 'icon', name: 'filter', class: 'size-4' -%}
+          {%- if layout == 'drawer' -%}
+            <span class="max-lg:hidden">{{ 'collections.filters.show' | t }}</span>
+            <span class="lg:hidden">{{ 'collections.filters.title' | t }}</span>
+          {%- else -%}
+            {{- 'collections.filters.title' | t -}}
+          {%- endif -%}
+          {%- if active_count > 0 -%}
+            <span class="flex size-5 items-center justify-center rounded-full bg-primary text-xs text-on-primary">
+              {{- active_count -}}
+              <span class="sr-only">{{ 'collections.filters.active' | t }}</span>
+            </span>
+          {%- endif -%}
+        </button>
+      {%- endif -%}
+      {%- if toolbar_nav != blank -%}
+        <div class="order-first w-full min-w-0 md:order-none md:w-auto md:flex-1">{{ toolbar_nav }}</div>
+        <p class="sr-only" data-results-count>{%- if count_text != blank -%}{{ count_text }}{%- else -%}{{ 'collections.product_count' | t: count: count }}{%- endif -%}</p>
+      {%- else -%}
+        <p class="type-sm text-muted" data-results-count>{%- if count_text != blank -%}{{ count_text }}{%- else -%}{{ 'collections.product_count' | t: count: count }}{%- endif -%}</p>
+      {%- endif -%}
+    {%- if density_toggle or show_sort -%}
+      <div class="ms-auto flex items-center gap-4">
+        {%- if density_toggle and products.size > 0 -%}
+          {%- assign density_list = density_options | default: '2,3,4' | split: ',' -%}
+          <aw-grid-density
+            class="hidden items-center gap-1 lg:flex"
+            role="group"
+            aria-label="{{ 'collections.density.label' | t }}"
+            data-key="{{ density_key | default: 'collection' }}"
+            data-default="{{ density_default }}"
+          >
+            {%- for option in density_list -%}
+              {%- liquid
+                assign n = option | plus: 0
+                assign gaps = n | minus: 1 | times: 2
+                assign bar = 20 | minus: gaps | times: 1.0 | divided_by: n
+              -%}
+              <button
+                type="button"
+                class="flex size-9 items-center justify-center rounded-btn text-fg/40 hover:text-fg aria-pressed:bg-fg/5 aria-pressed:text-fg"
+                data-cols="{{ n }}"
+                aria-pressed="{% if n == density_default %}true{% else %}false{% endif %}"
+                aria-label="{{ 'collections.density.columns' | t: count: n }}"
+              >
+                <svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
+                  {%- for i in (1..n) -%}
+                    {%- assign x = forloop.index0 | times: 2 | plus: 0 -%}
+                    {%- assign x = bar | times: forloop.index0 | plus: x -%}
+                    <rect x="{{ x }}" y="2" width="{{ bar }}" height="16" rx="1"/>
+                  {%- endfor -%}
+                </svg>
+              </button>
+            {%- endfor -%}
+          </aw-grid-density>
+        {%- endif -%}
+        {%- if show_sort -%}
+          <div class="flex items-center gap-2">
+            <label for="Sort-{{ section_id }}" class="type-sm text-muted max-md:sr-only">{{ 'collections.sort.label' | t }}</label>
+            <div class="relative">
+              <select id="Sort-{{ section_id }}" name="sort_by" data-sort class="h-10 appearance-none rounded-input border border-border bg-bg ps-3 pe-9 type-sm">
+                {%- for option in results.sort_options -%}
+                  <option value="{{ option.value | escape }}" {% if option.value == sort_by %}selected{% endif %}>{{ option.name | escape }}</option>
+                {%- endfor -%}
+              </select>
+              {%- render 'icon', name: 'chevron-down', class: 'pointer-events-none absolute top-1/2 end-2.5 size-4 -translate-y-1/2' -%}
+            </div>
+          </div>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+  </div>
+
+  {%- if active_count > 0 -%}
+    <ul class="flex flex-wrap items-center gap-2" role="list" aria-label="{{ 'collections.filters.active' | t }}">
+      {%- for filter in results.filters -%}
+        {%- if filter.type == 'price_range' -%}
+          {%- if filter.min_value.value or filter.max_value.value -%}
+            <li>
+              <a href="{{ filter.url_to_remove }}" data-facet-link class="flex items-center gap-1 rounded-full border border-border px-3 py-1 type-sm no-underline hover:border-fg">
+                {{- filter.min_value.value | default: 0 | money }}–{{ filter.max_value.value | default: filter.range_max | money -}}
+                {%- render 'icon', name: 'close', class: 'size-3.5' -%}
+                <span class="sr-only">{{ 'collections.filters.remove' | t }}</span>
+              </a>
+            </li>
+          {%- endif -%}
+        {%- else -%}
+          {%- for value in filter.active_values -%}
+            <li>
+              <a href="{{ value.url_to_remove }}" data-facet-link class="flex items-center gap-1 rounded-full border border-border px-3 py-1 type-sm no-underline hover:border-fg">
+                {{- value.label | escape -}}
+                {%- render 'icon', name: 'close', class: 'size-3.5' -%}
+                <span class="sr-only">{{ 'collections.filters.remove' | t }}</span>
+              </a>
+            </li>
+          {%- endfor -%}
+        {%- endif -%}
+      {%- endfor -%}
+      <li><a href="{{ clear_url }}" data-facet-link class="type-sm underline">{{ 'collections.filters.clear_all' | t }}</a></li>
+    </ul>
+  {%- endif -%}
+
+  {%- if products.size > 0 -%}
+    <ul class="grid grid-flow-row-dense {{ grid_class }} grid-gap" role="list" data-results-list>
+      {%- for product in products -%}
+        {%- assign product_index = forloop.index -%}
+        {%- if promo_count > 0 -%}
+          {%- for block in blocks -%}
+            {%- if block.type == 'promo' and block.settings.position == product_index -%}
+              {% render 'promo-tile', block: block %}
+            {%- endif -%}
+          {%- endfor -%}
+        {%- endif -%}
+        <li>
+          {%- liquid
+            assign eager = false
+            if forloop.index <= 4 and paginate.current_page == 1
+              assign eager = true
+            endif
+          -%}
+          {%- if product.object_type == 'product' or product.object_type == blank -%}
+            {% render 'product-card', product: product, eager: eager, quick_add: quick_add, sizes: card_sizes, show_highlights: show_highlights, rating_chip: rating_chip %}
+          {%- elsif product.object_type == 'article' and product.image -%}
+            {%- liquid
+              assign article_handle = '/' | append: product.handle
+              assign article_blog_url = product.url | remove_last: article_handle
+            -%}
+            {% render 'article-card',
+              article: product,
+              blog_url: article_blog_url,
+              ratio: 'square',
+              show_tags: true,
+              tags_on_image: true,
+              meta_icons: true,
+              show_date: true,
+              heading_tag: 'h3',
+              sizes: card_sizes
+            %}
+          {%- else -%}
+            <a href="{{ product.url }}" class="flex h-full flex-col gap-2 rounded-card border border-border p-5 no-underline hover:border-fg">
+              <span class="type-eyebrow text-muted">{{ product.object_type }}</span>
+              <span class="type-h6">{{ product.title | escape }}</span>
+            </a>
+          {%- endif -%}
+        </li>
+      {%- endfor -%}
+      {%- if promo_count > 0 and paginate.next == blank -%}
+        {%- for block in blocks -%}
+          {%- if block.type == 'promo' and block.settings.position > products.size -%}
+            {% render 'promo-tile', block: block %}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endif -%}
+    </ul>
+    {%- if paging == 'numbers' -%}
+      {% render 'pagination', paginate: paginate %}
+    {%- elsif paginate.next -%}
+      <aw-load-more class="flex flex-col items-center gap-3" data-section="{{ section_id }}" {% if paging == 'infinite' %}data-infinite{% endif %}>
+        <p class="type-sm text-muted" data-ref="progress">{{ 'collections.load_more.progress' | t: shown: shown, total: count }}</p>
+        <a href="{{ paginate.next.url }}" class="btn btn-secondary min-w-48" data-ref="button" data-loading-label="{{ 'collections.load_more.loading' | t | escape }}">
+          {{- 'collections.load_more.label' | t -}}
+        </a>
+      </aw-load-more>
+    {%- endif -%}
+  {%- elsif empty_collection -%}
+    <div class="flex flex-col items-start gap-4 py-12">
+      <p class="type-h5">{{ 'collections.empty_collection' | t }}</p>
+      <a href="{{ routes.all_products_collection_url }}" class="btn btn-primary">{{ 'general.continue_shopping' | t }}</a>
+    </div>
+  {%- else -%}
+    <div class="flex flex-col items-start gap-3 py-12">
+      <p class="type-h5">{{ 'collections.empty' | t }}</p>
+      {%- if active_count > 0 -%}
+        <p class="text-muted">{{ 'collections.filters.empty_hint' | t }}</p>
+        <a href="{{ clear_url }}" data-facet-link class="btn btn-secondary">{{ 'collections.filters.clear_all' | t }}</a>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+</div>

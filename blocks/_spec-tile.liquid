@@ -1,0 +1,77 @@
+{% doc %}
+  @description One spec tile inside "Spec highlight tiles": an icon, a value ("38h") and a short label ("Battery life"). Follows the parent's tile style (bordered, filled or plain). Hidden when value and label are both empty.
+  Use when: child of the product-spec-tiles block (blocks source).
+
+  @example
+  {% content_for 'block', type: '_spec-tile', id: 'tile-1' %}
+{% enddoc %}
+{%- assign s = block.settings -%}
+{%- if s.value != blank or s.label != blank -%}
+  <li
+    class="flex items-center gap-3 rounded-card border border-border px-4 py-3 in-data-[tile-style=filled]:border-transparent in-data-[tile-style=filled]:bg-fg/5 in-data-[tile-style=plain]:border-transparent in-data-[tile-style=plain]:ps-0"
+    {{ block.shopify_attributes }}
+  >
+    {%- if s.icon != 'none' -%}
+      {%- render 'icon', name: s.icon, class: 'size-(--tile-icon) text-muted' -%}
+    {%- endif -%}
+    <span class="flex min-w-0 flex-col">
+      {%- if s.value != blank -%}
+        <span class="type-sm font-semibold">{{ s.value | escape }}</span>
+      {%- endif -%}
+      {%- if s.label != blank -%}
+        <span class="type-xs text-muted">{{ s.label | escape }}</span>
+      {%- endif -%}
+    </span>
+  </li>
+{%- elsif request.design_mode -%}
+  <li class="type-xs text-muted" {{ block.shopify_attributes }}>{{ 'blocks.product_spec_tiles.empty_tile' | t }}</li>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:blocks.spec_tile.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "select",
+      "id": "icon",
+      "label": "t:blocks.feature.settings.icon.label",
+      "options": [
+        { "value": "none", "label": "t:blocks.product_icon_item.settings.icon.options.none" },
+        { "value": "battery", "label": "t:blocks.feature.settings.icon.options.battery" },
+        { "value": "bluetooth", "label": "t:blocks.feature.settings.icon.options.bluetooth" },
+        { "value": "bolt", "label": "t:blocks.feature.settings.icon.options.bolt" },
+        { "value": "headphones", "label": "t:blocks.feature.settings.icon.options.headphones" },
+        { "value": "speaker", "label": "t:blocks.feature.settings.icon.options.speaker" },
+        { "value": "mic", "label": "t:blocks.spec_tile.settings.icon.options.mic" },
+        { "value": "waves", "label": "t:blocks.spec_tile.settings.icon.options.waves" },
+        { "value": "weight", "label": "t:blocks.spec_tile.settings.icon.options.weight" },
+        { "value": "plug", "label": "t:blocks.spec_tile.settings.icon.options.plug" },
+        { "value": "ruler", "label": "t:blocks.product_icon_item.settings.icon.options.ruler" },
+        { "value": "clock", "label": "t:blocks.product_icon_item.settings.icon.options.clock" },
+        { "value": "water", "label": "t:blocks.feature.settings.icon.options.water" },
+        { "value": "shield", "label": "t:blocks.feature.settings.icon.options.shield" },
+        { "value": "leaf", "label": "t:blocks.product_icon_item.settings.icon.options.leaf" },
+        { "value": "star", "label": "t:blocks.feature.settings.icon.options.star" },
+        { "value": "globe", "label": "t:blocks.feature.settings.icon.options.globe" },
+        { "value": "check", "label": "t:blocks.feature.settings.icon.options.check" }
+      ],
+      "default": "check"
+    },
+    {
+      "type": "text",
+      "id": "value",
+      "label": "t:blocks.spec_tile.settings.value.label",
+      "info": "t:blocks.spec_tile.settings.value.info",
+      "default": "Value"
+    },
+    {
+      "type": "text",
+      "id": "label",
+      "label": "t:blocks.spec_tile.settings.label.label",
+      "default": "Add a key number"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.spec_tile.name" }]
+}
+{% endschema %}

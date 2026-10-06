@@ -1,0 +1,174 @@
+{% comment %}
+  @description Customer login (classic accounts): email and password, "Forgot your password?" view on the same page (works without JavaScript; focus moves to the new heading), success message after a reset email is sent, errors next to the fields, optional "Sign in with Shop" button and "Continue as guest" when checkout allows it.
+  Use when: templates/customers/login.json only.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign initial_view = 'login'
+  assign recover_success = false
+-%}
+{%- capture recover_view -%}
+  <div id="recover" class="flex flex-col gap-6" data-view-panel="recover">
+    <div class="flex flex-col gap-2 text-center">
+      <h2 class="type-h2" tabindex="-1" data-ref="recover-heading">{{ 'customer.recover.title' | t }}</h2>
+      <p class="text-muted">{{ 'customer.recover.subtext' | t }}</p>
+    </div>
+    {%- form 'recover_customer_password', class: 'flex flex-col gap-4' -%}
+      {%- if form.posted_successfully? -%}
+        {%- assign recover_success = true -%}
+      {%- endif -%}
+      {%- if form.errors -%}
+        {%- assign initial_view = 'recover' -%}
+        {%- assign recover_errors = form.errors | default_errors -%}
+        {% render 'form-alert', tone: 'error', message: recover_errors, focus: true %}
+      {%- endif -%}
+      {%- assign email_label = 'customer.fields.email' | t -%}
+      {%- assign email_error = form.errors.messages.email -%}
+      {% render 'account-field',
+        type: 'email',
+        name: 'email',
+        id: 'RecoverEmail',
+        label: email_label,
+        autocomplete: 'email',
+        required: true,
+        error: email_error
+      %}
+      <button type="submit" class="btn btn-primary w-full">{{ 'customer.recover.submit' | t }}</button>
+      <a href="{{ routes.account_login_url }}" class="btn btn-link self-center" data-view-link="login">{{ 'customer.recover.cancel' | t }}</a>
+    {%- endform -%}
+  </div>
+{%- endcapture -%}
+<aw-account-login
+  class="block surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+  data-view="{{ initial_view }}"
+>
+  <div class="page-width">
+    <div class="mx-auto flex w-full max-w-md flex-col gap-10">
+      <div id="login" class="flex flex-col gap-6" data-view-panel="login">
+        <h1 class="type-h1 text-center" tabindex="-1" data-ref="login-heading">{{ 'customer.login.title' | t }}</h1>
+        {%- if recover_success -%}
+          {%- assign recover_message = 'customer.recover.success' | t -%}
+          {% render 'form-alert', tone: 'success', message: recover_message, focus: true %}
+        {%- endif -%}
+        {%- if s.enable_shop_login -%}
+          <div class="flex flex-col items-center gap-4">
+            {{ shop | login_button }}
+            <p class="flex w-full items-center gap-3 type-sm text-muted before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border">{{ 'customer.login.or' | t }}</p>
+          </div>
+        {%- endif -%}
+        {%- form 'customer_login', class: 'flex flex-col gap-4' -%}
+          {%- if form.errors -%}
+            {%- assign login_errors = form.errors | default_errors -%}
+            {% render 'form-alert', tone: 'error', message: login_errors, id: 'LoginErrors', focus: true %}
+          {%- endif -%}
+          {%- assign email_label = 'customer.fields.email' | t -%}
+          {%- assign login_invalid = false -%}
+          {%- if form.errors -%}
+            {%- assign login_invalid = true -%}
+          {%- endif -%}
+          {% render 'account-field',
+            type: 'email',
+            name: 'customer[email]',
+            id: 'LoginEmail',
+            label: email_label,
+            autocomplete: 'email',
+            required: true,
+            invalid: login_invalid,
+            describedby: 'LoginErrors'
+          %}
+          {%- if form.password_needed -%}
+            {%- assign password_label = 'customer.fields.password' | t -%}
+            {% render 'account-field',
+              type: 'password',
+              name: 'customer[password]',
+              id: 'LoginPassword',
+              label: password_label,
+              autocomplete: 'current-password',
+              required: true,
+              invalid: login_invalid,
+              describedby: 'LoginErrors'
+            %}
+            <a href="#recover" class="self-start type-sm underline" data-view-link="recover">{{ 'customer.login.forgot_password' | t }}</a>
+          {%- endif -%}
+          <div class="mt-2 grid gap-3 md:grid-cols-2">
+            <button type="submit" class="btn btn-primary">{{ 'customer.login.submit' | t }}</button>
+            <a href="{{ routes.account_register_url }}" class="btn btn-secondary">{{ 'customer.login.create_account' | t }}</a>
+          </div>
+        {%- endform -%}
+      </div>
+
+      {{ recover_view }}
+
+      {%- if shop.checkout.guest_login -%}
+        <div class="flex flex-col gap-4 border-t border-border pt-8 text-center">
+          <h2 class="type-h5">{{ 'customer.login.guest_title' | t }}</h2>
+          {%- form 'guest_login' -%}
+            <button type="submit" class="btn btn-secondary w-full">{{ 'customer.login.guest_continue' | t }}</button>
+          {%- endform -%}
+        </div>
+      {%- endif -%}
+
+      <a href="{{ routes.root_url }}" class="self-center type-sm underline">{{ 'customer.return_to_store' | t }}</a>
+    </div>
+  </div>
+</aw-account-login>
+<script src="{{ 'c-account-login.js' | asset_url }}" type="module"></script>
+
+{% stylesheet %}
+  .section-main-login [data-view='login'] [data-view-panel='recover']:not(:target),
+  .section-main-login [data-view='login']:has(#recover:target) [data-view-panel='login'],
+  .section-main-login [data-view='recover'] [data-view-panel='login'] {
+    display: none;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.main_login.name",
+  "tag": "section",
+  "class": "section-main-login",
+  "enabled_on": {
+    "templates": ["customers/login"]
+  },
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "enable_shop_login",
+      "label": "t:sections.main_login.settings.enable_shop_login.label",
+      "info": "t:sections.main_login.settings.enable_shop_login.info",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 80
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,379 @@
+{% comment %}
+  @description Two to six columns, each with an image or an icon (built-in set or uploaded SVG/PNG), a heading, text and an optional link. Plain, bordered-card or filled-card look; icons above or beside the text; on mobile a swipeable row with previous/next buttons or a stacked grid. Optional heading group with eyebrow, description and button.
+  Use when: selling points, store promises (shipping, returns, warranty), spec strips ("150 cm", "IPX7"), how-it-works steps, comparisons, "shop by" entry points with images. Column text and images can be connected to product or page metafields (dynamic sources) so the same facts are maintained in one place.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign heading_id = 'MulticolumnHeading-' | append: section.id
+
+  case s.columns
+    when 2
+      assign cols_class = 'md:grid-cols-2'
+    when 4
+      assign cols_class = 'md:grid-cols-2 lg:grid-cols-4'
+    when 5
+      assign cols_class = 'md:grid-cols-3 lg:grid-cols-5'
+    when 6
+      assign cols_class = 'md:grid-cols-3 lg:grid-cols-6'
+    else
+      assign cols_class = 'md:grid-cols-3'
+  endcase
+
+  if s.mobile_layout == 'slider'
+    assign list_class = 'flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] -mx-(--s-gutter) px-(--s-gutter) scroll-px-(--s-gutter) md:mx-0 md:grid md:overflow-visible md:px-0'
+    if s.columns_mobile == '2'
+      assign slide_width = '46%'
+    else
+      assign slide_width = '82%'
+    endif
+  else
+    assign slide_width = '100%'
+    if s.columns_mobile == '2'
+      assign list_class = 'grid grid-cols-2'
+    else
+      assign list_class = 'grid grid-cols-1'
+    endif
+  endif
+
+  if s.card_style == 'plain'
+    assign gap_class = 'gap-x-5 gap-y-10 md:gap-x-8'
+  else
+    assign gap_class = 'gap-4 md:gap-6'
+  endif
+-%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1)); --icon-size: {{ s.icon_size }}px; --slide-w: {{ slide_width }};"
+  data-card="{{ s.card_style }}"
+  data-align="{{ s.text_alignment }}"
+  data-icon="{{ s.icon_position }}"
+  data-mobile="{{ s.mobile_layout }}"
+>
+  <div class="page-width flex flex-col gap-8 md:gap-10">
+    {%- render 'section-heading',
+      eyebrow: s.eyebrow,
+      heading: s.heading,
+      text: s.description,
+      alignment: s.heading_alignment,
+      link_label: s.link_label,
+      link: s.link,
+      heading_id: heading_id
+    -%}
+    <aw-slider class="flex flex-col gap-4">
+      <ul
+        class="{{ list_class }} {{ cols_class }} {{ gap_class }}"
+        role="list"
+        data-ref="track"
+        {% if s.heading != blank %}
+          aria-labelledby="{{ heading_id }}"
+        {% endif %}
+      >
+        {% content_for 'blocks' %}
+      </ul>
+      {%- if s.mobile_layout == 'slider' -%}
+        {%- render 'slider-buttons', class: 'justify-end md:hidden' -%}
+      {%- endif -%}
+    </aw-slider>
+  </div>
+</div>
+{%- if s.mobile_layout == 'slider' -%}
+  <script src="{{ 'c-slider.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.multicolumn.name",
+  "tag": "section",
+  "class": "section-multicolumn",
+  "disabled_on": {
+    "groups": ["header"]
+  },
+  "blocks": [
+    {
+      "type": "_column"
+    }
+  ],
+  "max_blocks": 12,
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:shared.section_heading.header"
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:shared.section_heading.eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:shared.section_heading.heading",
+      "default": "Why shop with us"
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "t:shared.section_heading.description"
+    },
+    {
+      "type": "select",
+      "id": "heading_alignment",
+      "label": "t:shared.section_heading.alignment",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "text",
+      "id": "link_label",
+      "label": "t:shared.section_heading.link_label"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "t:shared.section_heading.link",
+      "visible_if": "{{ section.settings.link_label != blank }}"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.layout"
+    },
+    {
+      "type": "range",
+      "id": "columns",
+      "label": "t:shared.columns_desktop",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "default": 3
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "label": "t:shared.columns_mobile.label",
+      "options": [
+        {
+          "value": "1",
+          "label": "t:shared.columns_mobile.options.one"
+        },
+        {
+          "value": "2",
+          "label": "t:shared.columns_mobile.options.two"
+        }
+      ],
+      "default": "1"
+    },
+    {
+      "type": "select",
+      "id": "mobile_layout",
+      "label": "t:shared.mobile_layout.label",
+      "options": [
+        {
+          "value": "slider",
+          "label": "t:shared.mobile_layout.options.slider"
+        },
+        {
+          "value": "stack",
+          "label": "t:shared.mobile_layout.options.stack"
+        }
+      ],
+      "default": "slider"
+    },
+    {
+      "type": "select",
+      "id": "card_style",
+      "label": "t:shared.card_style.label",
+      "options": [
+        {
+          "value": "plain",
+          "label": "t:shared.card_style.options.plain"
+        },
+        {
+          "value": "bordered",
+          "label": "t:shared.card_style.options.bordered"
+        },
+        {
+          "value": "filled",
+          "label": "t:shared.card_style.options.filled"
+        }
+      ],
+      "default": "plain"
+    },
+    {
+      "type": "select",
+      "id": "text_alignment",
+      "label": "t:shared.text_alignment",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        }
+      ],
+      "default": "start"
+    },
+    {
+      "type": "select",
+      "id": "image_ratio",
+      "label": "t:sections.multicolumn.settings.image_ratio.label",
+      "options": [
+        {
+          "value": "natural",
+          "label": "t:shared.ratio.options.natural"
+        },
+        {
+          "value": "square",
+          "label": "t:shared.ratio.options.square"
+        },
+        {
+          "value": "portrait",
+          "label": "t:shared.ratio.options.portrait"
+        },
+        {
+          "value": "landscape",
+          "label": "t:shared.ratio.options.landscape"
+        },
+        {
+          "value": "wide",
+          "label": "t:sections.multicolumn.settings.image_ratio.options.wide"
+        }
+      ],
+      "default": "landscape"
+    },
+    {
+      "type": "range",
+      "id": "icon_size",
+      "label": "t:sections.multicolumn.settings.icon_size.label",
+      "min": 20,
+      "max": 96,
+      "step": 4,
+      "unit": "px",
+      "default": 32
+    },
+    {
+      "type": "select",
+      "id": "icon_position",
+      "label": "t:sections.multicolumn.settings.icon_position.label",
+      "options": [
+        {
+          "value": "top",
+          "label": "t:sections.multicolumn.settings.icon_position.options.top"
+        },
+        {
+          "value": "start",
+          "label": "t:sections.multicolumn.settings.icon_position.options.start"
+        }
+      ],
+      "default": "top"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.multicolumn.name",
+      "blocks": [
+        {
+          "type": "_column",
+          "settings": {
+            "icon": "star",
+            "heading": "Add a heading",
+            "text": "<p>Pair a short heading with one or two lines about a feature, a promise or a step.</p>"
+          }
+        },
+        {
+          "type": "_column",
+          "settings": {
+            "icon": "sparkle",
+            "heading": "Add a heading",
+            "text": "<p>Pair a short heading with one or two lines about a feature, a promise or a step.</p>"
+          }
+        },
+        {
+          "type": "_column",
+          "settings": {
+            "icon": "heart",
+            "heading": "Add a heading",
+            "text": "<p>Pair a short heading with one or two lines about a feature, a promise or a step.</p>"
+          }
+        }
+      ]
+    },
+    {
+      "name": "t:sections.multicolumn.presets.image_columns",
+      "settings": {
+        "card_style": "bordered",
+        "heading": "Explore the range"
+      },
+      "blocks": [
+        {
+          "type": "_column",
+          "settings": {
+            "media": "image",
+            "heading": "Column with image",
+            "text": "<p>Choose an image and link this column to a collection or page.</p>",
+            "link_label": "Learn more"
+          }
+        },
+        {
+          "type": "_column",
+          "settings": {
+            "media": "image",
+            "heading": "Column with image",
+            "text": "<p>Choose an image and link this column to a collection or page.</p>",
+            "link_label": "Learn more"
+          }
+        },
+        {
+          "type": "_column",
+          "settings": {
+            "media": "image",
+            "heading": "Column with image",
+            "text": "<p>Choose an image and link this column to a collection or page.</p>",
+            "link_label": "Learn more"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

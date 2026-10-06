@@ -1,0 +1,682 @@
+{
+  "sections": {
+    "slideshow": {
+      "type": "slideshow",
+      "settings": {
+        "autoplay": true,
+        "autoplay_interval": 7,
+        "height": "full",
+        "full_width": true,
+        "transparent_header": true,
+        "padding_top": 0,
+        "padding_bottom": 0
+      },
+      "blocks": {
+        "slide-1": {
+          "type": "_slide",
+          "settings": {
+            "image": "shopify://shop_images/1b556fa9-ef2b-4489-ac37-bd96f923be1a.png",
+            "overlay_opacity": 20,
+            "position": "bottom_left",
+            "content_align": "start",
+            "text_color_scheme": "scheme-3"
+          },
+          "blocks": {
+            "title": {
+              "type": "heading",
+              "settings": {
+                "text": "Comfort, style, durability",
+                "size": "display",
+                "tag": "h2",
+                "alignment": "left"
+              }
+            },
+            "cta": {
+              "type": "button",
+              "settings": {
+                "label": "Shop living",
+                "link": "shopify://collections/quiet-living-spaces",
+                "style": "secondary"
+              }
+            }
+          },
+          "block_order": [
+            "title",
+            "cta"
+          ]
+        },
+        "slide-2": {
+          "type": "_slide",
+          "settings": {
+            "image": "shopify://shop_images/209ec08f-ac98-4591-b94c-3c164a07a1eb.png",
+            "overlay_opacity": 20,
+            "position": "bottom_left",
+            "content_align": "start",
+            "text_color_scheme": "scheme-3"
+          },
+          "blocks": {
+            "title": {
+              "type": "heading",
+              "settings": {
+                "text": "Gather around oak",
+                "size": "display",
+                "tag": "h2",
+                "alignment": "left"
+              }
+            },
+            "cta": {
+              "type": "button",
+              "settings": {
+                "label": "Shop dining",
+                "link": "shopify://collections/the-communal-hearth",
+                "style": "secondary"
+              }
+            }
+          },
+          "block_order": [
+            "title",
+            "cta"
+          ]
+        },
+        "slide-3": {
+          "type": "_slide",
+          "settings": {
+            "image": "shopify://shop_images/0cf2af3d-3aea-467a-98e9-b5edcadf71c8.png",
+            "overlay_opacity": 20,
+            "position": "bottom_left",
+            "content_align": "start",
+            "text_color_scheme": "scheme-3"
+          },
+          "blocks": {
+            "title": {
+              "type": "heading",
+              "settings": {
+                "text": "Light that sets the mood",
+                "size": "display",
+                "tag": "h2",
+                "alignment": "left"
+              }
+            },
+            "cta": {
+              "type": "button",
+              "settings": {
+                "label": "Shop lighting",
+                "link": "shopify://collections/luminous-intervals",
+                "style": "secondary"
+              }
+            }
+          },
+          "block_order": [
+            "title",
+            "cta"
+          ]
+        }
+      },
+      "block_order": [
+        "slide-1",
+        "slide-2",
+        "slide-3"
+      ]
+    },
+    "collage": {
+      "type": "collage",
+      "settings": {
+        "heading": "Love where you <em>live</em>",
+        "heading_highlight": "squiggle",
+        "row_height": 260,
+        "overlay_opacity": 25,
+        "padding_top": 72,
+        "padding_bottom": 48
+      },
+      "blocks": {
+        "c1": {
+          "type": "_collage-item",
+          "settings": {
+            "media_type": "collection",
+            "collection": "quiet-living-spaces",
+            "subtitle": "Sit comfortably, feel at home",
+            "show_arrow": true,
+            "column_span": 5,
+            "row_span": 2,
+            "image": "shopify://shop_images/30d322ab-e210-49be-aad8-f3e38377d2a8.png"
+          }
+        },
+        "c2": {
+          "type": "_collage-item",
+          "settings": {
+            "media_type": "collection",
+            "collection": "the-communal-hearth",
+            "subtitle": "Gather around the table",
+            "show_arrow": true,
+            "column_span": 7,
+            "row_span": 1,
+            "image": "shopify://shop_images/ce02b08f-22b1-4170-a4c6-199f9aae9022.png"
+          }
+        },
+        "c3": {
+          "type": "_collage-item",
+          "settings": {
+            "media_type": "collection",
+            "collection": "luminous-intervals",
+            "subtitle": "Light that sets the mood",
+            "show_arrow": true,
+            "column_span": 4,
+            "row_span": 1,
+            "mobile_width": "half",
+            "image": "shopify://shop_images/65e5906f-483f-4621-9c17-d599148e57c0.png"
+          }
+        },
+        "c4": {
+          "type": "_collage-item",
+          "settings": {
+            "media_type": "collection",
+            "collection": "sculptural-foundations",
+            "subtitle": "Finishing touches",
+            "show_arrow": true,
+            "column_span": 3,
+            "row_span": 1,
+            "mobile_width": "half",
+            "image": "shopify://shop_images/4bf3aed8-d59c-46db-bb85-efb8d8c65015.png"
+          }
+        }
+      },
+      "block_order": [
+        "c1",
+        "c2",
+        "c3",
+        "c4"
+      ]
+    },
+    "statement": {
+      "type": "scroll-reveal-text",
+      "settings": {
+        "text": "Our sofa collection blends modern Scandinavian design with sculptural forms, for comfort and style in any space.",
+        "split": "auto",
+        "start_opacity": 20,
+        "size": "h1",
+        "tag": "h2",
+        "alignment": "center",
+        "text_width": "medium",
+        "padding_top": 120,
+        "padding_bottom": 72
+      }
+    },
+    "reveal": {
+      "type": "reveal-image-with-text",
+      "settings": {
+        "image": "shopify://shop_images/8e52ef4d-cd33-4abc-85bb-8040ae3c3f15.png",
+        "start_size": 45,
+        "overlay_opacity": 20,
+        "content_position": "bottom_left",
+        "content_align": "start",
+        "text_color_scheme": "scheme-3"
+      },
+      "blocks": {
+        "h": {
+          "type": "heading",
+          "settings": {
+            "text": "Walnut modular sofa",
+            "size": "h1",
+            "tag": "h2",
+            "alignment": "left"
+          }
+        },
+        "b": {
+          "type": "button",
+          "settings": {
+            "label": "Discover the sofa",
+            "link": "shopify://products/walnut-brown-modular-sofa",
+            "style": "secondary"
+          }
+        }
+      },
+      "block_order": [
+        "h",
+        "b"
+      ]
+    },
+    "lounge": {
+      "type": "image-with-text",
+      "settings": {
+        "image": "shopify://shop_images/4abef0c7-ac75-481b-afbd-41096b7f0f0f.png",
+        "image_position": "start",
+        "image_width": "wide",
+        "image_ratio": "landscape",
+        "padding_top": 96,
+        "padding_bottom": 96
+      },
+      "blocks": {
+        "h": {
+          "type": "heading",
+          "settings": {
+            "text": "Meet the linen sectional",
+            "size": "h1",
+            "tag": "h2",
+            "alignment": "left"
+          }
+        },
+        "t": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Deep seats, a sturdy frame and removable Belgian linen covers. Demo copy \u2014 replace with your own product story.</p>",
+            "size": "body",
+            "muted": true,
+            "alignment": "left"
+          }
+        },
+        "b": {
+          "type": "button",
+          "settings": {
+            "label": "View full details",
+            "link": "shopify://products/belgian-linen-sectional-sofa",
+            "style": "secondary"
+          }
+        }
+      },
+      "block_order": [
+        "h",
+        "t",
+        "b"
+      ]
+    },
+    "inline": {
+      "type": "inline-image-text",
+      "settings": {
+        "text": "Work comfortably with our [image1] desk lamps and create a cozy [image2] living room with our <em>sculptural</em> [image3] sofas",
+        "heading_highlight": "squiggle",
+        "size": "h1",
+        "tag": "h2",
+        "image_height": 90,
+        "alignment": "center",
+        "width": "page",
+        "padding_top": 72,
+        "padding_bottom": 96
+      },
+      "blocks": {
+        "i1": {
+          "type": "image",
+          "settings": {
+            "image": "shopify://shop_images/65e5906f-483f-4621-9c17-d599148e57c0.png",
+            "shape": "pill"
+          }
+        },
+        "i2": {
+          "type": "image",
+          "settings": {
+            "image": "shopify://shop_images/ce02b08f-22b1-4170-a4c6-199f9aae9022.png",
+            "shape": "circle"
+          }
+        },
+        "i3": {
+          "type": "image",
+          "settings": {
+            "image": "shopify://shop_images/30d322ab-e210-49be-aad8-f3e38377d2a8.png",
+            "shape": "pill"
+          }
+        }
+      },
+      "block_order": [
+        "i1",
+        "i2",
+        "i3"
+      ]
+    },
+    "bundle": {
+      "type": "bundle-builder",
+      "settings": {
+        "eyebrow": "Mix and match",
+        "heading": "Create your <em>bundle</em>",
+        "description": "<p>Pick three pieces that belong together and add them to the cart in one go.</p>",
+        "products": [
+          "artistic-table-lamp",
+          "contemporary-ceramic-vase",
+          "handcrafted-ceramic-vase-in-sand-glaze",
+          "firebrick-wall-sconce",
+          "ash-hardwood-dining-chair-with-linea-silhouette",
+          "ash-taupe-custom-oversized-carpet"
+        ],
+        "columns_desktop": 3,
+        "columns_mobile": "2",
+        "min_items": 3,
+        "max_items": 6,
+        "allow_duplicates": false,
+        "panel_heading": "Your bundle",
+        "note": "Choose at least three pieces.",
+        "panel_color_scheme": "scheme-2",
+        "padding_top": 72,
+        "padding_bottom": 72
+      }
+    },
+    "featured": {
+      "type": "featured-product",
+      "settings": {
+        "product": "ash-hardwood-dining-chair-with-linea-silhouette",
+        "gallery_layout": "slider",
+        "thumbnail_position": "start",
+        "media_width": "large",
+        "badge_text": "Featured piece \u2022 Featured piece \u2022 ",
+        "badge_icon": "sparkle",
+        "enable_zoom": true,
+        "show_details_link": true,
+        "padding_top": 72,
+        "padding_bottom": 72
+      },
+      "blocks": {
+        "title": {
+          "type": "product-title",
+          "settings": {
+            "size": "h2",
+            "show_vendor": true
+          }
+        },
+        "rating": {
+          "type": "product-rating",
+          "settings": {
+            "anchor": ""
+          }
+        },
+        "price": {
+          "type": "product-price",
+          "settings": {
+            "show_tax_note": false
+          }
+        },
+        "picker": {
+          "type": "product-variant-picker",
+          "settings": {
+            "style": "buttons",
+            "swatches": true
+          }
+        },
+        "buy": {
+          "type": "product-buy-buttons",
+          "settings": {
+            "show_quantity": true,
+            "show_dynamic_checkout": false
+          }
+        }
+      },
+      "block_order": [
+        "title",
+        "rating",
+        "price",
+        "picker",
+        "buy"
+      ]
+    },
+    "arrivals": {
+      "type": "featured-collection",
+      "settings": {
+        "heading": "New arrivals",
+        "text": "<p>Explore pieces for living, dining and working, from Shopify's sample furniture and lighting catalogs.</p>",
+        "collection": "demo-inova-all",
+        "products_to_show": 10,
+        "columns_desktop": 4,
+        "layout": "carousel",
+        "mobile_layout": "slider",
+        "show_view_all": false,
+        "padding_top": 72,
+        "padding_bottom": 72
+      }
+    },
+    "about": {
+      "type": "image-with-text",
+      "settings": {
+        "image": "shopify://shop_images/a2fbe9e4-851b-4354-bd1d-cd6008fc8936.png",
+        "image_position": "start",
+        "image_width": "half",
+        "image_ratio": "portrait",
+        "image_style": "overlap",
+        "second_image": "shopify://shop_images/4bf3aed8-d59c-46db-bb85-efb8d8c65015.png",
+        "image_rotation": 4,
+        "color_scheme": "scheme-2",
+        "padding_top": 96,
+        "padding_bottom": 96
+      },
+      "blocks": {
+        "e": {
+          "type": "heading",
+          "settings": {
+            "text": "About us",
+            "size": "eyebrow",
+            "tag": "p",
+            "alignment": "left"
+          }
+        },
+        "h": {
+          "type": "heading",
+          "settings": {
+            "text": "Modern design, timeless aesthetics, meticulous craftsmanship.",
+            "size": "h2",
+            "tag": "h2",
+            "alignment": "left"
+          }
+        },
+        "b": {
+          "type": "button",
+          "settings": {
+            "label": "More about us",
+            "link": "shopify://pages/contact",
+            "style": "primary"
+          }
+        }
+      },
+      "block_order": [
+        "e",
+        "h",
+        "b"
+      ]
+    },
+    "services": {
+      "type": "multicolumn",
+      "settings": {
+        "heading": "",
+        "columns": 4,
+        "columns_mobile": "2",
+        "mobile_layout": "stack",
+        "card_style": "filled",
+        "icon_position": "start",
+        "icon_size": 28,
+        "padding_top": 56,
+        "padding_bottom": 56
+      },
+      "blocks": {
+        "c1": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "chat",
+            "heading": "Customer service",
+            "text": "<p>Real people answer within one business day.</p>"
+          }
+        },
+        "c2": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "truck",
+            "heading": "Delivery",
+            "text": "<p>Describe your delivery promise here.</p>"
+          }
+        },
+        "c3": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "gift",
+            "heading": "Refer a friend",
+            "text": "<p>Explain your referral offer here.</p>"
+          }
+        },
+        "c4": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "lock",
+            "heading": "Secure payment",
+            "text": "<p>Payments are processed by Shopify.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "c1",
+        "c2",
+        "c3",
+        "c4"
+      ]
+    },
+    "feed": {
+      "type": "shop-the-feed",
+      "settings": {
+        "heading": "Shop the <em>feed</em>",
+        "heading_highlight": "squiggle",
+        "text": "<p>Demo posts \u2014 connect your own social images and tag the products in them.</p>",
+        "account_handle": "@yourstore",
+        "follow_label": "Follow",
+        "follow_link": "https://instagram.com",
+        "platform_icon": "instagram",
+        "layout": "slider",
+        "columns": 5,
+        "image_ratio": "portrait",
+        "quick_add": true,
+        "padding_top": 72,
+        "padding_bottom": 72
+      },
+      "blocks": {
+        "p1": {
+          "type": "post",
+          "settings": {
+            "image": "shopify://shop_images/1939d2f9-a5bf-4034-a077-9eb1e3dbc84e.png",
+            "product_1": "artistic-table-lamp"
+          }
+        },
+        "p2": {
+          "type": "post",
+          "settings": {
+            "image": "shopify://shop_images/ccd0fd95-77db-40d5-8fa8-2597bcb4191b.png",
+            "product_1": "firebrick-wall-sconce"
+          }
+        },
+        "p3": {
+          "type": "post",
+          "settings": {
+            "image": "shopify://shop_images/b4420773-b7ee-4b0f-a17d-516883af22f2.png",
+            "product_1": "contemporary-ceramic-vase"
+          }
+        },
+        "p4": {
+          "type": "post",
+          "settings": {
+            "image": "shopify://shop_images/f25c35c2-caa8-4569-95d0-6c6ad5556a31.png"
+          }
+        },
+        "p5": {
+          "type": "post",
+          "settings": {
+            "image": "shopify://shop_images/a01d0525-a904-434c-b642-8b17eeff9ba6.png"
+          }
+        },
+        "p6": {
+          "type": "post",
+          "settings": {
+            "image": "shopify://shop_images/0cf2af3d-3aea-467a-98e9-b5edcadf71c8.png"
+          }
+        }
+      },
+      "block_order": [
+        "p1",
+        "p2",
+        "p3",
+        "p4",
+        "p5",
+        "p6"
+      ]
+    },
+    "designers": {
+      "type": "people-cards",
+      "settings": {
+        "heading": "Meet our <em>designers</em>",
+        "heading_highlight": "underline",
+        "text": "<p>Introduce the people behind your products. Demo cards \u2014 replace names, roles and photos.</p>",
+        "card_style": "overlay",
+        "columns": 4,
+        "view_all_label": "View all designers",
+        "view_all_link": "shopify://pages/contact",
+        "padding_top": 72,
+        "padding_bottom": 72
+      },
+      "blocks": {
+        "d1": {
+          "type": "person",
+          "settings": {
+            "image": "shopify://shop_images/2b29ca26-96c3-4683-b7c0-abd1d544bdc0.png",
+            "name": "Designer name",
+            "role": "Ceramics",
+            "bio": "<p>A short biography goes here: background, favourite materials and signature pieces.</p>"
+          }
+        },
+        "d2": {
+          "type": "person",
+          "settings": {
+            "image": "shopify://shop_images/0cf2af3d-3aea-467a-98e9-b5edcadf71c8.png",
+            "name": "Designer name",
+            "role": "Lighting",
+            "bio": "<p>A short biography goes here: background, favourite materials and signature pieces.</p>"
+          }
+        },
+        "d3": {
+          "type": "person",
+          "settings": {
+            "image": "shopify://shop_images/ce02b08f-22b1-4170-a4c6-199f9aae9022.png",
+            "name": "Designer name",
+            "role": "Furniture",
+            "bio": "<p>A short biography goes here: background, favourite materials and signature pieces.</p>"
+          }
+        },
+        "d4": {
+          "type": "person",
+          "settings": {
+            "image": "shopify://shop_images/2dc8737d-8e6b-4cc0-877a-10565fd5438c.png",
+            "name": "Designer name",
+            "role": "Textiles",
+            "bio": "<p>A short biography goes here: background, favourite materials and signature pieces.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "d1",
+        "d2",
+        "d3",
+        "d4"
+      ]
+    },
+    "blog": {
+      "type": "blog-posts",
+      "settings": {
+        "heading": "From the journal",
+        "blog": "journal",
+        "post_count": 3,
+        "columns_desktop": 3,
+        "show_view_all": true,
+        "padding_top": 72,
+        "padding_bottom": 56
+      }
+    }
+  },
+  "order": [
+    "slideshow",
+    "collage",
+    "bundle",
+    "statement",
+    "reveal",
+    "lounge",
+    "inline",
+    "featured",
+    "arrivals",
+    "about",
+    "feed",
+    "designers",
+    "blog",
+    "services"
+  ]
+}

@@ -1,0 +1,563 @@
+{% comment %}
+  @description Blog listing: blog title, optional intro, tag filter ("All" + every tag) as pill chips or as text links with slash separators, which scrolls sideways or turns into a dropdown on phones; post cards in a grid, list, "lead post" or collage layout (first post large with its text over the image, the next two beside it, then a grid), and pagination. Card details (image shape, tags on the image or above the text, date / reading time with icons, author, comments, excerpt) are switchable. Shows a friendly message when the blog (or the chosen tag) has no posts.
+  Use when: templates/blog*.json only.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign show_comments = false
+  if s.show_comments and blog.comments_enabled?
+    assign show_comments = true
+  endif
+
+  case s.columns_desktop
+    when 2
+      assign cols_class = 'md:grid-cols-2'
+    when 4
+      assign cols_class = 'md:grid-cols-2 lg:grid-cols-4'
+    else
+      assign cols_class = 'md:grid-cols-2 lg:grid-cols-3'
+  endcase
+
+  case s.heading_alignment
+    when 'center'
+      assign header_class = 'items-center text-center'
+      assign chips_class = 'md:justify-center'
+    when 'end'
+      assign header_class = 'items-end text-end'
+      assign chips_class = 'md:justify-end'
+    else
+      assign header_class = 'items-start text-start'
+      assign chips_class = ''
+  endcase
+
+  case s.heading_size
+    when 'h1'
+      assign heading_class = 'type-h1'
+    when 'h2'
+      assign heading_class = 'type-h2'
+    else
+      assign heading_class = 'type-display'
+  endcase
+
+  assign tag_style = s.tag_filter_style | default: 'chips'
+  assign tag_mobile = s.tag_filter_mobile | default: 'scroll'
+  assign list_mobile_class = ''
+  if tag_mobile == 'select'
+    assign list_mobile_class = 'max-md:hidden'
+  endif
+  if tag_style == 'links'
+    assign list_class = 'flex snap-x items-center gap-x-4 overflow-x-auto [scrollbar-width:none] -mx-(--s-gutter) px-(--s-gutter) md:mx-0 md:flex-wrap md:overflow-visible md:px-0'
+  else
+    assign list_class = 'flex snap-x gap-2 overflow-x-auto [scrollbar-width:none] -mx-(--s-gutter) px-(--s-gutter) md:mx-0 md:flex-wrap md:overflow-visible md:px-0'
+  endif
+
+  assign link_current_class = 'inline-flex min-h-10 items-center rounded-full border border-fg bg-fg px-4 type-sm text-bg no-underline'
+  assign link_idle_class = 'inline-flex min-h-10 items-center rounded-full border border-border px-4 type-sm no-underline hover:border-fg'
+  if tag_style == 'links'
+    assign link_current_class = 'inline-flex min-h-10 items-center type-h5 font-normal text-fg underline decoration-2 underline-offset-8'
+    assign link_idle_class = 'inline-flex min-h-10 items-center type-h5 font-normal text-fg/40 no-underline transition-colors hover:text-fg'
+  endif
+
+  assign lead_overlay = s.lead_overlay | divided_by: 100.0
+-%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+>
+  <div class="page-width flex flex-col gap-10">
+    <header class="flex flex-col gap-4 {{ header_class }}">
+      {%- if s.eyebrow != blank -%}<p class="type-eyebrow text-muted">{{ s.eyebrow | escape }}</p>{%- endif -%}
+      <h1 class="{{ heading_class }}">
+        {{- blog.title | escape -}}
+        {%- if current_tags -%}<span class="sr-only"> – {{ current_tags | join: ', ' | escape }}</span>{%- endif -%}
+      </h1>
+      {%- if s.description != blank -%}<div class="rte max-w-prose text-muted">{{ s.description }}</div>{%- endif -%}
+
+      {%- if s.show_tag_filter and blog.all_tags.size > 0 -%}
+        <nav class="w-full" aria-label="{{ 'blogs.filter.label' | t }}">
+          <ul class="{{ list_class }} {{ list_mobile_class }} {{ chips_class }}" role="list">
+            <li class="flex shrink-0 snap-start items-center gap-4">
+              <a
+                href="{{ blog.url }}"
+                class="{% if current_tags == blank %}{{ link_current_class }}{% else %}{{ link_idle_class }}{% endif %}"
+                {% if current_tags == blank %}
+                  aria-current="page"
+                {% endif %}
+              >
+                {{- 'blogs.filter.all' | t -}}
+              </a>
+            </li>
+            {%- for tag in blog.all_tags -%}
+              {%- liquid
+                assign is_current = false
+                if current_tags contains tag
+                  assign is_current = true
+                endif
+              -%}
+              <li class="flex shrink-0 snap-start items-center gap-4">
+                {%- if tag_style == 'links' -%}
+                  <span class="h-4 w-px rotate-[25deg] bg-fg/25" aria-hidden="true"></span>
+                {%- endif -%}
+                <a
+                  href="{{ blog.url }}/tagged/{{ tag | handle }}"
+                  class="{% if is_current %}{{ link_current_class }}{% else %}{{ link_idle_class }}{% endif %}"
+                  {% if is_current %}
+                    aria-current="page"
+                  {% endif %}
+                >
+                  <span class="sr-only">{{ 'blogs.filter.tag_label' | t }}: </span>{{ tag | escape }}
+                </a>
+              </li>
+            {%- endfor -%}
+          </ul>
+          {%- if tag_mobile == 'select' -%}
+            <aw-link-select class="relative block md:hidden">
+              <label for="BlogTagSelect-{{ section.id }}" class="sr-only">{{ 'blogs.filter.label' | t }}</label>
+              <select
+                id="BlogTagSelect-{{ section.id }}"
+                class="field h-12 w-full appearance-none pe-10 text-start"
+                data-ref="select"
+              >
+                <option value="{{ blog.url }}" {% if current_tags == blank %}selected{% endif %}>{{ 'blogs.filter.all' | t }}</option>
+                {%- for tag in blog.all_tags -%}
+                  <option value="{{ blog.url }}/tagged/{{ tag | handle }}" {% if current_tags contains tag %}selected{% endif %}>{{ tag | escape }}</option>
+                {%- endfor -%}
+              </select>
+              {%- render 'icon', name: 'chevron-down', class: 'pointer-events-none absolute top-1/2 end-4 size-4 -translate-y-1/2' -%}
+            </aw-link-select>
+          {%- endif -%}
+        </nav>
+      {%- endif -%}
+    </header>
+
+    {%- paginate blog.articles by s.posts_per_page -%}
+      {%- if blog.articles.size == 0 -%}
+        <div class="flex flex-col items-center gap-4 py-12 text-center">
+          <p class="type-h4">{{ 'blogs.empty' | t }}</p>
+          {%- if current_tags -%}
+            <a href="{{ blog.url }}" class="btn btn-secondary">{{ 'blogs.filter.show_all' | t }}</a>
+          {%- endif -%}
+        </div>
+      {%- else -%}
+        {%- case s.layout -%}
+          {%- when 'list' -%}
+            <ul class="flex flex-col gap-10 md:gap-12" role="list">
+              {%- for article in blog.articles -%}
+                <li class="{% unless forloop.first %}border-t border-border pt-10 md:pt-12{% endunless %}">
+                  {% render 'article-card',
+                    article: article,
+                    blog_url: blog.url,
+                    layout: 'horizontal',
+                    ratio: s.image_ratio,
+                    show_tags: s.show_tags,
+                    tags_on_image: s.tags_on_image,
+                    meta_icons: s.meta_icons,
+                    show_date: s.show_date,
+                    show_author: s.show_author,
+                    show_comments: show_comments,
+                    show_reading_time: s.show_reading_time,
+                    show_excerpt: s.show_excerpt,
+                    heading_tag: 'h2',
+                    sizes: '(min-width: 750px) 40vw, 100vw',
+                    eager: forloop.first
+                  %}
+                </li>
+              {%- endfor -%}
+            </ul>
+          {%- when 'collage' -%}
+            {%- liquid
+              assign collage = false
+              if paginate.current_page == 1 and blog.articles.size >= 3
+                assign collage = true
+              endif
+            -%}
+            <ul
+              class="grid grid-cols-1 gap-x-(--s-grid-gap) gap-y-10 md:grid-cols-2 md:gap-y-12 {% if collage %}lg:grid-cols-12{% else %}{{ cols_class }}{% endif %}"
+              role="list"
+              style="--overlay-opacity: {{ lead_overlay }}; --overlay-min-h: 28rem;"
+            >
+              {%- for article in blog.articles -%}
+                {%- liquid
+                  assign card_layout = 'stacked'
+                  assign card_sizes = '(min-width: 990px) 33vw, (min-width: 750px) 50vw, 100vw'
+                  assign item_class = ''
+                  if collage
+                    assign item_class = 'lg:col-span-4'
+                    if forloop.index == 1
+                      if article.image
+                        assign card_layout = 'overlay'
+                      endif
+                      assign card_sizes = '(min-width: 990px) 58vw, 100vw'
+                      assign item_class = 'md:col-span-2 lg:col-span-7 lg:row-span-2'
+                    elsif forloop.index == 2
+                      assign card_layout = 'side'
+                      assign card_sizes = '(min-width: 990px) 17vw, (min-width: 750px) 50vw, 100vw'
+                      assign item_class = 'lg:col-span-5'
+                    elsif forloop.index == 3
+                      assign card_layout = 'side'
+                      assign card_sizes = '(min-width: 990px) 17vw, (min-width: 750px) 50vw, 100vw'
+                      assign item_class = 'lg:col-span-5 lg:border-t lg:border-border lg:pt-8'
+                    endif
+                  endif
+                  assign eager = false
+                  if forloop.index <= 3
+                    assign eager = true
+                  endif
+                -%}
+                <li class="{{ item_class }}">
+                  {% render 'article-card',
+                    article: article,
+                    blog_url: blog.url,
+                    layout: card_layout,
+                    overlay_scheme: s.lead_text_scheme,
+                    ratio: s.image_ratio,
+                    show_tags: s.show_tags,
+                    tags_on_image: s.tags_on_image,
+                    meta_icons: s.meta_icons,
+                    show_date: s.show_date,
+                    show_author: s.show_author,
+                    show_comments: show_comments,
+                    show_reading_time: s.show_reading_time,
+                    show_excerpt: s.show_excerpt,
+                    heading_tag: 'h2',
+                    sizes: card_sizes,
+                    eager: eager
+                  %}
+                </li>
+              {%- endfor -%}
+            </ul>
+          {%- else -%}
+            <ul class="grid grid-cols-1 gap-x-(--s-grid-gap) gap-y-10 md:gap-y-12 {{ cols_class }}" role="list">
+              {%- for article in blog.articles -%}
+                {%- liquid
+                  assign card_layout = 'stacked'
+                  assign card_sizes = '(min-width: 990px) 33vw, (min-width: 750px) 50vw, 100vw'
+                  assign item_class = ''
+                  if s.layout == 'lead' and forloop.first and paginate.current_page == 1
+                    assign card_layout = 'lead'
+                    assign card_sizes = '(min-width: 750px) 58vw, 100vw'
+                    assign item_class = 'md:col-span-full'
+                  endif
+                  assign eager = false
+                  if forloop.index <= 2
+                    assign eager = true
+                  endif
+                -%}
+                <li class="{{ item_class }}">
+                  {% render 'article-card',
+                    article: article,
+                    blog_url: blog.url,
+                    layout: card_layout,
+                    ratio: s.image_ratio,
+                    show_tags: s.show_tags,
+                    tags_on_image: s.tags_on_image,
+                    meta_icons: s.meta_icons,
+                    show_date: s.show_date,
+                    show_author: s.show_author,
+                    show_comments: show_comments,
+                    show_reading_time: s.show_reading_time,
+                    show_excerpt: s.show_excerpt,
+                    heading_tag: 'h2',
+                    sizes: card_sizes,
+                    eager: eager
+                  %}
+                </li>
+              {%- endfor -%}
+            </ul>
+        {%- endcase -%}
+        {% render 'pagination', paginate: paginate %}
+      {%- endif -%}
+    {%- endpaginate -%}
+  </div>
+</div>
+{%- if s.show_tag_filter and tag_mobile == 'select' -%}
+  <script src="{{ 'c-link-select.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.main_blog.name",
+  "tag": "section",
+  "class": "section-main-blog",
+  "enabled_on": {
+    "templates": [
+      "blog"
+    ]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:sections.main_blog.settings.eyebrow.label"
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "t:sections.main_blog.settings.description.label"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "t:sections.main_blog.settings.heading_size.label",
+      "options": [
+        {
+          "value": "display",
+          "label": "t:sections.main_blog.settings.heading_size.options.display"
+        },
+        {
+          "value": "h1",
+          "label": "t:sections.main_blog.settings.heading_size.options.h1"
+        },
+        {
+          "value": "h2",
+          "label": "t:sections.main_blog.settings.heading_size.options.h2"
+        }
+      ],
+      "default": "h1"
+    },
+    {
+      "type": "select",
+      "id": "heading_alignment",
+      "label": "t:shared.text_alignment",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        },
+        {
+          "value": "end",
+          "label": "t:shared.align.options.end"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_tag_filter",
+      "label": "t:sections.main_blog.settings.show_tag_filter.label",
+      "info": "t:sections.main_blog.settings.show_tag_filter.info",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "tag_filter_style",
+      "label": "t:sections.main_blog.settings.tag_filter_style.label",
+      "options": [
+        {
+          "value": "chips",
+          "label": "t:sections.main_blog.settings.tag_filter_style.options.chips"
+        },
+        {
+          "value": "links",
+          "label": "t:sections.main_blog.settings.tag_filter_style.options.links"
+        }
+      ],
+      "default": "chips",
+      "visible_if": "{{ section.settings.show_tag_filter }}"
+    },
+    {
+      "type": "select",
+      "id": "tag_filter_mobile",
+      "label": "t:sections.main_blog.settings.tag_filter_mobile.label",
+      "options": [
+        {
+          "value": "scroll",
+          "label": "t:sections.main_blog.settings.tag_filter_mobile.options.scroll"
+        },
+        {
+          "value": "select",
+          "label": "t:sections.main_blog.settings.tag_filter_mobile.options.select"
+        }
+      ],
+      "default": "scroll",
+      "visible_if": "{{ section.settings.show_tag_filter }}"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.main_blog.settings.posts_header"
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "t:sections.main_blog.settings.layout.label",
+      "options": [
+        {
+          "value": "grid",
+          "label": "t:sections.main_blog.settings.layout.options.grid"
+        },
+        {
+          "value": "lead",
+          "label": "t:sections.main_blog.settings.layout.options.lead"
+        },
+        {
+          "value": "list",
+          "label": "t:sections.main_blog.settings.layout.options.list"
+        },
+        {
+          "value": "collage",
+          "label": "t:sections.main_blog.settings.layout.options.collage"
+        }
+      ],
+      "default": "lead",
+      "info": "t:sections.main_blog.settings.layout.info"
+    },
+    {
+      "type": "color_scheme",
+      "id": "lead_text_scheme",
+      "label": "t:sections.main_blog.settings.lead_text_scheme.label",
+      "info": "t:sections.main_blog.settings.lead_text_scheme.info",
+      "default": "scheme-3",
+      "visible_if": "{{ section.settings.layout == 'collage' }}"
+    },
+    {
+      "type": "range",
+      "id": "lead_overlay",
+      "label": "t:sections.main_blog.settings.lead_overlay.label",
+      "min": 0,
+      "max": 90,
+      "step": 5,
+      "unit": "%",
+      "default": 50,
+      "visible_if": "{{ section.settings.layout == 'collage' }}"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "label": "t:shared.columns_desktop",
+      "min": 2,
+      "max": 4,
+      "step": 1,
+      "default": 3,
+      "visible_if": "{{ section.settings.layout != 'list' }}"
+    },
+    {
+      "type": "range",
+      "id": "posts_per_page",
+      "label": "t:sections.main_blog.settings.posts_per_page.label",
+      "min": 3,
+      "max": 48,
+      "step": 3,
+      "default": 12
+    },
+    {
+      "type": "header",
+      "content": "t:sections.main_blog.settings.card_header"
+    },
+    {
+      "type": "select",
+      "id": "image_ratio",
+      "label": "t:sections.main_blog.settings.image_ratio.label",
+      "options": [
+        {
+          "value": "natural",
+          "label": "t:shared.ratio.options.natural"
+        },
+        {
+          "value": "square",
+          "label": "t:shared.ratio.options.square"
+        },
+        {
+          "value": "portrait",
+          "label": "t:shared.ratio.options.portrait"
+        },
+        {
+          "value": "landscape",
+          "label": "t:shared.ratio.options.landscape"
+        },
+        {
+          "value": "wide",
+          "label": "t:sections.main_blog.settings.image_ratio.options.wide"
+        }
+      ],
+      "default": "landscape"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_tags",
+      "label": "t:sections.main_blog.settings.show_tags.label",
+      "info": "t:sections.main_blog.settings.show_tags.info",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "tags_on_image",
+      "label": "t:sections.main_blog.settings.tags_on_image.label",
+      "default": false,
+      "visible_if": "{{ section.settings.show_tags }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_date",
+      "label": "t:sections.main_blog.settings.show_date.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "meta_icons",
+      "label": "t:sections.main_blog.settings.meta_icons.label",
+      "info": "t:sections.main_blog.settings.meta_icons.info",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_author",
+      "label": "t:sections.main_blog.settings.show_author.label",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_reading_time",
+      "label": "t:sections.main_blog.settings.show_reading_time.label",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_comments",
+      "label": "t:sections.main_blog.settings.show_comments.label",
+      "info": "t:sections.main_blog.settings.show_comments.info",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_excerpt",
+      "label": "t:sections.main_blog.settings.show_excerpt.label",
+      "info": "t:sections.main_blog.settings.show_excerpt.info",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 80
+    }
+  ]
+}
+{% endschema %}

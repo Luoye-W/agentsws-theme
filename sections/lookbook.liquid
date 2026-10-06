@@ -1,0 +1,419 @@
+{% comment %}
+  @description Shoppable image ("shop the look"): a lifestyle image with up to 8 hotspots. Each hotspot is a keyboard-reachable button with a pulsing dot that opens a small card — product (image, title, price, Add to cart for single-variant products, otherwise "Choose options") or a note (heading, text, link). Cards show on hover/focus and stay open on click; on phones they open as a bottom sheet. Optional numbered product list beside the image.
+  Use when: showing products in use or in a room, "shop the look", explaining features on a photo, annotated product images.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign image = s.image
+  assign mobile_image = s.image_mobile | default: s.image
+  assign with_list = false
+  if s.layout == 'list'
+    assign with_list = true
+  endif
+  assign ratio = image.aspect_ratio | default: 1.5
+  assign ratio_mobile = mobile_image.aspect_ratio | default: ratio
+  assign image_alt = image.alt | escape
+  assign heading_id = 'LookbookHeading-' | append: section.id
+  assign has_mobile_image = false
+  if s.image_mobile != blank
+    assign has_mobile_image = true
+  endif
+
+  if with_list
+    assign image_col = 'md:col-span-8'
+    assign image_sizes = '(min-width: 1200px) 800px, (min-width: 750px) 66vw, 100vw'
+  else
+    assign image_col = 'md:col-span-12'
+    assign image_sizes = '(min-width: 1200px) 1200px, 100vw'
+  endif
+  if s.list_position == 'start'
+    assign list_order = 'md:order-first'
+  else
+    assign list_order = ''
+  endif
+-%}
+<aw-lookbook
+  class="block surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1)); --look-ratio: {{ ratio }}; --look-ratio-mobile: {{ ratio_mobile }}; --look-overlay: {{ s.overlay_opacity | divided_by: 100.0 }};"
+  data-cart-add-url="{{ routes.cart_add_url }}"
+  data-cart-url="{{ routes.cart_url }}"
+  data-cart-type="{{ settings.cart_type }}"
+  data-error-text="{{ 'general.cart.error' | t | escape }}"
+>
+  <div class="page-width flex flex-col gap-8">
+    {%- render 'section-intro', eyebrow: s.eyebrow, heading: s.heading, highlight: s.heading_highlight, text: s.text, align: s.heading_alignment, id: heading_id -%}
+
+    <div
+      class="grid grid-cols-1 gap-8 md:grid-cols-12 md:items-center lg:gap-12"
+      {% if with_list %}
+        data-numbered
+      {% endif %}
+    >
+      <div class="relative {{ image_col }} aspect-(--look-ratio-mobile) md:aspect-(--look-ratio)">
+        <div class="absolute inset-0 overflow-hidden rounded-media bg-placeholder">
+          {%- if image != blank -%}
+            <picture>
+              {%- if s.image_mobile != blank -%}
+                <source
+                  media="(max-width: 749px)"
+                  srcset="{{ mobile_image | image_url: width: 750 }} 750w, {{ mobile_image | image_url: width: 1100 }} 1100w, {{ mobile_image | image_url: width: 1500 }} 1500w"
+                  sizes="100vw"
+                  width="{{ mobile_image.width }}"
+                  height="{{ mobile_image.height }}"
+                >
+              {%- endif -%}
+              {{ image | image_url: width: 2400 | image_tag: widths: '750, 1000, 1400, 1800, 2400', sizes: image_sizes, loading: 'lazy', alt: image_alt, class: 'size-full object-cover' }}
+            </picture>
+          {%- else -%}
+            {{ 'lifestyle-2' | placeholder_svg_tag: 'size-full object-cover' }}
+          {%- endif -%}
+          {%- if s.overlay_opacity > 0 -%}
+            <div class="absolute inset-0 bg-[rgb(0_0_0/var(--look-overlay))]" aria-hidden="true"></div>
+          {%- endif -%}
+        </div>
+        {%- for block in section.blocks -%}
+          {%- render 'lookbook-hotspot', spot: block, index: forloop.index, color_scheme: s.hotspot_color_scheme, has_mobile_image: has_mobile_image -%}
+        {%- endfor -%}
+      </div>
+
+      {%- if with_list and section.blocks.size > 0 -%}
+        <ol class="flex flex-col divide-y divide-border border-y border-border md:col-span-4 {{ list_order }}" role="list" aria-label="{{ 'sections.lookbook.list_label' | t }}">
+          {%- for spot in section.blocks -%}
+            {%- liquid
+              assign spot_product = spot.settings.product
+              assign spot_heading = spot.settings.heading | escape
+            -%}
+            <li class="flex items-center gap-4 py-4 transition-colors data-active:bg-fg/5" data-ref="list-item" data-block-id="{{ spot.id }}">
+              <span class="type-xs flex size-7 shrink-0 items-center justify-center rounded-full border border-border font-semibold" aria-hidden="true">{{ forloop.index }}</span>
+              {%- if spot_product != blank -%}
+                <div class="w-16 shrink-0 overflow-hidden rounded-media bg-placeholder">
+                  {%- if spot_product.featured_image -%}
+                    {{ spot_product.featured_image | image_url: width: 200 | image_tag: widths: '100, 150, 200', sizes: '64px', loading: 'lazy', alt: '', class: 'aspect-square w-full object-cover' }}
+                  {%- else -%}
+                    {{ 'product-1' | placeholder_svg_tag: 'aspect-square w-full' }}
+                  {%- endif -%}
+                </div>
+                <div class="flex min-w-0 flex-1 flex-col gap-1">
+                  <a href="{{ spot_product.url }}" class="type-card no-underline hover:underline">{{ spot_product.title | escape }}</a>
+                  <div class="type-sm">{% render 'price', product: spot_product, size: 'sm' %}</div>
+                </div>
+              {%- elsif spot_heading != blank -%}
+                <div class="flex min-w-0 flex-1 flex-col gap-1">
+                  {%- if spot.settings.link != blank -%}
+                    <a href="{{ spot.settings.link }}" class="type-card no-underline hover:underline">{{ spot_heading }}</a>
+                  {%- else -%}
+                    <p class="type-card">{{ spot_heading }}</p>
+                  {%- endif -%}
+                </div>
+              {%- else -%}
+                <p class="type-sm flex-1 text-muted">{{ 'sections.lookbook.hotspot' | t: index: forloop.index }}</p>
+              {%- endif -%}
+            </li>
+          {%- endfor -%}
+        </ol>
+      {%- endif -%}
+    </div>
+  </div>
+</aw-lookbook>
+<script src="{{ 'c-lookbook.js' | asset_url }}" type="module"></script>
+
+{% stylesheet %}
+  /* Pulsing ring behind each hotspot dot (static with reduced motion). */
+  @media (prefers-reduced-motion: no-preference) {
+    .lookbook-hotspot__pulse {
+      animation: lookbook-pulse 2s ease-in-out infinite;
+    }
+  }
+  @keyframes lookbook-pulse {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(0.8);
+      opacity: 0.6;
+    }
+  }
+  /* Hotspot card: a manual popover in the top layer. Desktop: floats next to its hotspot (JS sets top/left).
+     Phones: bottom sheet. */
+  .lookbook-card {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    width: min(20rem, calc(100vw - 2rem));
+    max-height: calc(100svh - 2rem);
+    overflow: auto;
+  }
+  .lookbook-card::backdrop {
+    background: transparent;
+  }
+  @media (max-width: 749px) {
+    .lookbook-card {
+      inset: auto 0 0 0;
+      width: 100%;
+      max-height: 80svh;
+      border-end-start-radius: 0;
+      border-end-end-radius: 0;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .lookbook-card::backdrop {
+      background: var(--p-overlay, rgb(0 0 0 / 0.4));
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.lookbook.name",
+  "tag": "section",
+  "class": "section-lookbook",
+  "blocks": [
+    {
+      "type": "hotspot",
+      "name": "t:blocks.hotspot.name",
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "t:blocks.collage_item.settings.product.label",
+          "info": "t:blocks.hotspot.settings.product.info"
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "t:blocks.collage_item.settings.heading.label",
+          "visible_if": "{{ block.settings.product == blank }}"
+        },
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "t:sections.featured_collection.settings.text.label",
+          "visible_if": "{{ block.settings.product == blank }}"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "t:blocks.button.settings.link.label",
+          "visible_if": "{{ block.settings.product == blank }}"
+        },
+        {
+          "type": "text",
+          "id": "link_label",
+          "label": "t:blocks.image_card.settings.link_label.label",
+          "visible_if": "{{ block.settings.product == blank }}"
+        },
+        {
+          "type": "header",
+          "content": "t:blocks.hotspot.settings.position_header"
+        },
+        {
+          "type": "range",
+          "id": "x",
+          "label": "t:blocks.hotspot.settings.x.label",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "%",
+          "default": 50
+        },
+        {
+          "type": "range",
+          "id": "y",
+          "label": "t:blocks.hotspot.settings.y.label",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "%",
+          "default": 50
+        },
+        {
+          "type": "range",
+          "id": "x_mobile",
+          "label": "t:blocks.hotspot.settings.x_mobile.label",
+          "info": "t:blocks.hotspot.settings.mobile_info",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "%",
+          "default": 50
+        },
+        {
+          "type": "range",
+          "id": "y_mobile",
+          "label": "t:blocks.hotspot.settings.y_mobile.label",
+          "info": "t:blocks.hotspot.settings.mobile_info",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "%",
+          "default": 50
+        }
+      ]
+    }
+  ],
+  "max_blocks": 8,
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:sections.featured_collection.settings.eyebrow.label"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:sections.featured_collection.settings.heading.label",
+      "default": "Shop the look"
+    },
+    {
+      "type": "select",
+      "id": "heading_highlight",
+      "label": "t:shared.heading_highlight.label",
+      "info": "t:shared.heading_highlight.info",
+      "options": [
+        { "value": "none", "label": "t:shared.heading_highlight.options.none" },
+        { "value": "color", "label": "t:shared.heading_highlight.options.color" },
+        { "value": "marker", "label": "t:shared.heading_highlight.options.marker" },
+        { "value": "underline", "label": "t:shared.heading_highlight.options.underline" },
+        { "value": "outline", "label": "t:shared.heading_highlight.options.outline" },
+        { "value": "circle", "label": "t:shared.heading_highlight.options.circle" },
+        { "value": "squiggle", "label": "t:shared.heading_highlight.options.squiggle" }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:sections.featured_collection.settings.text.label"
+    },
+    {
+      "type": "select",
+      "id": "heading_alignment",
+      "label": "t:shared.media.heading_alignment",
+      "options": [
+        { "value": "start", "label": "t:shared.align.options.start" },
+        { "value": "center", "label": "t:shared.align.options.center" }
+      ],
+      "default": "start"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.lookbook.settings.image_header"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:sections.hero.settings.image.label"
+    },
+    {
+      "type": "image_picker",
+      "id": "image_mobile",
+      "label": "t:sections.hero.settings.image_mobile.label",
+      "info": "t:sections.lookbook.settings.image_mobile.info"
+    },
+    {
+      "type": "range",
+      "id": "overlay_opacity",
+      "label": "t:sections.hero.settings.overlay_opacity.label",
+      "min": 0,
+      "max": 60,
+      "step": 5,
+      "unit": "%",
+      "default": 0
+    },
+    {
+      "type": "color_scheme",
+      "id": "hotspot_color_scheme",
+      "label": "t:sections.lookbook.settings.hotspot_color_scheme.label",
+      "info": "t:sections.lookbook.settings.hotspot_color_scheme.info",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.layout"
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "t:sections.lookbook.settings.layout.label",
+      "options": [
+        { "value": "image", "label": "t:sections.lookbook.settings.layout.options.image" },
+        { "value": "list", "label": "t:sections.lookbook.settings.layout.options.list" }
+      ],
+      "default": "list"
+    },
+    {
+      "type": "select",
+      "id": "list_position",
+      "label": "t:sections.lookbook.settings.list_position.label",
+      "options": [
+        { "value": "start", "label": "t:sections.image_with_text.settings.image_position.options.start" },
+        { "value": "end", "label": "t:sections.image_with_text.settings.image_position.options.end" }
+      ],
+      "default": "end",
+      "visible_if": "{{ section.settings.layout == 'list' }}"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.lookbook.name",
+      "blocks": [
+        {
+          "type": "hotspot",
+          "settings": {
+            "heading": "Point out a detail",
+            "text": "<p>Pick a product for this hotspot, or keep a short note like this one.</p>",
+            "x": 30,
+            "y": 40,
+            "x_mobile": 30,
+            "y_mobile": 40
+          }
+        },
+        {
+          "type": "hotspot",
+          "settings": {
+            "heading": "Add another hotspot",
+            "text": "<p>Move it with the position sliders.</p>",
+            "x": 65,
+            "y": 70,
+            "x_mobile": 65,
+            "y_mobile": 70
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,9 @@
+# Not part of the storefront theme; never pushed to Shopify.
+src/**
+scripts/**
+recipes/**
+docs/**
+tests/**
+node_modules/**
+.verify/**
+presets/**

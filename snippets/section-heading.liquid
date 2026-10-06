@@ -1,0 +1,68 @@
+{% doc %}
+  @description Heading group shown above a section's content: optional eyebrow line, heading, description and one secondary button. Outputs nothing when every field is empty. Start-aligned groups put the button on the far side on desktop; centered groups stack everything.
+  Use when: the top of content sections (multicolumn, FAQ, testimonials, logo list, timeline, stats, collection list, contact form) so every section heading looks and behaves the same.
+
+  @param {string} [eyebrow] - Small uppercase line above the heading
+  @param {string} [heading] - Heading (inline rich text), rendered as h2
+  @param {string} [text] - Description (rich text)
+  @param {string} [alignment] - 'start' (default) or 'center'
+  @param {string} [link_label] - Button text; the button shows only when both label and link are set
+  @param {string} [link] - Button URL
+  @param {string} [heading_id] - id for the h2 so the section content can point at it with aria-labelledby
+  @param {string} [size] - Heading size preset: 'display', 'h1', 'h2' (default) or 'h3'
+  @param {string} [tag] - Heading element: 'h1', 'h2' (default) or 'h3'
+
+  @example
+  {% render 'section-heading', eyebrow: s.eyebrow, heading: s.heading, text: s.description, alignment: s.heading_alignment, link_label: s.link_label, link: s.link, heading_id: heading_id %}
+{% enddoc %}
+{%- liquid
+  assign has_link = false
+  if link_label != blank and link != blank
+    assign has_link = true
+  endif
+
+  case size
+    when 'display'
+      assign heading_class = 'type-display'
+    when 'h1'
+      assign heading_class = 'type-h1'
+    when 'h3'
+      assign heading_class = 'type-h3'
+    else
+      assign heading_class = 'type-h2'
+  endcase
+  case tag
+    when 'h1'
+      assign heading_tag = 'h1'
+    when 'h3'
+      assign heading_tag = 'h3'
+    else
+      assign heading_tag = 'h2'
+  endcase
+
+  if alignment == 'center'
+    assign wrapper_class = 'flex flex-col items-center gap-5 text-center'
+    assign group_class = 'mx-auto flex max-w-3xl flex-col items-center gap-3'
+  else
+    assign wrapper_class = 'flex flex-col gap-5 md:flex-row md:items-end md:justify-between'
+    assign group_class = 'flex max-w-3xl flex-col gap-3'
+  endif
+-%}
+{%- if eyebrow != blank or heading != blank or text != blank or has_link -%}
+  <div class="{{ wrapper_class }}">
+    <div class="{{ group_class }}">
+      {%- if eyebrow != blank -%}
+        <p class="type-eyebrow text-muted">{{ eyebrow | escape }}</p>
+      {%- endif -%}
+      {%- if heading != blank -%}
+        <{{ heading_tag }} class="{{ heading_class }}" {% if heading_id != blank %}id="{{ heading_id }}"{% endif %}>{{ heading }}</{{ heading_tag }}>
+      {%- endif -%}
+      {%- if text != blank -%}
+        <div class="rte text-muted">{{ text }}</div>
+      {%- endif -%}
+    </div>
+    {%- if has_link -%}
+      <a href="{{ link }}" class="btn btn-secondary shrink-0">{{ link_label | escape }}</a>
+    {%- endif -%}
+  </div>
+{%- endif -%}

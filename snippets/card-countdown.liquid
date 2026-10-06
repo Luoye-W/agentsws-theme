@@ -1,0 +1,42 @@
+{% doc %}
+  @description Small sale countdown pill for a product card ("◷ 94d : 23h : 34m : 05s"), counting down to the date in a product metafield (Theme settings → Product cards → sale end date metafield, default custom.sale_ends, type "Date and time"). Prints nothing when the product has no date or it has passed; hides itself at zero. Ticks through <aw-product-countdown> (assets/c-product-countdown.js).
+  Use when: inside product-card's media box, when Theme settings → Product cards → Show a sale countdown is on.
+
+  @param {object} product - The product
+  @param {string} [class] - Position classes, default 'absolute inset-x-3 bottom-3 flex justify-center'
+
+  @example
+  {% render 'card-countdown', product: product %}
+{% enddoc %}
+{%- liquid
+  assign field_path = settings.card_countdown_metafield | default: 'custom.sale_ends' | strip
+  assign namespace = field_path | split: '.' | first
+  assign key = field_path | split: '.' | last
+  assign field = product.metafields[namespace][key]
+  assign end_value = field.value | default: field
+  assign end_seconds = 0
+  if end_value != blank
+    assign end_seconds = end_value | date: '%s' | plus: 0
+  endif
+  assign now_seconds = 'now' | date: '%s' | plus: 0
+  assign wrapper_class = class | default: 'absolute inset-x-3 bottom-3 flex justify-center'
+-%}
+{%- if end_seconds > now_seconds -%}
+  {%- assign end_text = end_value | date: format: 'date_at_time' -%}
+  <div class="{{ wrapper_class }} pointer-events-none">
+    <aw-product-countdown
+      class="flex items-center gap-1.5 rounded-full bg-badge px-3 py-1.5 type-xs font-semibold text-on-badge tabular-nums shadow-sm"
+      data-end="{{ end_seconds }}"
+    >
+      {%- render 'icon', name: 'clock', class: 'size-4 shrink-0' -%}
+      <span class="sr-only">{{ 'blocks.product_countdown.ends_at' | t: date: end_text }}</span>
+      <span aria-hidden="true">
+        <span data-ref="days">--</span>{{ 'products.card_countdown.days' | t }}{{ ' : ' }}
+        <span data-ref="hours">--</span>{{ 'products.card_countdown.hours' | t }}{{ ' : ' }}
+        <span data-ref="minutes">--</span>{{ 'products.card_countdown.minutes' | t }}{{ ' : ' }}
+        <span data-ref="seconds">--</span>{{ 'products.card_countdown.seconds' | t }}
+      </span>
+    </aw-product-countdown>
+  </div>
+  <script src="{{ 'c-product-countdown.js' | asset_url }}" type="module"></script>
+{%- endif -%}

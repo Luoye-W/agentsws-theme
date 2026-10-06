@@ -1,0 +1,361 @@
+{% comment %}
+  @description Thin bar above the header with one or more short messages ("Announcement" blocks: text, optional mobile text, link and icon). Messages rotate one at a time (auto-advance interval, optional arrows, visible pause button) or scroll as a marquee (loop time, direction; pauses on hover/focus, has a pause button and stays still for reduced motion). Optional social icons and country/language selectors on desktop; can be hidden on the home page. Hidden when it has nothing to show.
+  Use when: header group only, for store-wide notices (shipping policy, returns, launch news). Only state real offers — no fake urgency.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign hide_here = false
+  if s.hide_on_home and template.name == 'index'
+    assign hide_here = true
+  endif
+
+  assign has_social = false
+  if s.show_social
+    assign networks = 'instagram,facebook,x,youtube,tiktok,pinterest,snapchat,linkedin,discord,threads,twitch,whatsapp' | split: ','
+    for network in networks
+      assign key = 'social_' | append: network
+      if settings[key] != blank
+        assign has_social = true
+        break
+      endif
+    endfor
+  endif
+
+  assign has_localization = false
+  if s.show_country_selector and localization.available_countries.size > 1
+    assign has_localization = true
+  endif
+  if s.show_language_selector and localization.available_languages.size > 1
+    assign has_localization = true
+  endif
+
+  assign has_sides = false
+  if has_social or has_localization
+    assign has_sides = true
+  endif
+
+  assign message_count = section.blocks.size
+  assign rotating = false
+  if s.mode == 'rotate' and message_count > 1
+    assign rotating = true
+  endif
+  comment
+    Without auto-advance the arrows are the only way to reach the other messages, so they are always shown then.
+  endcomment
+  assign arrows = false
+  if rotating
+    if s.show_arrows or s.autoplay == false
+      assign arrows = true
+    endif
+  endif
+-%}
+{%- capture announcement_blocks -%}{% content_for 'blocks' %}{%- endcapture -%}
+{%- unless hide_here -%}
+  {%- if message_count > 0 or has_sides -%}
+    <div class="surface-{{ s.color_scheme }}">
+      <div class="page-width grid min-h-10 items-center gap-4 type-xs {% if has_sides %}lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]{% endif %}">
+        {%- if has_sides -%}
+          <div class="hidden lg:flex lg:items-center">
+            {%- if has_social -%}
+              {% render 'social-icons', class: '-ms-2 flex flex-wrap items-center', icon_class: 'size-4', link_class: 'flex size-8 items-center justify-center rounded-btn hover:bg-fg/10' %}
+            {%- endif -%}
+          </div>
+        {%- endif -%}
+
+        <aw-announcement
+          class="announcement-bar flex min-w-0 items-center justify-center gap-1 py-1"
+          data-mode="{{ s.mode }}"
+          data-autoplay="{{ s.autoplay }}"
+          data-interval="{{ s.interval }}"
+          data-direction="{{ s.marquee_direction }}"
+          data-label-pause="{{ 'sections.announcement_bar.pause' | t | escape }}"
+          data-label-play="{{ 'sections.announcement_bar.play' | t | escape }}"
+          style="--marquee-duration: {{ s.marquee_duration }}s;"
+          {% if rotating %}
+            role="region" aria-roledescription="{{ 'sections.announcement_bar.carousel' | t | escape }}" aria-label="{{ 'sections.announcement_bar.label' | t | escape }}"
+          {% elsif s.mode == 'marquee' %}
+            role="marquee" aria-label="{{ 'sections.announcement_bar.label' | t | escape }}"
+          {% endif %}
+        >
+          {%- if s.mode == 'marquee' -%}
+            <div class="min-w-0 flex-1 overflow-hidden">
+              <div class="announcement-bar__track flex w-max" data-ref="track">
+                <div class="announcement-bar__group flex shrink-0 items-center" data-ref="group">
+                  {{ announcement_blocks }}
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="flex size-8 shrink-0 items-center justify-center rounded-btn hover:bg-fg/10 motion-reduce:hidden"
+              data-ref="pause"
+              aria-label="{{ 'sections.announcement_bar.pause' | t }}"
+            >
+              <span data-ref="pause-icon">{%- render 'icon', name: 'pause', class: 'size-4' -%}</span>
+              <span data-ref="play-icon" hidden>{%- render 'icon', name: 'play', class: 'size-4' -%}</span>
+            </button>
+          {%- else -%}
+            {%- if arrows -%}
+              <button type="button" class="flex size-8 shrink-0 items-center justify-center rounded-btn hover:bg-fg/10" data-ref="prev" aria-label="{{ 'sections.announcement_bar.previous' | t }}">
+                {%- render 'icon', name: 'chevron-left', class: 'size-4 rtl:rotate-180' -%}
+              </button>
+            {%- endif -%}
+            <div class="announcement-bar__viewport grid min-w-0 flex-1 text-center" data-ref="viewport" aria-live="off">
+              {{ announcement_blocks }}
+            </div>
+            {%- if arrows -%}
+              <button type="button" class="flex size-8 shrink-0 items-center justify-center rounded-btn hover:bg-fg/10" data-ref="next" aria-label="{{ 'sections.announcement_bar.next' | t }}">
+                {%- render 'icon', name: 'chevron-right', class: 'size-4 rtl:rotate-180' -%}
+              </button>
+            {%- endif -%}
+            {%- if rotating and s.autoplay -%}
+              <button
+                type="button"
+                class="flex size-8 shrink-0 items-center justify-center rounded-btn hover:bg-fg/10"
+                data-ref="pause"
+                aria-label="{{ 'sections.announcement_bar.pause' | t }}"
+              >
+                <span data-ref="pause-icon">{%- render 'icon', name: 'pause', class: 'size-4' -%}</span>
+                <span data-ref="play-icon" hidden>{%- render 'icon', name: 'play', class: 'size-4' -%}</span>
+              </button>
+            {%- endif -%}
+          {%- endif -%}
+        </aw-announcement>
+
+        {%- if has_sides -%}
+          <div class="hidden lg:flex lg:items-center lg:justify-end">
+            {%- if has_localization -%}
+              {% render 'localization-form', form_id: 'AnnouncementLocalization', show_country: s.show_country_selector, show_language: s.show_language_selector, compact: true %}
+            {%- endif -%}
+          </div>
+        {%- endif -%}
+      </div>
+    </div>
+    <script src="{{ 'c-announcement.js' | asset_url }}" type="module"></script>
+  {%- endif -%}
+{%- endunless -%}
+
+{% stylesheet %}
+  /* Rotate: messages share one grid cell; before the script runs only the first is shown. */
+  .announcement-bar[data-mode='rotate'] .announcement-bar__viewport > * {
+    grid-area: 1 / 1;
+  }
+  .announcement-bar[data-mode='rotate']:not([data-ready]) .announcement-bar__viewport > :not(:first-child) {
+    display: none;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .announcement-bar[data-ready][data-mode='rotate'] .announcement-bar__viewport > :not([hidden]) {
+      animation: announcement-bar-in 0.45s ease both;
+    }
+  }
+  @keyframes announcement-bar-in {
+    from { opacity: 0; transform: translateY(0.5rem); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* Marquee: the script clones the group once so the track can loop by moving exactly half its width. */
+  .announcement-bar[data-mode='marquee'] .announcement-bar__group > * {
+    padding-inline: 1.5rem;
+  }
+  .announcement-bar[data-mode='marquee'] .announcement-bar__group > *::before {
+    content: '';
+    position: relative;
+    inset-inline-start: -1.5rem;
+    width: 4px;
+    height: 4px;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    background: currentColor;
+    opacity: 0.6;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .announcement-bar[data-ready][data-mode='marquee'] .announcement-bar__track {
+      animation: announcement-bar-marquee var(--marquee-duration, 30s) linear infinite;
+    }
+    [dir='rtl'] .announcement-bar[data-ready][data-mode='marquee'] .announcement-bar__track {
+      animation-name: announcement-bar-marquee-rtl;
+    }
+    .announcement-bar[data-direction='right'] .announcement-bar__track {
+      animation-direction: reverse;
+    }
+    .announcement-bar[data-mode='marquee']:hover .announcement-bar__track,
+    .announcement-bar[data-mode='marquee']:focus-within .announcement-bar__track,
+    .announcement-bar[data-paused] .announcement-bar__track {
+      animation-play-state: paused;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .announcement-bar[data-mode='marquee'] .announcement-bar__track {
+      width: auto;
+    }
+    .announcement-bar[data-mode='marquee'] .announcement-bar__group {
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+  }
+  @keyframes announcement-bar-marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @keyframes announcement-bar-marquee-rtl {
+    from { transform: translateX(0); }
+    to { transform: translateX(50%); }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.announcement_bar.name",
+  "class": "section-announcement-bar",
+  "enabled_on": {
+    "groups": [
+      "header"
+    ]
+  },
+  "max_blocks": 8,
+  "blocks": [
+    {
+      "type": "_announcement"
+    }
+  ],
+  "settings": [
+    {
+      "type": "select",
+      "id": "mode",
+      "label": "t:sections.announcement_bar.settings.mode.label",
+      "options": [
+        {
+          "value": "rotate",
+          "label": "t:sections.announcement_bar.settings.mode.options.rotate"
+        },
+        {
+          "value": "marquee",
+          "label": "t:sections.announcement_bar.settings.mode.options.marquee"
+        }
+      ],
+      "default": "rotate"
+    },
+    {
+      "type": "checkbox",
+      "id": "autoplay",
+      "label": "t:sections.announcement_bar.settings.autoplay.label",
+      "info": "t:sections.announcement_bar.settings.autoplay.info",
+      "default": true,
+      "visible_if": "{{ section.settings.mode == 'rotate' }}"
+    },
+    {
+      "type": "range",
+      "id": "interval",
+      "label": "t:sections.announcement_bar.settings.interval.label",
+      "min": 3,
+      "max": 10,
+      "step": 1,
+      "unit": "s",
+      "default": 5,
+      "visible_if": "{{ section.settings.mode == 'rotate' and section.settings.autoplay }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_arrows",
+      "label": "t:sections.announcement_bar.settings.show_arrows.label",
+      "info": "t:sections.announcement_bar.settings.show_arrows.info",
+      "default": false,
+      "visible_if": "{{ section.settings.mode == 'rotate' }}"
+    },
+    {
+      "type": "range",
+      "id": "marquee_duration",
+      "label": "t:sections.announcement_bar.settings.marquee_duration.label",
+      "info": "t:sections.announcement_bar.settings.marquee_duration.info",
+      "min": 10,
+      "max": 80,
+      "step": 2,
+      "unit": "s",
+      "default": 30,
+      "visible_if": "{{ section.settings.mode == 'marquee' }}"
+    },
+    {
+      "type": "select",
+      "id": "marquee_direction",
+      "label": "t:sections.announcement_bar.settings.marquee_direction.label",
+      "options": [
+        {
+          "value": "left",
+          "label": "t:sections.announcement_bar.settings.marquee_direction.options.left"
+        },
+        {
+          "value": "right",
+          "label": "t:sections.announcement_bar.settings.marquee_direction.options.right"
+        }
+      ],
+      "default": "left",
+      "visible_if": "{{ section.settings.mode == 'marquee' }}"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.announcement_bar.settings.extras_header"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_social",
+      "label": "t:sections.announcement_bar.settings.show_social.label",
+      "info": "t:sections.announcement_bar.settings.show_social.info",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_country_selector",
+      "label": "t:sections.header.settings.show_country_selector.label",
+      "info": "t:sections.header.settings.show_country_selector.info",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_language_selector",
+      "label": "t:sections.header.settings.show_language_selector.label",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_on_home",
+      "label": "t:sections.announcement_bar.settings.hide_on_home.label",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-4"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.announcement_bar.name",
+      "blocks": {
+        "message-1": {
+          "type": "_announcement",
+          "settings": {
+            "text": "Add a store-wide message",
+            "icon": "none"
+          }
+        },
+        "message-2": {
+          "type": "_announcement",
+          "settings": {
+            "text": "Add another message, like your returns policy",
+            "icon": "none"
+          }
+        }
+      },
+      "block_order": [
+        "message-1",
+        "message-2"
+      ]
+    }
+  ]
+}
+{% endschema %}

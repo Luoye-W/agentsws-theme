@@ -1,0 +1,24 @@
+{% doc %}
+  @description The product description written in Shopify admin, as rich text.
+  Use when: product info column, on its own or inside a collapsible row.
+
+  @example
+  {% content_for 'block', type: 'product-description', id: 'description' %}
+{% enddoc %}
+{%- assign product = closest.product -%}
+{%- if product.description != blank -%}
+  <div class="rte type-body text-muted" {{ block.shopify_attributes }}>
+    {{- product.description -}}
+  </div>
+{%- else -%}
+  <div {{ block.shopify_attributes }}></div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:blocks.product_description.name",
+  "tag": null,
+  "settings": [],
+  "presets": [{ "name": "t:blocks.product_description.name" }]
+}
+{% endschema %}

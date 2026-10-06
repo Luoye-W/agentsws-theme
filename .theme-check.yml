@@ -1,0 +1,6 @@
+extends: theme-check:recommended
+ignore:
+  - node_modules/**
+  - src/**
+  - scripts/**
+  - tests/**

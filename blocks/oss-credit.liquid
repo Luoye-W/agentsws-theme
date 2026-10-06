@@ -1,0 +1,25 @@
+{% doc %}
+  @description "Built with agentsws" credit link for the footer. OPEN-SOURCE EDITION ONLY: files prefixed oss- are removed from any Theme Store package (Theme Store forbids designer credits). Never render oss- files from other Liquid files; only place them via JSON templates or section groups.
+  Use when: footer group of the open-source edition.
+
+  @example
+  {% content_for 'block', type: 'oss-credit', id: 'credit' %}
+{% enddoc %}
+<p class="type-xs text-muted" {{ block.shopify_attributes }}>
+  <a href="https://agentsws.com" class="underline" target="_blank" rel="noopener">
+    {{- 'general.credit' | t -}}
+  </a>
+</p>
+
+{% schema %}
+{
+  "name": "t:blocks.oss_credit.name",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "t:blocks.oss_credit.name"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,376 @@
+{% comment %}
+  @description Video from Shopify, YouTube or Vimeo with a cover image and play button; optional text overlay built from blocks (heading, text, buttons). Autoplay plays muted after the page has loaded, never on data-saver / 2G connections or with reduced motion, always with a pause button.
+  In banner mode (full width) it can make the header transparent when it is the first section on the page.
+  Use when: installation or brand videos, product demos, a video banner with a headline on top.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign has_content = false
+  if section.blocks.size > 0
+    assign has_content = true
+  endif
+
+  assign natural_ratio = s.cover_image.aspect_ratio | default: s.video.aspect_ratio | default: 1.7778
+  case s.ratio
+    when 'widescreen'
+      assign ratio = '16 / 9'
+    when 'cinema'
+      assign ratio = '21 / 9'
+    when 'landscape'
+      assign ratio = '4 / 3'
+    when 'square'
+      assign ratio = '1 / 1'
+    when 'portrait'
+      assign ratio = '4 / 5'
+    when 'vertical'
+      assign ratio = '9 / 16'
+    else
+      assign ratio = natural_ratio
+  endcase
+  case s.ratio_mobile
+    when 'widescreen'
+      assign ratio_mobile = '16 / 9'
+    when 'square'
+      assign ratio_mobile = '1 / 1'
+    when 'portrait'
+      assign ratio_mobile = '4 / 5'
+    when 'vertical'
+      assign ratio_mobile = '9 / 16'
+    else
+      assign ratio_mobile = ratio
+  endcase
+
+  if s.full_width
+    assign wrapper_class = 'w-full'
+    assign frame_radius = ''
+  else
+    assign wrapper_class = 'page-width'
+    assign frame_radius = 'rounded-media'
+  endif
+
+  case s.content_position
+    when 'top_left'
+      assign position_class = 'items-start justify-start text-start'
+    when 'top_center'
+      assign position_class = 'items-start justify-center text-center'
+    when 'middle_left'
+      assign position_class = 'items-center justify-start text-start'
+    when 'middle_center'
+      assign position_class = 'items-center justify-center text-center'
+    when 'bottom_center'
+      assign position_class = 'items-end justify-center text-center'
+    else
+      assign position_class = 'items-end justify-start text-start'
+  endcase
+
+  case s.content_align
+    when 'center'
+      assign content_align_class = 'items-center'
+    when 'end'
+      assign content_align_class = 'items-end'
+    else
+      assign content_align_class = 'items-start'
+  endcase
+
+  assign eager = false
+  if section.index <= 2
+    assign eager = true
+  endif
+  assign button_place = blank
+  if has_content
+    assign button_place = 'corner'
+  endif
+
+  comment
+    Transparent header only in banner mode (full width). The text moves below the header by its height.
+  endcomment
+  assign transparent_header = false
+  if s.transparent_header and s.full_width
+    assign transparent_header = true
+  endif
+  if transparent_header
+    assign overlay_padding_class = 'p-6 pt-[calc(1.5rem+var(--transparent-header-offset,0px))] pe-20 md:p-12 md:pt-[calc(3rem+var(--transparent-header-offset,0px))] md:pe-24'
+  else
+    assign overlay_padding_class = 'p-6 pe-20 md:p-12 md:pe-24'
+  endif
+-%}
+<div
+  class="section-video surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1)); --video-ratio: {{ ratio }}; --video-ratio-mobile: {{ ratio_mobile }}; --video-overlay: {{ s.overlay_opacity | divided_by: 100.0 }};"
+  {% if transparent_header %}
+    data-transparent-header
+  {% endif %}
+>
+  <div class="{{ wrapper_class }}">
+    <div class="section-video__frame relative isolate overflow-hidden {{ frame_radius }} aspect-(--video-ratio-mobile) md:aspect-(--video-ratio)">
+      {%- render 'video-player',
+        video: s.video,
+        video_url: s.video_url,
+        cover: s.cover_image,
+        autoplay: s.autoplay,
+        loop: s.loop,
+        description: s.description,
+        eager: eager,
+        button: button_place,
+        class: 'absolute inset-0 size-full'
+      -%}
+      {%- if has_content -%}
+        <div class="section-video__overlay pointer-events-none absolute inset-0 z-[5] bg-[rgb(0_0_0/var(--video-overlay))] transition-opacity duration-500" aria-hidden="true"></div>
+        <div class="section-video__overlay pointer-events-none absolute inset-0 z-[6] flex {{ overlay_padding_class }} transition-opacity duration-500 surface-{{ s.text_color_scheme }} bg-transparent {{ position_class }}">
+          <div
+            class="flex max-w-2xl flex-col gap-5 {{ content_align_class }} [&_a]:pointer-events-auto [&_button]:pointer-events-auto [&_input]:pointer-events-auto"
+            data-heading-highlight="{{ s.heading_highlight }}"
+          >
+            {% content_for 'blocks' %}
+          </div>
+        </div>
+      {%- endif -%}
+    </div>
+    {%- if s.video == blank and s.video_url == blank and request.design_mode -%}
+      <p class="type-sm mt-3 text-muted">{{ 'sections.video.editor_empty' | t }}</p>
+    {%- endif -%}
+  </div>
+</div>
+
+{% stylesheet %}
+  /* Once a click-to-play video runs with sound and native controls, the text overlay steps aside. */
+  .section-video__frame:has(aw-video[data-revealed]:not([data-autoplay])) .section-video__overlay {
+    opacity: 0;
+    visibility: hidden;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.video.name",
+  "tag": "section",
+  "class": "section-video-wrapper",
+  "blocks": [
+    {
+      "type": "@theme"
+    },
+    {
+      "type": "@app"
+    }
+  ],
+  "settings": [
+    {
+      "type": "video",
+      "id": "video",
+      "label": "t:sections.video.settings.video.label",
+      "info": "t:sections.video.settings.video.info"
+    },
+    {
+      "type": "video_url",
+      "id": "video_url",
+      "accept": ["youtube", "vimeo"],
+      "label": "t:sections.video.settings.video_url.label",
+      "info": "t:sections.video.settings.video_url.info"
+    },
+    {
+      "type": "image_picker",
+      "id": "cover_image",
+      "label": "t:sections.video.settings.cover_image.label",
+      "info": "t:sections.video.settings.cover_image.info"
+    },
+    {
+      "type": "text",
+      "id": "description",
+      "label": "t:sections.video.settings.description.label",
+      "info": "t:sections.video.settings.description.info"
+    },
+    {
+      "type": "checkbox",
+      "id": "autoplay",
+      "label": "t:sections.video.settings.autoplay.label",
+      "info": "t:sections.video.settings.autoplay.info",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "loop",
+      "label": "t:sections.video.settings.loop.label",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "t:shared.layout"
+    },
+    {
+      "type": "select",
+      "id": "ratio",
+      "label": "t:sections.video.settings.ratio.label",
+      "options": [
+        { "value": "auto", "label": "t:sections.video.settings.ratio.options.auto" },
+        { "value": "widescreen", "label": "t:sections.video.settings.ratio.options.widescreen" },
+        { "value": "cinema", "label": "t:sections.video.settings.ratio.options.cinema" },
+        { "value": "landscape", "label": "t:sections.video.settings.ratio.options.landscape" },
+        { "value": "square", "label": "t:sections.video.settings.ratio.options.square" },
+        { "value": "portrait", "label": "t:sections.video.settings.ratio.options.portrait" },
+        { "value": "vertical", "label": "t:sections.video.settings.ratio.options.vertical" }
+      ],
+      "default": "widescreen"
+    },
+    {
+      "type": "select",
+      "id": "ratio_mobile",
+      "label": "t:sections.video.settings.ratio_mobile.label",
+      "options": [
+        { "value": "same", "label": "t:sections.video.settings.ratio_mobile.options.same" },
+        { "value": "widescreen", "label": "t:sections.video.settings.ratio.options.widescreen" },
+        { "value": "square", "label": "t:sections.video.settings.ratio.options.square" },
+        { "value": "portrait", "label": "t:sections.video.settings.ratio.options.portrait" },
+        { "value": "vertical", "label": "t:sections.video.settings.ratio.options.vertical" }
+      ],
+      "default": "same"
+    },
+    {
+      "type": "checkbox",
+      "id": "full_width",
+      "label": "t:shared.media.full_width",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "transparent_header",
+      "label": "t:sections.hero.settings.transparent_header.label",
+      "info": "t:sections.video.settings.transparent_header.info",
+      "default": false,
+      "visible_if": "{{ section.settings.full_width }}"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.media.overlay_header",
+      "info": "t:shared.media.overlay_info"
+    },
+    {
+      "type": "select",
+      "id": "content_position",
+      "label": "t:sections.hero.settings.position.label",
+      "options": [
+        { "value": "top_left", "label": "t:sections.hero.settings.position.options.top_left" },
+        { "value": "top_center", "label": "t:sections.hero.settings.position.options.top_center" },
+        { "value": "middle_left", "label": "t:sections.hero.settings.position.options.middle_left" },
+        { "value": "middle_center", "label": "t:sections.hero.settings.position.options.middle_center" },
+        { "value": "bottom_left", "label": "t:sections.hero.settings.position.options.bottom_left" },
+        { "value": "bottom_center", "label": "t:sections.hero.settings.position.options.bottom_center" }
+      ],
+      "default": "bottom_left"
+    },
+    {
+      "type": "select",
+      "id": "content_align",
+      "label": "t:sections.hero.settings.content_align.label",
+      "options": [
+        { "value": "start", "label": "t:shared.align.options.start" },
+        { "value": "center", "label": "t:shared.align.options.center" },
+        { "value": "end", "label": "t:shared.align.options.end" }
+      ],
+      "default": "start"
+    },
+    {
+      "type": "select",
+      "id": "heading_highlight",
+      "label": "t:shared.heading_highlight.label",
+      "info": "t:shared.heading_highlight.info",
+      "options": [
+        { "value": "none", "label": "t:shared.heading_highlight.options.none" },
+        { "value": "color", "label": "t:shared.heading_highlight.options.color" },
+        { "value": "marker", "label": "t:shared.heading_highlight.options.marker" },
+        { "value": "underline", "label": "t:shared.heading_highlight.options.underline" },
+        { "value": "outline", "label": "t:shared.heading_highlight.options.outline" },
+        { "value": "circle", "label": "t:shared.heading_highlight.options.circle" },
+        { "value": "squiggle", "label": "t:shared.heading_highlight.options.squiggle" }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "color_scheme",
+      "id": "text_color_scheme",
+      "label": "t:sections.hero.settings.text_surface.label",
+      "info": "t:sections.hero.settings.text_surface.info",
+      "default": "scheme-3"
+    },
+    {
+      "type": "range",
+      "id": "overlay_opacity",
+      "label": "t:sections.hero.settings.overlay_opacity.label",
+      "min": 0,
+      "max": 90,
+      "step": 5,
+      "unit": "%",
+      "default": 30
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.video.name"
+    },
+    {
+      "name": "t:sections.video.presets.banner",
+      "settings": {
+        "autoplay": true,
+        "loop": true,
+        "full_width": true,
+        "ratio": "cinema",
+        "ratio_mobile": "portrait",
+        "padding_top": 0,
+        "padding_bottom": 0
+      },
+      "blocks": [
+        {
+          "type": "heading",
+          "settings": {
+            "text": "Add a headline for your video",
+            "size": "h1",
+            "tag": "h2"
+          }
+        },
+        {
+          "type": "text",
+          "settings": {
+            "text": "<p>Describe what shoppers will see in the video.</p>",
+            "size": "lg"
+          }
+        },
+        {
+          "type": "button",
+          "settings": {
+            "label": "Shop now"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

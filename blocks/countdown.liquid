@@ -1,0 +1,137 @@
+{% doc %}
+  @description Countdown timer to a real deadline (date YYYY-MM-DD + time HH:MM in the store's time zone), standard (numbers over unit labels) or compact (one line). Invalid or missing dates show no timer; after the deadline it shows an optional "ended" message or disappears. Screen readers get the end date once instead of a ticking announcement.
+  Use when: a real sale or launch deadline inside any section that accepts theme blocks (container, rich text, group, hero). Never for fake urgency.
+
+  @example
+  {% content_for 'block', type: 'countdown', id: 'sale-timer' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  if s.when_ended == 'hide'
+    assign timer_when_ended = 'hide'
+  else
+    assign timer_when_ended = 'message'
+  endif
+-%}
+<div class="w-full" {{ block.shopify_attributes }}>
+  {%- render 'countdown-timer',
+    end_date: s.end_date,
+    end_time: s.end_time,
+    ended_message: s.ended_message,
+    when_ended: timer_when_ended,
+    style: s.style,
+    size: s.size,
+    align: s.alignment
+  -%}
+</div>
+
+{% schema %}
+{
+  "name": "t:blocks.countdown.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:sections.countdown.settings.real_deadline_notice"
+    },
+    {
+      "type": "text",
+      "id": "end_date",
+      "label": "t:sections.countdown.settings.end_date.label",
+      "info": "t:sections.countdown.settings.end_date.info",
+      "placeholder": "2026-12-31"
+    },
+    {
+      "type": "text",
+      "id": "end_time",
+      "label": "t:sections.countdown.settings.end_time.label",
+      "info": "t:sections.countdown.settings.end_time.info",
+      "placeholder": "18:00"
+    },
+    {
+      "type": "select",
+      "id": "when_ended",
+      "label": "t:sections.countdown.settings.when_ended.label",
+      "options": [
+        {
+          "value": "message",
+          "label": "t:sections.countdown.settings.when_ended.options.message"
+        },
+        {
+          "value": "hide",
+          "label": "t:blocks.countdown.settings.when_ended_hide"
+        }
+      ],
+      "default": "message"
+    },
+    {
+      "type": "richtext",
+      "id": "ended_message",
+      "label": "t:sections.countdown.settings.ended_message.label",
+      "visible_if": "{{ block.settings.when_ended == 'message' }}"
+    },
+    {
+      "type": "select",
+      "id": "style",
+      "label": "t:blocks.countdown.settings.style.label",
+      "options": [
+        {
+          "value": "standard",
+          "label": "t:blocks.countdown.settings.style.options.standard"
+        },
+        {
+          "value": "compact",
+          "label": "t:blocks.countdown.settings.style.options.compact"
+        }
+      ],
+      "default": "standard"
+    },
+    {
+      "type": "select",
+      "id": "size",
+      "label": "t:sections.countdown.settings.timer_size.label",
+      "visible_if": "{{ block.settings.style == 'standard' }}",
+      "options": [
+        {
+          "value": "sm",
+          "label": "t:sections.countdown.settings.timer_size.options.sm"
+        },
+        {
+          "value": "md",
+          "label": "t:sections.countdown.settings.timer_size.options.md"
+        },
+        {
+          "value": "lg",
+          "label": "t:sections.countdown.settings.timer_size.options.lg"
+        }
+      ],
+      "default": "md"
+    },
+    {
+      "type": "select",
+      "id": "alignment",
+      "label": "t:shared.text_alignment",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        },
+        {
+          "value": "end",
+          "label": "t:shared.align.options.end"
+        }
+      ],
+      "default": "start"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:blocks.countdown.name"
+    }
+  ]
+}
+{% endschema %}

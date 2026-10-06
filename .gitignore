@@ -1,0 +1,8 @@
+node_modules
+.verify/
+.shopify/
+.env
+.DS_Store
+*.log
+.claude/
+.demo/

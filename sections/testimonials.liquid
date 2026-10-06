@@ -1,0 +1,368 @@
+{% comment %}
+  @description Customer quotes as a grid, a slider with previous/next buttons, a "scattered" column of staggered cards under a big two-line heading (first line at the start, second line at the end), or a "banner" showing one quote at a time over a background image with previous/next buttons. Each quote can show a star rating (read out as text, e.g. "4 out of 5 stars"), the author's name, role or city, an avatar and a link to the product it is about. Ships with obvious placeholder text only — never invented reviews — which never reaches the storefront (the section stays hidden until a real quote is entered), and shows a reminder in the theme editor that quotes must be genuine.
+  Use when: a few hand-picked, real customer or press quotes on the home page, product pages or landing pages. For live review data use a reviews app block instead.
+{% endcomment %}
+{%- capture quote_blocks -%}{% content_for 'blocks' %}{%- endcapture -%}
+{%- liquid
+  assign s = section.settings
+  assign heading_id = 'TestimonialsHeading-' | append: section.id
+
+  comment
+    Hide the whole section on the storefront until at least one real quote is filled in.
+    Theme block settings cannot be read from section.blocks, so each _testimonial decides for itself and marks a
+    rendered quote with data-testimonial; the section looks for that marker in the rendered blocks.
+  endcomment
+  assign has_quotes = false
+  if quote_blocks contains 'data-testimonial'
+    assign has_quotes = true
+  endif
+
+  assign card_style = s.card_style
+  assign text_alignment = s.text_alignment
+  if s.layout == 'slider'
+    assign list_class = 'flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] -mx-(--s-gutter) px-(--s-gutter) scroll-px-(--s-gutter) gap-4 md:mx-0 md:px-0 md:gap-6'
+  elsif s.layout == 'scattered'
+    assign list_class = 'flex flex-col gap-4 md:mx-auto md:w-full md:max-w-5xl md:gap-10'
+  elsif s.layout == 'banner'
+    assign list_class = 'flex w-full snap-x snap-mandatory overflow-x-auto [scrollbar-width:none]'
+    assign card_style = 'plain'
+    assign text_alignment = 'center'
+  else
+    case s.columns
+      when 1
+        assign list_class = 'grid grid-cols-1 gap-4 md:gap-6'
+      when 2
+        assign list_class = 'grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6'
+      when 4
+        assign list_class = 'grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-4'
+      else
+        assign list_class = 'grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6'
+    endcase
+  endif
+-%}
+{%- if has_quotes or request.design_mode -%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1)); --per-view: {{ s.columns }}; --banner-h: {{ s.banner_height }}px; --banner-overlay: {{ s.banner_overlay | divided_by: 100.0 }};"
+  data-card="{{ card_style }}"
+  data-layout="{{ s.layout }}"
+  data-align="{{ text_alignment }}"
+>
+  <div class="page-width flex flex-col gap-8 md:gap-10">
+    {%- if request.design_mode -%}
+      <p class="type-sm flex items-start gap-2 rounded-card border border-border p-3 text-muted">
+        {%- render 'icon', name: 'shield', class: 'size-5' -%}
+        {{- 'sections.testimonials.editor_notice' | t -}}
+      </p>
+    {%- endif -%}
+    {%- if s.layout == 'scattered' -%}
+      {%- comment -%} Big heading split over two lines: the first at the start, the second at the end. {%- endcomment -%}
+      <div class="flex flex-col gap-4">
+        {%- if s.eyebrow != blank -%}
+          <p class="type-eyebrow text-muted">{{ s.eyebrow | escape }}</p>
+        {%- endif -%}
+        {%- if s.heading != blank or s.heading_end != blank -%}
+          <h2 id="{{ heading_id }}" class="type-display flex flex-col gap-1 md:gap-3">
+            {%- if s.heading != blank -%}<span class="self-start">{{ s.heading }}</span>{%- endif -%}
+            {%- if s.heading_end != blank -%}<span class="self-end text-end">{{ s.heading_end }}</span>{%- endif -%}
+          </h2>
+        {%- endif -%}
+        {%- if s.description != blank -%}
+          <div class="rte max-w-2xl text-muted">{{ s.description }}</div>
+        {%- endif -%}
+        {%- if s.link_label != blank and s.link != blank -%}
+          <a href="{{ s.link }}" class="btn btn-secondary self-start">{{ s.link_label | escape }}</a>
+        {%- endif -%}
+      </div>
+    {%- else -%}
+      {%- render 'section-heading',
+        eyebrow: s.eyebrow,
+        heading: s.heading,
+        text: s.description,
+        alignment: s.heading_alignment,
+        link_label: s.link_label,
+        link: s.link,
+        heading_id: heading_id
+      -%}
+    {%- endif -%}
+    {%- capture quote_list -%}
+      <ul
+        class="{{ list_class }}"
+        role="list"
+        data-ref="track"
+        {% if s.heading != blank %}
+          aria-labelledby="{{ heading_id }}"
+        {% endif %}
+      >
+        {{ quote_blocks }}
+      </ul>
+    {%- endcapture -%}
+    {%- if s.layout == 'banner' -%}
+      {%- assign banner_alt = s.banner_image.alt | escape -%}
+      <div class="relative isolate flex min-h-[calc(var(--banner-h)*0.75)] items-center justify-center overflow-hidden rounded-media bg-placeholder md:min-h-(--banner-h)">
+        {%- if s.banner_image != blank -%}
+          {{ s.banner_image | image_url: width: 2400 | image_tag: widths: '750, 1100, 1500, 1800, 2400', sizes: '(min-width: 1400px) 1400px, 100vw', loading: 'lazy', alt: banner_alt, class: 'absolute inset-0 -z-10 size-full object-cover' }}
+        {%- else -%}
+          {{ 'lifestyle-2' | placeholder_svg_tag: 'absolute inset-0 -z-10 size-full' }}
+        {%- endif -%}
+        <div class="absolute inset-0 -z-10 bg-[rgb(0_0_0/var(--banner-overlay))]" aria-hidden="true"></div>
+        <aw-slider class="surface-{{ s.banner_text_scheme }} flex w-full max-w-3xl flex-col items-center gap-6 bg-transparent px-6 py-12 md:px-12 md:py-16">
+          {{ quote_list }}
+          {%- render 'slider-buttons', class: 'justify-center' -%}
+        </aw-slider>
+      </div>
+    {%- else -%}
+      <aw-slider class="flex flex-col gap-4">
+        {{ quote_list }}
+        {%- if s.layout == 'slider' -%}
+          {%- render 'slider-buttons', class: 'justify-end' -%}
+        {%- endif -%}
+      </aw-slider>
+    {%- endif -%}
+  </div>
+</div>
+{%- if s.layout == 'slider' or s.layout == 'banner' -%}
+  <script src="{{ 'c-slider.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.testimonials.name",
+  "tag": "section",
+  "class": "section-testimonials",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "blocks": [
+    {
+      "type": "_testimonial"
+    }
+  ],
+  "max_blocks": 12,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:sections.testimonials.settings.genuine_notice"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.section_heading.header"
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:shared.section_heading.eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:shared.section_heading.heading",
+      "default": "What customers say"
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "t:shared.section_heading.description"
+    },
+    {
+      "type": "select",
+      "id": "heading_alignment",
+      "label": "t:shared.section_heading.alignment",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        }
+      ],
+      "default": "center",
+      "visible_if": "{{ section.settings.layout != 'scattered' }}"
+    },
+    {
+      "type": "text",
+      "id": "link_label",
+      "label": "t:shared.section_heading.link_label"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "t:shared.section_heading.link",
+      "visible_if": "{{ section.settings.link_label != blank }}"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.layout"
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "t:sections.testimonials.settings.layout.label",
+      "options": [
+        {
+          "value": "grid",
+          "label": "t:sections.testimonials.settings.layout.options.grid"
+        },
+        {
+          "value": "slider",
+          "label": "t:sections.testimonials.settings.layout.options.slider"
+        },
+        {
+          "value": "scattered",
+          "label": "t:sections.testimonials.settings.layout.options.scattered"
+        },
+        {
+          "value": "banner",
+          "label": "t:sections.testimonials.settings.layout.options.banner"
+        }
+      ],
+      "default": "grid"
+    },
+    {
+      "type": "range",
+      "id": "columns",
+      "label": "t:sections.testimonials.settings.columns.label",
+      "min": 1,
+      "max": 4,
+      "step": 1,
+      "default": 3,
+      "visible_if": "{{ section.settings.layout == 'grid' or section.settings.layout == 'slider' }}"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading_end",
+      "label": "t:sections.testimonials.settings.heading_end.label",
+      "info": "t:sections.testimonials.settings.heading_end.info",
+      "visible_if": "{{ section.settings.layout == 'scattered' }}"
+    },
+    {
+      "type": "image_picker",
+      "id": "banner_image",
+      "label": "t:sections.testimonials.settings.banner_image.label",
+      "visible_if": "{{ section.settings.layout == 'banner' }}"
+    },
+    {
+      "type": "range",
+      "id": "banner_height",
+      "label": "t:sections.testimonials.settings.banner_height.label",
+      "min": 360,
+      "max": 900,
+      "step": 20,
+      "unit": "px",
+      "default": 560,
+      "visible_if": "{{ section.settings.layout == 'banner' }}"
+    },
+    {
+      "type": "range",
+      "id": "banner_overlay",
+      "label": "t:sections.hero.settings.overlay_opacity.label",
+      "min": 0,
+      "max": 90,
+      "step": 5,
+      "unit": "%",
+      "default": 50,
+      "visible_if": "{{ section.settings.layout == 'banner' }}"
+    },
+    {
+      "type": "color_scheme",
+      "id": "banner_text_scheme",
+      "label": "t:sections.hero.settings.text_surface.label",
+      "info": "t:sections.hero.settings.text_surface.info",
+      "default": "scheme-3",
+      "visible_if": "{{ section.settings.layout == 'banner' }}"
+    },
+    {
+      "type": "select",
+      "id": "card_style",
+      "label": "t:shared.card_style.label",
+      "options": [
+        {
+          "value": "plain",
+          "label": "t:shared.card_style.options.plain"
+        },
+        {
+          "value": "bordered",
+          "label": "t:shared.card_style.options.bordered"
+        },
+        {
+          "value": "filled",
+          "label": "t:shared.card_style.options.filled"
+        }
+      ],
+      "default": "filled",
+      "visible_if": "{{ section.settings.layout != 'banner' }}"
+    },
+    {
+      "type": "select",
+      "id": "text_alignment",
+      "label": "t:shared.text_alignment",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        }
+      ],
+      "default": "start"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_quote_icon",
+      "label": "t:sections.testimonials.settings.show_quote_icon.label",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.testimonials.name",
+      "blocks": [
+        {
+          "type": "_testimonial"
+        },
+        {
+          "type": "_testimonial"
+        },
+        {
+          "type": "_testimonial"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

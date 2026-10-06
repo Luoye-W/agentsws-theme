@@ -1,0 +1,338 @@
+{% comment %}
+  @description Side-by-side comparison of up to 4 products. Rows come from each product's specification metafield (multi-line text, one "Label: Value" per line — the same custom.specifications field the Specifications block reads) and are aligned by label, so every product's value sits in the right row; missing values show "—". "true" / "false" values become check / cross icons. Optional "Highlight differences" switch, product header that sticks while scrolling (desktop), Add to cart per column (with a variant menu for products with options) and a sticky first column when the table scrolls sideways on phones.
+  Use when: "compare models", "which one is right for me", thickness / size / edition comparisons. Fill the metafield per product in admin; no specs are typed into the theme.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign compare_products = s.products
+  assign column_count = compare_products.size | default: 0
+  assign field_path = s.metafield | default: 'custom.specifications' | strip
+  assign namespace = field_path | split: '.' | first
+  assign key = field_path | split: '.' | last
+  assign sep = '§§'
+  assign product_sep = '¦¦'
+
+  comment
+    One pass over every product: spec strings ("§§label=>value§§…", first occurrence of a label wins) and the
+    union of labels in first-seen order. Labels match case-insensitively.
+  endcomment
+  assign label_keys = sep
+  assign label_names = ''
+  assign all_specs = ''
+  for item in compare_products limit: 4
+    assign field = item.metafields[namespace][key]
+    assign raw = field.value | default: field
+    assign lines = raw | newline_to_br | split: '<br />'
+    assign spec = sep
+    for line in lines
+      assign text = line | strip
+      unless text contains ':'
+        continue
+      endunless
+      assign label = text | split: ':' | first | strip
+      if label == blank
+        continue
+      endif
+      assign value = text | split: ':' | slice: 1, 50 | join: ':' | strip
+      assign label_key = label | downcase
+      assign probe = sep | append: label_key | append: '=>'
+      unless spec contains probe
+        assign spec = spec | append: label_key | append: '=>' | append: value | append: sep
+      endunless
+      assign union_probe = sep | append: label_key | append: sep
+      unless label_keys contains union_probe
+        assign label_keys = label_keys | append: label_key | append: sep
+        assign label_names = label_names | append: label | append: sep
+      endunless
+    endfor
+    assign all_specs = all_specs | append: spec | append: product_sep
+  endfor
+  assign specs = all_specs | split: product_sep
+  assign row_keys = label_keys | remove_first: sep | split: sep
+  assign row_names = label_names | split: sep
+
+  assign different_class = 'in-data-[highlight=true]:bg-[color-mix(in_srgb,var(--color-accent)_18%,var(--color-bg))]'
+  if s.sticky_header
+    assign head_sticky = 'md:sticky md:top-[var(--header-h,0px)]'
+  else
+    assign head_sticky = ''
+  endif
+-%}
+<aw-product-comparison
+  class="block surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1)); --cols: {{ column_count }};"
+  data-highlight="{{ s.highlight_by_default }}"
+>
+  <div class="page-width flex flex-col gap-6">
+    {%- if s.heading != blank or s.text != blank -%}
+      <div class="flex max-w-2xl flex-col gap-2">
+        {%- if s.heading != blank -%}<h2 class="type-h2">{{ s.heading }}</h2>{%- endif -%}
+        {%- if s.text != blank -%}<div class="rte text-muted">{{ s.text }}</div>{%- endif -%}
+      </div>
+    {%- endif -%}
+
+    {%- if column_count > 0 -%}
+      {%- if s.show_highlight_toggle and column_count > 1 -%}
+        <label class="inline-flex cursor-pointer items-center gap-3 self-start rounded-full bg-fg/5 px-4 py-2 type-sm">
+          <input type="checkbox" role="switch" class="peer sr-only" data-ref="toggle" {% if s.highlight_by_default %}checked{% endif %}>
+          <span class="relative h-5 w-9 shrink-0 rounded-full bg-fg/20 transition after:absolute after:top-0.5 after:start-0.5 after:size-4 after:rounded-full after:bg-bg after:transition peer-checked:bg-primary peer-checked:after:translate-x-4 rtl:peer-checked:after:-translate-x-4 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2" aria-hidden="true"></span>
+          {{ 'sections.product_comparison.highlight' | t }}
+        </label>
+      {%- endif -%}
+
+      <div class="-mx-(--s-gutter) overflow-x-auto px-(--s-gutter) md:mx-0 md:overflow-visible md:px-0">
+        <table class="w-full min-w-[calc(8rem+var(--cols)*11rem)] table-fixed border-collapse type-sm md:min-w-0">
+          {%- assign caption = s.heading | strip_html -%}
+          {%- if caption == blank -%}{%- assign caption = 'sections.product_comparison.caption' | t -%}{%- endif -%}
+          <caption class="sr-only">{{ caption }}</caption>
+          <thead>
+            <tr>
+              <td class="sticky start-0 z-20 w-32 bg-bg md:w-48 {{ head_sticky }}"></td>
+              {%- for item in compare_products limit: 4 -%}
+                {%- assign image_alt = item.featured_media.alt | default: item.title | escape -%}
+                <th scope="col" class="z-10 bg-bg p-3 text-start align-top font-normal {{ head_sticky }}">
+                  <div class="flex flex-col gap-2 md:flex-row md:items-start md:gap-3">
+                    <a href="{{ item.url }}" class="block size-16 shrink-0 overflow-hidden rounded-media bg-placeholder md:size-20" tabindex="-1" aria-hidden="true">
+                      {%- if item.featured_media -%}
+                        {{ item.featured_media | image_url: width: 240 | image_tag: widths: '80, 160, 240', sizes: '80px', loading: 'lazy', class: 'size-full object-contain', alt: image_alt }}
+                      {%- else -%}
+                        {{ 'product-1' | placeholder_svg_tag: 'size-full' }}
+                      {%- endif -%}
+                    </a>
+                    <div class="flex min-w-0 flex-col gap-1">
+                      {%- if s.show_vendor and item.vendor != blank -%}
+                        <p class="type-xs text-muted">{{ item.vendor | escape }}</p>
+                      {%- endif -%}
+                      <a href="{{ item.url }}" class="line-clamp-2 font-semibold no-underline hover:underline">{{ item.title | escape }}</a>
+                      {%- if s.show_price -%}
+                        {% render 'price', product: item, size: 'sm' %}
+                      {%- endif -%}
+                    </div>
+                  </div>
+                </th>
+              {%- endfor -%}
+            </tr>
+          </thead>
+          <tbody>
+            {%- for row_key in row_keys -%}
+              {%- liquid
+                assign row_name = row_names[forloop.index0]
+                assign probe = sep | append: row_key | append: '=>'
+                assign first_value = nil
+                assign different = false
+                for spec in specs
+                  assign cell = ''
+                  if spec contains probe
+                    assign cell = spec | split: probe | last | split: sep | first | strip | downcase
+                  endif
+                  if forloop.first
+                    assign first_value = cell
+                  elsif cell != first_value
+                    assign different = true
+                  endif
+                endfor
+              -%}
+              <tr class="border-t border-border" data-different="{{ different }}">
+                <th scope="row" class="sticky start-0 z-10 bg-bg p-3 text-start align-top font-semibold {% if different %}{{ different_class }}{% endif %}">
+                  {{- row_name | escape -}}
+                  {%- if different %}<span class="sr-only"> ({{ 'sections.product_comparison.differs' | t }})</span>{% endif -%}
+                </th>
+                {%- for spec in specs -%}
+                  {%- liquid
+                    assign cell = ''
+                    if spec contains probe
+                      assign cell = spec | split: probe | last | split: sep | first | strip
+                    endif
+                    assign cell_key = cell | downcase
+                  -%}
+                  <td class="p-3 align-top {% if different %}{{ different_class }}{% endif %}">
+                    {%- if cell == blank -%}
+                      <span class="text-muted" aria-hidden="true">—</span>
+                      <span class="sr-only">{{ 'sections.product_comparison.not_specified' | t }}</span>
+                    {%- elsif cell_key == 'true' -%}
+                      {%- render 'icon', name: 'check', class: 'size-5 text-success' -%}
+                      <span class="sr-only">{{ 'sections.product_comparison.yes' | t }}</span>
+                    {%- elsif cell_key == 'false' -%}
+                      {%- render 'icon', name: 'close', class: 'size-5 text-muted' -%}
+                      <span class="sr-only">{{ 'sections.product_comparison.no' | t }}</span>
+                    {%- else -%}
+                      {{ cell | escape }}
+                    {%- endif -%}
+                  </td>
+                {%- endfor -%}
+              </tr>
+            {%- endfor -%}
+
+            {%- if s.show_add_to_cart -%}
+              <tr class="border-t border-border">
+                <td class="sticky start-0 z-10 bg-bg"></td>
+                {%- for item in compare_products limit: 4 -%}
+                  {%- liquid
+                    assign form_id = 'CompareForm-' | append: section.id | append: '-' | append: forloop.index
+                    assign first_variant = item.selected_or_first_available_variant
+                  -%}
+                  <td class="p-3 align-top">
+                    <aw-product-form
+                      class="flex flex-col gap-2"
+                      data-cart-add-url="{{ routes.cart_add_url }}"
+                      data-cart-url="{{ routes.cart_url }}"
+                      data-cart-type="{{ settings.cart_type }}"
+                      data-error-text="{{ 'general.cart.error' | t | escape }}"
+                    >
+                      {%- form 'product', item, id: form_id, class: 'flex flex-col gap-2', novalidate: 'novalidate' -%}
+                        {%- if item.has_only_default_variant -%}
+                          <input type="hidden" name="id" value="{{ first_variant.id }}">
+                        {%- else -%}
+                          <label for="{{ form_id }}-variant" class="sr-only">{{ 'sections.product_comparison.variant_label' | t: product: item.title }}</label>
+                          <select id="{{ form_id }}-variant" name="id" class="field h-10 type-sm">
+                            {%- for variant in item.variants -%}
+                              <option value="{{ variant.id }}" {% if variant == first_variant %}selected{% endif %} {% unless variant.available %}disabled{% endunless %}>
+                                {{- variant.title | escape }} · {{ variant.price | money -}}
+                                {%- unless variant.available %} — {{ 'products.product.sold_out' | t }}{% endunless -%}
+                              </option>
+                            {%- endfor -%}
+                          </select>
+                        {%- endif -%}
+                        <input type="hidden" name="quantity" value="{{ first_variant.quantity_rule.min | default: 1 }}">
+                        <button
+                          type="submit"
+                          class="btn btn-primary w-full aria-busy:opacity-70"
+                          {% unless item.available %}
+                            disabled
+                          {% endunless %}
+                        >
+                          {%- if item.available -%}
+                            {{ 'products.product.add_to_cart' | t }}
+                          {%- else -%}
+                            {{ 'products.product.sold_out' | t }}
+                          {%- endif -%}
+                          <span class="sr-only">: {{ item.title | escape }}</span>
+                        </button>
+                        <p class="type-xs text-error" role="alert" data-ref="error" hidden></p>
+                      {%- endform -%}
+                    </aw-product-form>
+                  </td>
+                {%- endfor -%}
+              </tr>
+            {%- endif -%}
+          </tbody>
+        </table>
+      </div>
+      {%- if row_keys.size == 0 and request.design_mode -%}
+        <p class="type-sm text-muted">{{ 'sections.product_comparison.no_specs' | t: field: field_path }}</p>
+      {%- endif -%}
+    {%- elsif request.design_mode -%}
+      <p class="type-sm text-muted">{{ 'sections.product_comparison.empty' | t }}</p>
+    {%- endif -%}
+  </div>
+</aw-product-comparison>
+<script src="{{ 'c-product-comparison.js' | asset_url }}" type="module"></script>
+{%- if s.show_add_to_cart -%}
+  <script src="{{ 'c-product-form.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.product_comparison.name",
+  "class": "section-product-comparison",
+  "settings": [
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:sections.featured_collection.settings.heading.label",
+      "default": "Compare products"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:sections.featured_collection.settings.text.label"
+    },
+    {
+      "type": "product_list",
+      "id": "products",
+      "label": "t:sections.product_comparison.settings.products.label",
+      "info": "t:sections.product_comparison.settings.products.info",
+      "limit": 4
+    },
+    {
+      "type": "text",
+      "id": "metafield",
+      "label": "t:sections.product_comparison.settings.metafield.label",
+      "info": "t:sections.product_comparison.settings.metafield.info",
+      "default": "custom.specifications"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_highlight_toggle",
+      "label": "t:sections.product_comparison.settings.show_highlight_toggle.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "highlight_by_default",
+      "label": "t:sections.product_comparison.settings.highlight_by_default.label",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "sticky_header",
+      "label": "t:sections.product_comparison.settings.sticky_header.label",
+      "info": "t:sections.product_comparison.settings.sticky_header.info",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_vendor",
+      "label": "t:sections.product_comparison.settings.show_vendor.label",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_price",
+      "label": "t:sections.product_comparison.settings.show_price.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_add_to_cart",
+      "label": "t:sections.product_comparison.settings.show_add_to_cart.label",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.product_comparison.name"
+    }
+  ]
+}
+{% endschema %}

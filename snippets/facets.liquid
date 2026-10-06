@@ -1,0 +1,183 @@
+{% doc %}
+  @description Storefront filter form (availability, price range, product type, colour swatches, any filter set up in the Search & Discovery app). Submits as a normal GET form; <aw-facets> turns changes into in-place updates.
+  Use when: collection and search result sections, once for the desktop sidebar and once inside the mobile filter drawer.
+
+  @param {object} results - The collection or search object (has .filters)
+  @param {string} form_id - Unique id for this form (e.g. "Facets-desktop-<section id>")
+  @param {string} [sort_by] - Current sort order, kept when filters change
+  @param {string} [terms] - Search terms, kept when filters change on the search page
+  @param {string} [layout] - 'stack' (default: groups under each other, for the sidebar and drawer) or 'horizontal' (a row of dropdown buttons above the grid)
+  @param {boolean} [collapsed] - Stack layout: start with every group closed except groups with active values (default: first three open)
+
+  @example
+  {% render 'facets', results: collection, form_id: 'Facets-desktop', sort_by: collection.sort_by %}
+{% enddoc %}
+{%- liquid
+  assign horizontal = false
+  if layout == 'horizontal'
+    assign horizontal = true
+  endif
+-%}
+<form id="{{ form_id }}" data-facets-form class="flex {% if horizontal %}flex-row flex-wrap items-center gap-2{% else %}flex-col{% endif %}">
+  {%- if terms != blank -%}
+    <input type="hidden" name="q" value="{{ terms | escape }}">
+    <input type="hidden" name="options[prefix]" value="last">
+    <input type="hidden" name="type" value="product">
+  {%- endif -%}
+  {%- if sort_by != blank -%}
+    <input type="hidden" name="sort_by" value="{{ sort_by | escape }}">
+  {%- endif -%}
+
+  {%- for filter in results.filters -%}
+    {%- liquid
+      assign filter_id = form_id | append: '-' | append: forloop.index
+      assign facet_key = filter.label | handleize
+      assign facet_active = false
+      if filter.active_values.size > 0
+        assign facet_active = true
+      endif
+      if filter.type == 'price_range'
+        if filter.min_value.value or filter.max_value.value
+          assign facet_active = true
+        endif
+      endif
+      assign facet_open = false
+      unless horizontal
+        if facet_active
+          assign facet_open = true
+        elsif collapsed != true and forloop.index <= 3
+          assign facet_open = true
+        endif
+      endunless
+      if horizontal
+        assign details_class = 'group/facet relative'
+        assign summary_class = 'flex h-10 cursor-pointer list-none items-center gap-2 rounded-btn border border-border px-4 type-sm hover:border-fg group-open/facet:border-fg [&::-webkit-details-marker]:hidden'
+        if facet_active
+          assign summary_class = summary_class | append: ' border-fg font-semibold'
+        endif
+      else
+        assign details_class = 'group/facet border-b border-border'
+        assign summary_class = 'flex cursor-pointer list-none items-center justify-between gap-2 py-4 font-semibold [&::-webkit-details-marker]:hidden'
+      endif
+    -%}
+    <details
+      class="{{ details_class }}"
+      data-facet-key="{{ facet_key }}"
+      {% if horizontal %}
+        data-facet-dropdown
+      {% endif %}
+      {% if facet_open %}
+        open
+      {% endif %}
+    >
+      <summary class="{{ summary_class }}">
+        <span>
+          {{- filter.label | escape -}}
+          {%- if filter.active_values.size > 0 %} <span class="text-muted">({{ filter.active_values.size }})</span>{% endif -%}
+        </span>
+        {%- render 'icon', name: 'chevron-down', class: 'size-4 transition group-open/facet:rotate-180' -%}
+      </summary>
+      <div class="{% if horizontal %}absolute start-0 top-full z-30 mt-2 max-h-[60vh] w-72 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-card border border-border bg-bg p-4 shadow-lg{% else %}pb-5{% endif %}">
+
+      {%- case filter.type -%}
+        {%- when 'price_range' -%}
+          {%- liquid
+            assign max_price = filter.range_max | money_without_currency | remove: ','
+            assign gte_value = filter.min_value.value | money_without_currency | remove: ','
+            assign lte_value = filter.max_value.value | money_without_currency | remove: ','
+          -%}
+          <fieldset class="flex items-center gap-3">
+            <legend class="sr-only">{{ filter.label | escape }}</legend>
+            <label class="flex flex-1 items-center gap-2 rounded-input border border-border px-3">
+              <span class="text-muted">{{ cart.currency.symbol }}</span>
+              <span class="sr-only">{{ 'collections.filters.from' | t }}</span>
+              <input
+                type="number"
+                name="{{ filter.min_value.param_name }}"
+                id="{{ filter_id }}-gte"
+                {% if filter.min_value.value %}
+                  value="{{ gte_value }}"
+                {% endif %}
+                placeholder="0"
+                min="0"
+                max="{{ max_price }}"
+                class="h-10 w-full min-w-0 border-0 bg-transparent"
+              >
+            </label>
+            <span aria-hidden="true">–</span>
+            <label class="flex flex-1 items-center gap-2 rounded-input border border-border px-3">
+              <span class="text-muted">{{ cart.currency.symbol }}</span>
+              <span class="sr-only">{{ 'collections.filters.to' | t }}</span>
+              <input
+                type="number"
+                name="{{ filter.max_value.param_name }}"
+                id="{{ filter_id }}-lte"
+                {% if filter.max_value.value %}
+                  value="{{ lte_value }}"
+                {% endif %}
+                placeholder="{{ max_price }}"
+                min="0"
+                max="{{ max_price }}"
+                class="h-10 w-full min-w-0 border-0 bg-transparent"
+              >
+            </label>
+          </fieldset>
+        {%- else -%}
+          <fieldset>
+            <legend class="sr-only">{{ filter.label | escape }}</legend>
+            {%- liquid
+              comment
+                Colour chips: filters shown as swatches in Search & Discovery, or named like a colour option
+                (Theme settings → Color swatches → Colour option names).
+              endcomment
+              assign filter_swatches = false
+              if filter.presentation == 'swatch'
+                assign filter_swatches = true
+              elsif filter.presentation != 'image' and filter.type == 'list'
+                capture filter_swatch_mode
+                  render 'swatch-option', name: filter.label
+                endcapture
+                if filter_swatch_mode contains 'swatch'
+                  assign filter_swatches = true
+                endif
+              endif
+            -%}
+            <ul class="flex flex-col gap-1" role="list">
+              {%- for value in filter.values -%}
+                {%- assign input_id = filter_id | append: '-' | append: forloop.index -%}
+                <li>
+                  <label for="{{ input_id }}" class="flex cursor-pointer items-center gap-3 py-1.5 {% if value.count == 0 and value.active == false %}text-muted{% endif %}">
+                    <input
+                      type="checkbox"
+                      id="{{ input_id }}"
+                      name="{{ value.param_name }}"
+                      value="{{ value.value | escape }}"
+                      class="size-4 shrink-0 accent-(--c-fg)"
+                      {% if value.active %}
+                        checked
+                      {% endif %}
+                      {% if value.count == 0 and value.active == false %}
+                        disabled
+                      {% endif %}
+                    >
+                    {%- if filter.presentation == 'image' and value.image -%}
+                      {{ value.image | image_url: width: 80 | image_tag: widths: '40, 80', sizes: '40px', class: 'size-10 shrink-0 rounded-media bg-fg/5 object-contain', alt: '', loading: 'lazy' }}
+                    {%- elsif filter_swatches -%}
+                      {% render 'swatch', value: value, class: 'size-5' %}
+                    {%- endif -%}
+                    <span class="flex-1">{{ value.label | escape }}</span>
+                    <span class="type-xs text-muted">{{ value.count }}</span>
+                  </label>
+                </li>
+              {%- endfor -%}
+            </ul>
+          </fieldset>
+      {%- endcase -%}
+      </div>
+    </details>
+  {%- endfor -%}
+
+  <noscript>
+    <button type="submit" class="btn btn-primary mt-4 w-full">{{ 'collections.filters.apply' | t }}</button>
+  </noscript>
+</form>

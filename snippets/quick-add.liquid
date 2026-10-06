@@ -1,0 +1,56 @@
+{% doc %}
+  @description Round "+" button on a product card. Single-variant products are added to the cart at once (cart drawer opens); products with options open the quick view window (sections/product-quick-view) to pick a variant. Sold-out products get no button. Needs `c-quick-add.js` on the page (sections that render cards load it when their "Quick add" setting is on).
+  Use when: inside product-card (quick_add param) or compact product rows.
+
+  @param {object} product - The product
+  @param {string} [class] - Position classes for the wrapper, default "absolute bottom-3 end-3 z-10"
+
+  @example
+  {% render 'quick-add', product: product %}
+{% enddoc %}
+{%- liquid
+  assign wrapper_class = class | default: 'absolute bottom-3 end-3 z-10'
+  assign single_variant = false
+  if product.has_only_default_variant or product.variants.size == 1
+    assign single_variant = true
+  endif
+  assign first_variant = product.selected_or_first_available_variant
+  assign quick_view_url = product.url | split: '?' | first | append: '?section_id=product-quick-view'
+-%}
+{%- if product.available -%}
+  <aw-quick-add
+    class="{{ wrapper_class }}"
+    data-cart-add-url="{{ routes.cart_add_url }}"
+    data-cart-url="{{ routes.cart_url }}"
+    data-cart-type="{{ settings.cart_type }}"
+    data-error-text="{{ 'general.cart.error' | t | escape }}"
+    data-close-text="{{ 'general.accessibility.close' | t | escape }}"
+  >
+    {%- if single_variant -%}
+      <button
+        type="button"
+        class="flex size-10 items-center justify-center rounded-full border border-border bg-bg text-fg shadow-sm transition hover:bg-fg hover:text-bg aria-busy:opacity-60"
+        data-ref="add"
+        data-variant-id="{{ first_variant.id }}"
+        data-quantity="{{ first_variant.quantity_rule.min | default: 1 }}"
+        aria-label="{{ 'products.product.quick_add' | t: product: product.title | escape }}"
+        title="{{ 'products.product.add_to_cart' | t }}"
+      >
+        {%- render 'icon', name: 'plus', class: 'size-5' -%}
+      </button>
+    {%- else -%}
+      <button
+        type="button"
+        class="flex size-10 items-center justify-center rounded-full border border-border bg-bg text-fg shadow-sm transition hover:bg-fg hover:text-bg aria-busy:opacity-60"
+        data-ref="view"
+        data-url="{{ quick_view_url }}"
+        aria-haspopup="dialog"
+        aria-label="{{ 'products.product.choose_options' | t: product: product.title | escape }}"
+        title="{{ 'products.product.choose_options_short' | t }}"
+      >
+        {%- render 'icon', name: 'plus', class: 'size-5' -%}
+      </button>
+    {%- endif -%}
+    <p class="absolute bottom-full end-0 mb-2 w-max max-w-48 rounded-btn bg-fg px-2 py-1 type-xs text-bg" role="alert" data-ref="error" hidden></p>
+  </aw-quick-add>
+{%- endif -%}

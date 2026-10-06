@@ -1,0 +1,17 @@
+{% comment %}
+  @description Renders one product card for the product in the URL (/products/<handle>?section_id=product-card-fragment). Never shown on its own: the "Recently viewed" section fetches it through the Section Rendering API, one card per product. The card carries every optional part (spec icons, rating chip, star row); the script removes what the section turned off.
+  Use when: never add to templates — scripts fetch it by file name.
+{% endcomment %}
+{%- if product -%}
+  <div data-product-card-fragment>
+    {% render 'product-card', product: product, sizes: '(min-width: 990px) 25vw, (min-width: 750px) 33vw, 72vw', quick_add: true, fragment: true %}
+  </div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.product_card_fragment.name",
+  "class": "section-product-card-fragment",
+  "settings": []
+}
+{% endschema %}

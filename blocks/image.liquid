@@ -1,0 +1,108 @@
+{% doc %}
+  @description Responsive image with aspect ratio, optional rounded corners and optional link. Uses the focal point set in Shopify admin. Shows a placeholder until an image is chosen.
+  Use when: single images in any layout. For image + text side by side, put an image block and a group block inside a row container.
+
+  @example
+  {% content_for 'block', type: 'image', id: 'hero-image' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+
+  case s.aspect
+    when 'square'
+      assign ratio = '1 / 1'
+    when 'portrait'
+      assign ratio = '3 / 4'
+    when 'landscape'
+      assign ratio = '4 / 3'
+    when 'wide'
+      assign ratio = '16 / 9'
+    else
+      assign ratio = 'auto'
+  endcase
+
+  assign radius_class = ''
+  if s.rounded
+    assign radius_class = 'rounded-media'
+  endif
+
+  assign loading = 'lazy'
+  if section.index and section.index <= 2
+    assign loading = 'eager'
+  endif
+-%}
+{%- capture media -%}
+  {%- if s.image -%}
+    {{
+      s.image
+      | image_url: width: 2400
+      | image_tag:
+        widths: '375, 550, 750, 1100, 1500, 1800, 2400',
+        sizes: '(min-width: 750px) 50vw, 100vw',
+        loading: loading,
+        class: 'w-full h-full object-cover',
+        alt: s.image.alt
+    }}
+  {%- else -%}
+    {{ 'image' | placeholder_svg_tag: 'w-full h-full bg-muted/10' }}
+  {%- endif -%}
+{%- endcapture -%}
+{%- capture ratio_style -%}aspect-ratio: {{ ratio }};{%- endcapture -%}
+
+{%- if s.link != blank -%}
+  <a
+    href="{{ s.link }}"
+    class="block w-full overflow-hidden {{ radius_class }}"
+    style="{{ ratio_style }}"
+    {{ block.shopify_attributes }}
+  >
+    {{- media -}}
+  </a>
+{%- else -%}
+  <div class="w-full overflow-hidden {{ radius_class }}" style="{{ ratio_style }}" {{ block.shopify_attributes }}>
+    {{- media -}}
+  </div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:blocks.image.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:blocks.image.settings.image.label"
+    },
+    {
+      "type": "select",
+      "id": "aspect",
+      "label": "t:blocks.image.settings.aspect.label",
+      "options": [
+        { "value": "auto", "label": "t:blocks.image.settings.aspect.options.auto" },
+        { "value": "square", "label": "t:blocks.image.settings.aspect.options.square" },
+        { "value": "portrait", "label": "t:blocks.image.settings.aspect.options.portrait" },
+        { "value": "landscape", "label": "t:blocks.image.settings.aspect.options.landscape" },
+        { "value": "wide", "label": "t:blocks.image.settings.aspect.options.wide" }
+      ],
+      "default": "auto"
+    },
+    {
+      "type": "checkbox",
+      "id": "rounded",
+      "label": "t:blocks.image.settings.rounded.label",
+      "default": true
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "t:blocks.image.settings.link.label"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:blocks.image.name"
+    }
+  ]
+}
+{% endschema %}

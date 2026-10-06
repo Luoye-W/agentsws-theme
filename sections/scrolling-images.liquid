@@ -1,0 +1,282 @@
+{% comment %}
+  @description Endless row of image and text tiles that scrolls sideways (marquee) at a set speed and direction. Optional tilt (the strip is rotated 0–6°) and twin rows (a second, decorative row of the same tiles moving the other way). Pauses on hover and keyboard focus, has a visible pause button, and stops off screen. With reduced motion (or without JavaScript) it is a single static row shoppers can swipe (the tilt stays). Mobile images supported per tile.
+  Use when: brand moments, press or community photos, "as seen on", a moving strip of product shots or short slogans between sections.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign heading_id = 'ScrollingImagesHeading-' | append: section.id
+-%}
+<aw-scrolling-images
+  class="scrolling-images block surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1)); --tile-h: {{ s.tile_height }}px; --tile-h-mobile: {{ s.tile_height_mobile }}px; --tile-gap: {{ s.gap }}px; --scrolling-images-tilt: {{ s.tilt }}deg;"
+  data-speed="{{ s.speed }}"
+  data-direction="{{ s.direction }}"
+  {% if s.tilt > 0 %}
+    data-tilt
+  {% endif %}
+  data-label-play="{{ 'sections.scrolling_images.play' | t }}"
+  data-label-pause="{{ 'sections.scrolling_images.pause' | t }}"
+  {% if s.heading != blank %}
+    role="region"
+    aria-labelledby="{{ heading_id }}"
+  {% endif %}
+>
+  {%- if s.eyebrow != blank or s.heading != blank or s.text != blank -%}
+    <div class="page-width mb-8">
+      {%- render 'section-intro', eyebrow: s.eyebrow, heading: s.heading, highlight: s.heading_highlight, text: s.text, align: s.heading_alignment, id: heading_id -%}
+    </div>
+  {%- endif -%}
+  <div class="relative">
+    <div class="scrolling-images__clip">
+      <div class="scrolling-images__rows flex flex-col gap-(--tile-gap)">
+        <div class="scrolling-images__viewport overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" data-ref="viewport">
+          <ul class="scrolling-images__track flex w-max gap-(--tile-gap) px-(--s-gutter)" role="list" data-ref="track">
+            {% content_for 'blocks' %}
+          </ul>
+        </div>
+        {%- if s.twin_rows -%}
+          {%- comment -%} Filled by c-scrolling-images.js with copies of the tiles; decorative, so hidden from assistive tech. {%- endcomment -%}
+          <div class="scrolling-images__viewport overflow-hidden" data-ref="twin" aria-hidden="true" inert hidden>
+            <div class="scrolling-images__track scrolling-images__track--twin flex w-max gap-(--tile-gap) px-(--s-gutter)" data-ref="twin-track"></div>
+          </div>
+        {%- endif -%}
+      </div>
+    </div>
+    <div class="page-width mt-4 flex justify-end">
+      <button
+        type="button"
+        class="flex size-10 items-center justify-center rounded-full border border-border hover:bg-fg/10"
+        data-ref="toggle"
+        data-playing
+        aria-label="{{ 'sections.scrolling_images.pause' | t }}"
+        hidden
+      >
+        {%- render 'play-pause-icon', class: 'size-4' -%}
+      </button>
+    </div>
+  </div>
+</aw-scrolling-images>
+<script src="{{ 'c-scrolling-images.js' | asset_url }}" type="module"></script>
+
+{% stylesheet %}
+  .scrolling-images[data-running] .scrolling-images__viewport {
+    overflow: hidden;
+  }
+  .scrolling-images[data-running] .scrolling-images__track {
+    animation: scrolling-images-move var(--marquee-duration, 40s) linear infinite;
+  }
+  .scrolling-images[data-direction='right'] .scrolling-images__track,
+  .scrolling-images[data-direction='left'] .scrolling-images__track--twin {
+    animation-direction: reverse;
+  }
+  .scrolling-images[data-direction='right'] .scrolling-images__track--twin {
+    animation-direction: normal;
+  }
+  .scrolling-images[data-paused] .scrolling-images__track,
+  .scrolling-images[data-offscreen] .scrolling-images__track,
+  .scrolling-images__rows:hover .scrolling-images__track,
+  .scrolling-images__rows:focus-within .scrolling-images__track {
+    animation-play-state: paused;
+  }
+  /* Tilt: the rows are rotated and made a little wider than the screen so no corner shows; the clip adds just
+     enough height for the rotated strip (half its width × sin of the angle) and hides the overflow. */
+  .scrolling-images[data-tilt] .scrolling-images__clip {
+    overflow: hidden;
+    padding-block: 5%;
+    padding-block: calc(sin(var(--scrolling-images-tilt)) * 52%);
+  }
+  .scrolling-images[data-tilt] .scrolling-images__rows {
+    width: 120%;
+    margin-inline-start: -10%;
+    rotate: calc(var(--scrolling-images-tilt) * -1);
+  }
+  [dir='rtl'] .scrolling-images[data-tilt] .scrolling-images__rows {
+    rotate: var(--scrolling-images-tilt);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .scrolling-images[data-running] .scrolling-images__track {
+      animation: none;
+    }
+  }
+  @keyframes scrolling-images-move {
+    to {
+      transform: translateX(var(--marquee-distance, -50%));
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.scrolling_images.name",
+  "tag": "section",
+  "class": "section-scrolling-images",
+  "blocks": [
+    {
+      "type": "_scrolling-image"
+    }
+  ],
+  "max_blocks": 16,
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:sections.featured_collection.settings.eyebrow.label"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:sections.featured_collection.settings.heading.label"
+    },
+    {
+      "type": "select",
+      "id": "heading_highlight",
+      "label": "t:shared.heading_highlight.label",
+      "info": "t:shared.heading_highlight.info",
+      "options": [
+        { "value": "none", "label": "t:shared.heading_highlight.options.none" },
+        { "value": "color", "label": "t:shared.heading_highlight.options.color" },
+        { "value": "marker", "label": "t:shared.heading_highlight.options.marker" },
+        { "value": "underline", "label": "t:shared.heading_highlight.options.underline" },
+        { "value": "outline", "label": "t:shared.heading_highlight.options.outline" },
+        { "value": "circle", "label": "t:shared.heading_highlight.options.circle" },
+        { "value": "squiggle", "label": "t:shared.heading_highlight.options.squiggle" }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:sections.featured_collection.settings.text.label"
+    },
+    {
+      "type": "select",
+      "id": "heading_alignment",
+      "label": "t:shared.media.heading_alignment",
+      "options": [
+        { "value": "start", "label": "t:shared.align.options.start" },
+        { "value": "center", "label": "t:shared.align.options.center" }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.scrolling_images.settings.motion_header"
+    },
+    {
+      "type": "range",
+      "id": "speed",
+      "label": "t:sections.scrolling_images.settings.speed.label",
+      "info": "t:sections.scrolling_images.settings.speed.info",
+      "min": 10,
+      "max": 150,
+      "step": 10,
+      "unit": "px",
+      "default": 40
+    },
+    {
+      "type": "select",
+      "id": "direction",
+      "label": "t:sections.scrolling_images.settings.direction.label",
+      "options": [
+        { "value": "left", "label": "t:sections.scrolling_images.settings.direction.options.left" },
+        { "value": "right", "label": "t:sections.scrolling_images.settings.direction.options.right" }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "checkbox",
+      "id": "twin_rows",
+      "label": "t:sections.scrolling_images.settings.twin_rows.label",
+      "info": "t:sections.scrolling_images.settings.twin_rows.info",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:shared.layout"
+    },
+    {
+      "type": "range",
+      "id": "tilt",
+      "label": "t:sections.scrolling_images.settings.tilt.label",
+      "info": "t:sections.scrolling_images.settings.tilt.info",
+      "min": 0,
+      "max": 6,
+      "step": 1,
+      "unit": "°",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "tile_height",
+      "label": "t:sections.scrolling_images.settings.tile_height.label",
+      "min": 120,
+      "max": 480,
+      "step": 10,
+      "unit": "px",
+      "default": 300
+    },
+    {
+      "type": "range",
+      "id": "tile_height_mobile",
+      "label": "t:sections.scrolling_images.settings.tile_height_mobile.label",
+      "min": 100,
+      "max": 360,
+      "step": 10,
+      "unit": "px",
+      "default": 200
+    },
+    {
+      "type": "range",
+      "id": "gap",
+      "label": "t:shared.gap",
+      "min": 0,
+      "max": 64,
+      "step": 4,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.scrolling_images.name",
+      "blocks": [
+        { "type": "_scrolling-image" },
+        { "type": "_scrolling-image", "settings": { "text": "Add a short line" } },
+        { "type": "_scrolling-image" },
+        { "type": "_scrolling-image" },
+        { "type": "_scrolling-image", "settings": { "text": "Add another line" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

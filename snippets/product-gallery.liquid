@@ -1,0 +1,590 @@
+{% doc %}
+  @description Product media viewer. Phones get a swipeable slider (full-width slides or 75% slides that show part of the next one; dots, thumbnails or a counter underneath; keeps its place when the screen rotates). On desktop choose one large slide with thumbnails below it, beside it (a scrollable column) or none (dots), a 2-column grid, a single stacked column or "featured" (the first media large and sticky, the others stacked in a narrower second column). Arrow buttons appear when the pointer is over the gallery or they have keyboard focus; thumbnail strips fade at the edge that has more to scroll. Image shape: match the first image, each image's own shape, square, portrait, landscape or wide. Zoom: full-screen viewer (click / tap / Enter, drag to pan, pinch or mouse wheel, arrow keys, Esc) or a 2× magnifier that follows the mouse (touch screens and keyboard open the full-screen viewer); optional magnifier button on phones. Handles images, videos (optional muted autoplay and loop), YouTube/Vimeo and 3D models. Starts on the selected variant's image and can show only the selected variant's images.
+  Variant images: with filter_variant_media, images attached to another variant are hidden, and images can be grouped by option value with a tag in their alt text — at the end ("Side view #color:black", several values "#color:black,blue", several options "#color:black,size:large") or, as before, at the start ("#Color:Black | Side view"). Tagged images show only while a listed value is selected; untagged images always show. The tag is never read out to screen readers.
+  Use when: product sections (main product, quick view, featured product).
+
+  @param {object} product - The product
+  @param {string} section_id - Id of the product section (the gallery follows its variant changes)
+  @param {object} [featured] - Media to show first, usually the selected variant's featured media
+  @param {object} [variant] - Selected variant (needed for filter_variant_media)
+  @param {string} [ratio] - 'first' (every slide takes the first image's shape), 'natural' (each image its own shape), 'square' (default), 'portrait' (4:5), 'landscape' (4:3) or 'wide' (16:9)
+  @param {string} [fit] - 'contain' (default, for cut-out product shots) or 'cover'
+  @param {string} [layout] - Desktop layout: 'slider' (default), 'grid' (2 columns), 'stack' (1 column) or 'featured' (first media large, the rest in a narrower column)
+  @param {string} [thumbnail_position] - Slider thumbnails on desktop: 'below' (default), 'start' (beside the image) or 'none' (dots)
+  @param {boolean} [zoom] - Let shoppers zoom images
+  @param {string} [zoom_mode] - 'lightbox' (default, full-screen viewer) or 'hover' (2× magnifier that follows the mouse; touch and keyboard open the full-screen viewer)
+  @param {boolean} [zoom_button] - Phones: a magnifier button on each image opens the zoom (the image itself is then only swiped, not tapped)
+  @param {string} [mobile_width] - Phone slide width: 'full' (default) or 'peek' (75%, part of the next slide shows)
+  @param {string} [mobile_nav] - Phone navigation: 'dots' (default), 'thumbnails' or 'counter'
+  @param {boolean} [filter_variant_media] - Show only images of the selected variant (see the alt text tag above)
+  @param {boolean} [video_autoplay] - Play uploaded videos muted while they are in view (not with reduced motion)
+  @param {boolean} [video_loop] - Loop uploaded videos
+  @param {string} [sizes] - Image sizes attribute, default "(min-width: 990px) 55vw, 100vw"
+
+  @example
+  {% render 'product-gallery', product: product, section_id: section.id, featured: product.selected_or_first_available_variant.featured_media, layout: 'slider', thumbnail_position: 'start', ratio: 'first', zoom: true, zoom_mode: 'hover' %}
+{% enddoc %}
+{%- liquid
+  assign first_media = featured | default: product.featured_media
+  assign gallery_layout = layout | default: 'slider'
+  assign thumbs_at = thumbnail_position | default: 'below'
+  assign image_sizes = sizes | default: '(min-width: 990px) 55vw, 100vw'
+  assign phone_nav = mobile_nav | default: 'dots'
+  assign hover_zoom = false
+  if zoom and zoom_mode == 'hover'
+    assign hover_zoom = true
+  endif
+
+  case ratio
+    when 'portrait'
+      assign ratio_value = '4 / 5'
+    when 'landscape'
+      assign ratio_value = '4 / 3'
+    when 'wide'
+      assign ratio_value = '16 / 9'
+    when 'first'
+      assign ratio_value = first_media.preview_image.aspect_ratio | default: first_media.aspect_ratio | default: 1
+    when 'natural'
+      assign ratio_value = first_media.preview_image.aspect_ratio | default: first_media.aspect_ratio | default: 1
+    else
+      assign ratio_value = '1 / 1'
+  endcase
+
+  if fit == 'cover' and ratio != 'natural'
+    assign fit_class = 'size-full object-cover'
+  else
+    assign fit_class = 'size-full object-contain'
+  endif
+
+  if first_media
+    assign ordered = product.media | where: 'id', first_media.id
+    assign rest = product.media | reject: 'id', first_media.id
+    assign ordered = ordered | concat: rest
+  else
+    assign ordered = product.media
+  endif
+
+  comment
+    Visible media ids (",id,id,"). Tagged media follow the selected option values; media attached to another variant
+    are hidden when the selected variant has its own image. A tag is "#option:value" pairs separated by commas at the end
+    of the alt text (a value without "option:" belongs to the option before it), or "#Option:Value | alt" at the start.
+  endcomment
+  assign visible_ids = ','
+  assign variant_media_ids = ','
+  if filter_variant_media and variant.featured_media
+    for v in product.variants
+      if v.featured_media
+        assign variant_media_ids = variant_media_ids | append: v.featured_media.id | append: ','
+      endif
+    endfor
+  endif
+  for media in ordered
+    assign show = true
+    if filter_variant_media
+      assign alt_raw = media.alt | default: '' | strip
+      assign first_char = alt_raw | slice: 0
+      assign tag_body = ''
+      if first_char == '#' and alt_raw contains ':'
+        assign tag_body = alt_raw | split: '|' | first | remove_first: '#'
+      elsif alt_raw contains '#'
+        assign tag_candidate = alt_raw | split: '#' | last
+        if tag_candidate contains ':'
+          assign tag_body = tag_candidate
+        endif
+      endif
+      if tag_body != ''
+        assign mentioned = ','
+        assign matched = ','
+        assign tag_option = ''
+        assign tag_pieces = tag_body | split: ','
+        for piece in tag_pieces
+          if piece contains ':'
+            assign tag_option = piece | split: ':' | first | strip | downcase
+            assign tag_value = piece | split: ':' | slice: 1, 9 | join: ':' | strip | downcase
+          else
+            assign tag_value = piece | strip | downcase
+          endif
+          assign chosen = nil
+          for option in product.options_with_values
+            assign option_key = option.name | downcase | strip
+            if option_key == tag_option
+              assign chosen = option.selected_value | downcase | strip
+            endif
+          endfor
+          if chosen == nil
+            continue
+          endif
+          assign option_mark = ',' | append: tag_option | append: ','
+          unless mentioned contains option_mark
+            assign mentioned = mentioned | append: tag_option | append: ','
+          endunless
+          if chosen == tag_value
+            unless matched contains option_mark
+              assign matched = matched | append: tag_option | append: ','
+            endunless
+          endif
+        endfor
+        assign mentioned_count = mentioned | split: ',' | size
+        assign matched_count = matched | split: ',' | size
+        if mentioned_count != matched_count
+          assign show = false
+        endif
+      else
+        assign media_key = ',' | append: media.id | append: ','
+        if variant_media_ids contains media_key and media.id != variant.featured_media.id
+          assign show = false
+        endif
+      endif
+    endif
+    if show
+      assign visible_ids = visible_ids | append: media.id | append: ','
+    endif
+  endfor
+  if visible_ids == ','
+    for media in ordered
+      assign visible_ids = visible_ids | append: media.id | append: ','
+    endfor
+  endif
+  assign visible_count = visible_ids | remove_first: ',' | split: ',' | size
+
+  case gallery_layout
+    when 'grid'
+      assign track_class = 'md:grid md:grid-cols-2 md:gap-3 md:overflow-visible md:rounded-none md:bg-transparent'
+      assign slide_class = 'md:w-auto md:overflow-hidden md:rounded-media md:bg-fg/5'
+    when 'stack'
+      assign track_class = 'md:grid md:grid-cols-1 md:gap-3 md:overflow-visible md:rounded-none md:bg-transparent'
+      assign slide_class = 'md:w-auto md:overflow-hidden md:rounded-media md:bg-fg/5'
+    when 'featured'
+      assign track_class = 'md:grid md:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)] md:items-start md:gap-3 md:overflow-visible md:rounded-none md:bg-transparent'
+      assign slide_class = 'md:w-auto md:overflow-hidden md:rounded-media md:bg-fg/5'
+    else
+      assign track_class = ''
+      assign slide_class = ''
+  endcase
+  if ratio == 'natural'
+    assign track_class = track_class | append: ' items-start overflow-y-hidden transition-[height] duration-300 motion-reduce:transition-none'
+  endif
+  if mobile_width == 'peek' and visible_count > 1
+    assign track_class = track_class | append: ' max-md:gap-2 max-md:rounded-none max-md:bg-transparent'
+    assign slide_class = slide_class | append: ' max-md:w-[75%] max-md:overflow-hidden max-md:rounded-media max-md:bg-fg/5'
+  endif
+
+  comment
+    Navigation under the slides. Phones: dots, thumbnails or a counter (mobile_nav). Desktop: thumbnails (slider with
+    thumbnails below / beside) or dots (slider without thumbnails); grid, stack and featured need none.
+  endcomment
+  assign thumbs_phone = false
+  assign dots_phone = false
+  assign thumbs_desktop = false
+  assign dots_desktop = false
+  if visible_count > 1
+    case phone_nav
+      when 'thumbnails'
+        assign thumbs_phone = true
+      when 'counter'
+        assign thumbs_phone = false
+      else
+        assign dots_phone = true
+    endcase
+    if gallery_layout == 'slider'
+      if thumbs_at == 'none'
+        assign dots_desktop = true
+      else
+        assign thumbs_desktop = true
+      endif
+    endif
+  endif
+  assign thumbs_beside = false
+  if thumbs_desktop and thumbs_at == 'start'
+    assign thumbs_beside = true
+  endif
+  assign thumbs_visibility = ''
+  if thumbs_phone and thumbs_desktop == false
+    assign thumbs_visibility = 'md:hidden'
+  elsif thumbs_phone == false and thumbs_desktop
+    assign thumbs_visibility = 'max-md:hidden'
+  endif
+  assign dots_visibility = 'flex'
+  if dots_phone and dots_desktop == false
+    assign dots_visibility = 'flex md:hidden'
+  elsif dots_phone == false and dots_desktop
+    assign dots_visibility = 'hidden md:flex'
+  endif
+  assign counter_template = 'products.product.media.position' | t: index: '[index]', count: '[count]'
+-%}
+<aw-gallery
+  class="product-gallery group/gallery flex flex-col gap-3{% if thumbs_beside %} md:grid md:grid-cols-[4.5rem_minmax(0,1fr)] lg:grid-cols-[5.5rem_minmax(0,1fr)] xl:grid-cols-[7rem_minmax(0,1fr)]{% endif %}"
+  data-section="{{ section_id }}"
+  data-counter="{{ counter_template | escape }}"
+  {% if video_autoplay %}
+    data-video-autoplay
+  {% endif %}
+  {% if video_loop %}
+    data-video-loop
+  {% endif %}
+  {% if hover_zoom %}
+    data-zoom-mode="hover"
+  {% endif %}
+  {% if ratio == 'natural' %}
+    data-natural
+  {% endif %}
+  {% if filter_variant_media %}
+    data-swap="gallery-{{ section_id }}"
+  {% endif %}
+  style="--media-ratio: {{ ratio_value }};{% if gallery_layout == 'featured' %} --rest: {{ visible_count | minus: 1 | at_least: 1 }};{% endif %}"
+  role="region"
+  aria-label="{{ 'products.product.media.gallery' | t }}"
+>
+  <div class="relative min-w-0">
+    <ul
+      data-ref="track"
+      tabindex="0"
+      class="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain rounded-media bg-fg/5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden {{ track_class }}"
+      role="list"
+    >
+      {%- if product.media.size == 0 -%}
+        <li class="w-full shrink-0 snap-start aspect-(--media-ratio)" data-ref="slide">
+          {{ 'product-1' | placeholder_svg_tag: 'size-full' }}
+        </li>
+      {%- endif -%}
+      {%- assign position = 0 -%}
+      {%- assign image_index = 0 -%}
+      {%- for media in ordered -%}
+        {%- assign media_key = ',' | append: media.id | append: ',' -%}
+        {%- unless visible_ids contains media_key -%}{%- continue -%}{%- endunless -%}
+        {%- liquid
+          assign position = position | plus: 1
+          comment
+            Remove the variant tag from the alt text: "#Option:Value | alt" at the start or "alt #option:value" at the end.
+          endcomment
+          assign alt_raw = media.alt | default: '' | strip
+          assign first_char = alt_raw | slice: 0
+          assign media_alt = alt_raw
+          if first_char == '#' and alt_raw contains ':'
+            assign media_alt = ''
+            if alt_raw contains '|'
+              assign alt_tag = alt_raw | split: '|' | first
+              assign media_alt = alt_raw | remove_first: alt_tag | remove_first: '|' | strip
+            endif
+          elsif alt_raw contains '#'
+            assign tag_candidate = alt_raw | split: '#' | last
+            if tag_candidate contains ':'
+              assign alt_marker = '#' | append: tag_candidate
+              assign media_alt = alt_raw | remove_last: alt_marker | strip
+            endif
+          endif
+          assign media_alt = media_alt | default: product.title
+          assign span_class = ''
+          if gallery_layout == 'grid' and position == 1
+            assign odd = visible_count | modulo: 2
+            if odd == 1
+              assign span_class = 'md:col-span-2'
+            endif
+          endif
+          comment
+            Featured: the first media spans every row of the narrow column (--rest rows) and stays in view while they scroll.
+          endcomment
+          if gallery_layout == 'featured'
+            if visible_count == 1
+              assign span_class = 'md:col-span-2'
+            elsif position == 1
+              assign span_class = 'md:sticky md:top-[calc(var(--header-h,0px)+1.5rem)] md:col-start-1 md:row-start-1 md:row-span-(--rest)'
+            else
+              assign span_class = 'md:col-start-2'
+            endif
+          endif
+          assign slide_ratio = ''
+          if ratio == 'natural'
+            assign slide_ratio = media.preview_image.aspect_ratio | default: media.aspect_ratio | default: 1
+          endif
+        -%}
+        <li
+          class="relative w-full shrink-0 snap-start aspect-(--media-ratio) {{ slide_class }} {{ span_class }}"
+          data-ref="slide"
+          data-media-id="{{ media.id }}"
+          {% if slide_ratio != '' %}
+            style="--media-ratio: {{ slide_ratio }};"
+          {% endif %}
+          aria-label="{{ 'products.product.media.position' | t: index: position, count: visible_count }}"
+          aria-roledescription="{{ 'products.product.media.slide' | t }}"
+        >
+          {%- case media.media_type -%}
+            {%- when 'image' -%}
+              {%- liquid
+                assign loading = 'lazy'
+                assign priority = 'auto'
+                if position == 1
+                  assign loading = 'eager'
+                  assign priority = 'high'
+                endif
+              -%}
+              {%- capture image_html -%}
+                {{
+                  media
+                  | image_url: width: 2000
+                  | image_tag:
+                    widths: '400, 600, 800, 1000, 1300, 1600, 2000',
+                    sizes: image_sizes,
+                    loading: loading,
+                    fetchpriority: priority,
+                    class: fit_class,
+                    alt: media_alt
+                }}
+              {%- endcapture -%}
+              {%- if zoom -%}
+                {%- liquid
+                  assign zoom_srcset = media | image_url: width: 1200 | append: ' 1200w, '
+                  assign zoom_1800 = media | image_url: width: 1800
+                  assign zoom_2400 = media | image_url: width: 2400
+                  assign zoom_3000 = media | image_url: width: 3000
+                  assign zoom_srcset = zoom_srcset | append: zoom_1800 | append: ' 1800w, ' | append: zoom_2400 | append: ' 2400w, ' | append: zoom_3000 | append: ' 3000w'
+                  assign image_index = image_index | plus: 1
+                  assign zoom_label = 'products.product.media.open_zoom' | t: index: image_index
+                -%}
+                <button
+                  type="button"
+                  class="product-gallery__zoom relative block size-full cursor-zoom-in overflow-hidden{% if zoom_button %} max-md:pointer-events-none{% endif %}"
+                  data-ref="zoom"
+                  data-src="{{ media | image_url: width: 1800 }}"
+                  data-srcset="{{ zoom_srcset }}"
+                  data-magnify="{{ zoom_2400 }}"
+                  data-alt="{{ media_alt | escape }}"
+                  aria-haspopup="dialog"
+                  aria-label="{{ zoom_label }}"
+                >
+                  {{ image_html }}
+                </button>
+                {%- if zoom_button -%}
+                  <button
+                    type="button"
+                    tabindex="-1"
+                    data-ref="zoom-button"
+                    class="absolute top-3 end-3 flex size-10 items-center justify-center rounded-full border border-border/50 bg-bg/60 backdrop-blur-sm md:hidden"
+                    aria-label="{{ zoom_label }}"
+                  >
+                    {%- render 'icon', name: 'zoom', class: 'size-5' -%}
+                  </button>
+                {%- endif -%}
+              {%- else -%}
+                {{ image_html }}
+              {%- endif -%}
+            {%- when 'external_video' -%}
+              <div class="flex size-full items-center">
+                {{ media | external_video_tag: class: 'aspect-video w-full', loading: 'lazy' }}
+              </div>
+            {%- when 'video' -%}
+              {{ media | video_tag: controls: true, preload: 'metadata', playsinline: true, class: 'size-full object-contain', image_size: '1600x' }}
+            {%- else -%}
+              {{ media | media_tag: image_size: '1600x', class: 'size-full' }}
+          {%- endcase -%}
+        </li>
+      {%- endfor -%}
+    </ul>
+
+    {%- if visible_count > 1 -%}
+      {%- if gallery_layout == 'slider' -%}
+        <button type="button" data-ref="prev" class="product-gallery__arrow absolute top-1/2 start-3 hidden size-11 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-bg shadow-sm md:flex" aria-label="{{ 'products.product.media.previous' | t }}">
+          {%- render 'icon', name: 'chevron-left', class: 'size-5 rtl:rotate-180' -%}
+        </button>
+        <button type="button" data-ref="next" class="product-gallery__arrow absolute top-1/2 end-3 hidden size-11 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-bg shadow-sm md:flex" aria-label="{{ 'products.product.media.next' | t }}">
+          {%- render 'icon', name: 'chevron-right', class: 'size-5 rtl:rotate-180' -%}
+        </button>
+      {%- endif -%}
+      <p
+        class="{% if phone_nav == 'counter' %}pointer-events-none absolute bottom-3 end-3 rounded-btn bg-bg/80 px-2 py-1 type-xs md:sr-only{% else %}sr-only{% endif %}"
+        data-ref="status"
+        aria-live="polite"
+      >
+        {{ 'products.product.media.position' | t: index: 1, count: visible_count }}
+      </p>
+    {%- endif -%}
+  </div>
+
+  {%- if dots_phone or dots_desktop -%}
+    <div class="{{ dots_visibility }} items-center justify-center gap-2 py-1" data-ref="dots" aria-hidden="true">
+      {%- for i in (1..visible_count) -%}
+        <span class="size-1.5 rounded-full bg-fg/35 transition data-current:bg-transparent data-current:ring-1 data-current:ring-fg motion-reduce:transition-none" {% if forloop.first %}data-current{% endif %}></span>
+      {%- endfor -%}
+    </div>
+  {%- endif -%}
+
+  {%- if thumbs_phone or thumbs_desktop -%}
+    <div class="relative min-w-0 {{ thumbs_visibility }}{% if thumbs_beside %} md:order-first{% endif %}" data-ref="thumbs-frame">
+      <ul
+        class="product-gallery__thumbs flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden{% if thumbs_beside %} md:absolute md:inset-0 md:flex-col md:overflow-x-hidden md:overflow-y-auto md:pb-0{% endif %}"
+        data-ref="thumbs"
+        role="list"
+      >
+        {%- assign position = 0 -%}
+        {%- for media in ordered -%}
+          {%- assign media_key = ',' | append: media.id | append: ',' -%}
+          {%- unless visible_ids contains media_key -%}{%- continue -%}{%- endunless -%}
+          {%- assign position = position | plus: 1 -%}
+          <li class="shrink-0{% if thumbs_beside %} md:w-full{% endif %}">
+            <button
+              type="button"
+              data-ref="thumb"
+              data-index="{{ position | minus: 1 }}"
+              class="relative block size-16 overflow-hidden rounded-media bg-fg/5 after:pointer-events-none after:absolute after:inset-0 after:rounded-media after:ring-2 after:ring-transparent after:ring-inset aria-[current=true]:after:ring-fg md:size-18 lg:size-20{% if thumbs_beside %} md:aspect-square md:h-auto md:w-full lg:h-auto lg:w-full{% endif %}"
+              aria-current="{% if position == 1 %}true{% else %}false{% endif %}"
+              aria-label="{{ 'products.product.media.show' | t: index: position }}"
+            >
+              {{
+                media.preview_image
+                | image_url: width: 240
+                | image_tag: widths: '80, 160, 240', sizes: '112px', class: 'size-full object-contain', alt: '', loading: 'lazy'
+              }}
+              {%- if media.media_type == 'video' or media.media_type == 'external_video' -%}
+                <span class="absolute inset-0 m-auto flex size-7 items-center justify-center rounded-full bg-bg/80">
+                  {%- render 'icon', name: 'play', class: 'size-4' -%}
+                </span>
+              {%- elsif media.media_type == 'model' -%}
+                <span class="absolute inset-0 m-auto flex size-7 items-center justify-center rounded-full bg-bg/80">
+                  {%- render 'icon', name: 'box', class: 'size-4' -%}
+                </span>
+              {%- endif -%}
+            </button>
+          </li>
+        {%- endfor -%}
+      </ul>
+      {%- comment -%} Mouse helpers at the ends of the strip; keyboard users move through the thumbnails themselves. {%- endcomment -%}
+      <button
+        type="button"
+        tabindex="-1"
+        aria-hidden="true"
+        data-ref="thumbs-back"
+        class="absolute top-1/2 start-0 flex size-7 -translate-y-1/2 items-center justify-center rounded-full bg-bg shadow-sm{% if thumbs_beside %} md:inset-x-0 md:top-0 md:mx-auto md:translate-y-0{% endif %}"
+        hidden
+      >
+        {%- if thumbs_beside -%}
+          {%- render 'icon', name: 'chevron-left', class: 'size-4 rtl:rotate-180 md:hidden' -%}
+          {%- render 'icon', name: 'chevron-down', class: 'hidden size-4 rotate-180 md:block' -%}
+        {%- else -%}
+          {%- render 'icon', name: 'chevron-left', class: 'size-4 rtl:rotate-180' -%}
+        {%- endif -%}
+      </button>
+      <button
+        type="button"
+        tabindex="-1"
+        aria-hidden="true"
+        data-ref="thumbs-more"
+        class="absolute top-1/2 end-0 flex size-7 -translate-y-1/2 items-center justify-center rounded-full bg-bg shadow-sm{% if thumbs_beside %} md:inset-x-0 md:top-auto md:bottom-0 md:mx-auto md:translate-y-0{% endif %}"
+        hidden
+      >
+        {%- if thumbs_beside -%}
+          {%- render 'icon', name: 'chevron-right', class: 'size-4 rtl:rotate-180 md:hidden' -%}
+          {%- render 'icon', name: 'chevron-down', class: 'hidden size-4 md:block' -%}
+        {%- else -%}
+          {%- render 'icon', name: 'chevron-right', class: 'size-4 rtl:rotate-180' -%}
+        {%- endif -%}
+      </button>
+    </div>
+  {%- endif -%}
+
+  {%- if zoom and image_index > 0 -%}
+    <aw-lightbox class="contents" data-ref="lightbox" data-counter="{{ counter_template | escape }}">
+      <dialog
+        data-ref="lb-dialog"
+        class="m-0 h-dvh max-h-none w-full max-w-none surface-{{ settings.drawer_color_scheme }} p-0 backdrop:bg-overlay"
+        aria-label="{{ 'products.product.media.zoom_dialog' | t: product: product.title | escape }}"
+      >
+        <div class="relative flex h-full flex-col">
+          <div class="flex items-center justify-between gap-4 px-4 py-2">
+            <p class="type-sm text-muted" data-ref="lb-status" aria-live="polite"></p>
+            <div class="flex items-center gap-1">
+              <button type="button" class="flex size-11 items-center justify-center rounded-full hover:bg-fg/5" data-ref="lb-zoom" aria-pressed="false" aria-label="{{ 'products.product.media.zoom' | t }}">
+                {%- render 'icon', name: 'zoom', class: 'size-6' -%}
+              </button>
+              <button type="button" class="flex size-11 items-center justify-center rounded-full hover:bg-fg/5" data-ref="lb-close" aria-label="{{ 'general.accessibility.close' | t }}">
+                {%- render 'icon', name: 'close', class: 'size-6' -%}
+              </button>
+            </div>
+          </div>
+          <div class="relative min-h-0 flex-1 cursor-zoom-in touch-none overflow-hidden select-none data-[zoomed]:cursor-grab" data-ref="lb-stage"></div>
+          {%- if image_index > 1 -%}
+            <button type="button" data-ref="lb-prev" class="absolute top-1/2 start-3 flex size-11 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-bg shadow-sm" aria-label="{{ 'products.product.media.previous' | t }}">
+              {%- render 'icon', name: 'chevron-left', class: 'size-5 rtl:rotate-180' -%}
+            </button>
+            <button type="button" data-ref="lb-next" class="absolute top-1/2 end-3 flex size-11 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-bg shadow-sm" aria-label="{{ 'products.product.media.next' | t }}">
+              {%- render 'icon', name: 'chevron-right', class: 'size-5 rtl:rotate-180' -%}
+            </button>
+          {%- endif -%}
+        </div>
+      </dialog>
+    </aw-lightbox>
+  {%- endif -%}
+</aw-gallery>
+<script src="{{ 'c-gallery.js' | asset_url }}" type="module"></script>
+{%- if zoom -%}
+  <script src="{{ 'c-lightbox.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+
+{% stylesheet %}
+  /* Arrows: shown while a mouse is over the gallery or the gallery has keyboard focus (always shown on touch). */
+  .product-gallery__arrow {
+    transition: opacity 0.2s ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .product-gallery .product-gallery__arrow {
+      opacity: 0;
+    }
+    .product-gallery:hover .product-gallery__arrow,
+    .product-gallery:has(:focus-visible) .product-gallery__arrow {
+      opacity: 1;
+    }
+  }
+
+  /* Thumbnail strip: c-gallery.js sets --fade-dir / --fade-start / --fade-end when there is more to scroll. */
+  .product-gallery__thumbs {
+    --fade-start: 0px;
+    --fade-end: 0px;
+    -webkit-mask-image: linear-gradient(
+      to var(--fade-dir, right),
+      transparent 0,
+      #000 var(--fade-start),
+      #000 calc(100% - var(--fade-end)),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to var(--fade-dir, right),
+      transparent 0,
+      #000 var(--fade-start),
+      #000 calc(100% - var(--fade-end)),
+      transparent 100%
+    );
+  }
+
+  /* Hover magnifier: a 2× copy of the image that follows the pointer (created by c-gallery.js). */
+  .product-gallery__magnify {
+    position: absolute;
+    inset: 0;
+    display: block;
+    overflow: hidden;
+    cursor: zoom-out;
+    background: color-mix(in srgb, var(--c-fg) 5%, var(--c-bg));
+    transition: opacity 0.2s ease;
+  }
+  .product-gallery__magnify[data-loading] {
+    opacity: 0.6;
+    cursor: progress;
+  }
+  .product-gallery__magnify img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 200%;
+    height: 200%;
+    max-width: none;
+    object-fit: contain;
+  }
+  .product-gallery__magnify[data-fit='cover'] img {
+    object-fit: cover;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .product-gallery__arrow,
+    .product-gallery__magnify {
+      transition: none;
+    }
+  }
+{% endstylesheet %}

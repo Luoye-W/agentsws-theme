@@ -1,0 +1,166 @@
+{% doc %}
+  @description One extra field on the create-account form: short text, long text, checkbox, radio buttons or dropdown. The answer is saved in the customer's note as "Label: value". A checkbox sends its value only when ticked.
+  Use when: only inside the "main-register" section, to ask new customers for more details (company, birthday month, how they heard about you).
+
+  @example
+  {% content_for 'block', type: '_register-field', id: 'field-1' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  assign label = s.label | strip
+  if label == blank
+    assign label = 'customer.register.custom_field' | t
+  endif
+  assign field_name = 'customer[note][' | append: label | append: ']'
+  assign field_id = 'RegisterField-' | append: block.id
+  assign options = s.options | split: ','
+-%}
+<div {{ block.shopify_attributes }}>
+  {%- case s.field_type -%}
+    {%- when 'textarea' -%}
+      {% render 'account-field',
+        type: 'textarea',
+        name: field_name,
+        id: field_id,
+        label: label,
+        required: s.required
+      %}
+    {%- when 'checkbox' -%}
+      <label class="flex items-start gap-3 type-sm">
+        <input
+          type="checkbox"
+          name="{{ field_name }}"
+          value="{{ s.checked_value | default: 'Yes' | escape }}"
+          class="mt-0.5 size-5 shrink-0 accent-primary"
+          {% if s.required %}
+            required
+          {% endif %}
+        >
+        <span>{{ label | escape }}{% if s.required %}<span aria-hidden="true"> *</span>{% endif %}</span>
+      </label>
+    {%- when 'radio' -%}
+      <fieldset class="flex flex-col gap-2">
+        <legend class="mb-1 type-sm font-medium">
+          {{- label | escape -}}
+          {%- if s.required -%}<span aria-hidden="true"> *</span>{%- endif -%}
+        </legend>
+        {%- for option in options -%}
+          {%- assign option_value = option | strip -%}
+          {%- if option_value != blank -%}
+            <label class="flex items-center gap-3 type-sm">
+              <input
+                type="radio"
+                name="{{ field_name }}"
+                value="{{ option_value | escape }}"
+                class="size-5 shrink-0 accent-primary"
+                {% if s.required %}
+                  required
+                {% endif %}
+              >
+              {{ option_value | escape }}
+            </label>
+          {%- endif -%}
+        {%- endfor -%}
+      </fieldset>
+    {%- when 'select' -%}
+      <div class="flex flex-col gap-1.5">
+        <label for="{{ field_id }}" class="type-sm font-medium">
+          {{- label | escape -}}
+          {%- if s.required -%}<span aria-hidden="true"> *</span>{%- endif -%}
+        </label>
+        <select
+          id="{{ field_id }}"
+          name="{{ field_name }}"
+          class="field"
+          {% if s.required %}
+            required
+          {% endif %}
+        >
+          <option value="">{{ 'customer.register.choose' | t }}</option>
+          {%- for option in options -%}
+            {%- assign option_value = option | strip -%}
+            {%- if option_value != blank -%}
+              <option value="{{ option_value | escape }}">{{ option_value | escape }}</option>
+            {%- endif -%}
+          {%- endfor -%}
+        </select>
+      </div>
+    {%- else -%}
+      {% render 'account-field',
+        name: field_name,
+        id: field_id,
+        label: label,
+        required: s.required
+      %}
+  {%- endcase -%}
+</div>
+
+{% schema %}
+{
+  "name": "t:blocks.register_field.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "select",
+      "id": "field_type",
+      "label": "t:blocks.register_field.settings.field_type.label",
+      "options": [
+        {
+          "value": "text",
+          "label": "t:blocks.register_field.settings.field_type.options.text"
+        },
+        {
+          "value": "textarea",
+          "label": "t:blocks.register_field.settings.field_type.options.textarea"
+        },
+        {
+          "value": "checkbox",
+          "label": "t:blocks.register_field.settings.field_type.options.checkbox"
+        },
+        {
+          "value": "radio",
+          "label": "t:blocks.register_field.settings.field_type.options.radio"
+        },
+        {
+          "value": "select",
+          "label": "t:blocks.register_field.settings.field_type.options.select"
+        }
+      ],
+      "default": "text"
+    },
+    {
+      "type": "text",
+      "id": "label",
+      "label": "t:blocks.register_field.settings.label.label",
+      "info": "t:blocks.register_field.settings.label.info",
+      "default": "Company"
+    },
+    {
+      "type": "checkbox",
+      "id": "required",
+      "label": "t:blocks.register_field.settings.required.label",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "checked_value",
+      "label": "t:blocks.register_field.settings.checked_value.label",
+      "info": "t:blocks.register_field.settings.checked_value.info",
+      "default": "Yes",
+      "visible_if": "{{ block.settings.field_type == 'checkbox' }}"
+    },
+    {
+      "type": "text",
+      "id": "options",
+      "label": "t:blocks.register_field.settings.options.label",
+      "info": "t:blocks.register_field.settings.options.info",
+      "visible_if": "{{ block.settings.field_type == 'radio' or block.settings.field_type == 'select' }}"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:blocks.register_field.name"
+    }
+  ]
+}
+{% endschema %}

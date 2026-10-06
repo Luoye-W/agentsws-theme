@@ -1,0 +1,88 @@
+{
+  "current": {
+    "color_schemes": {
+      "scheme-1": {
+        "settings": {
+          "background": "#FFFFFF",
+          "background_gradient": "",
+          "foreground": "#141414",
+          "primary": "#141414",
+          "on_primary": "#FFFFFF",
+          "accent": "#C9A36B",
+          "on_accent": "#141414"
+        }
+      },
+      "scheme-2": {
+        "settings": {
+          "background": "#F4F4F2",
+          "background_gradient": "",
+          "foreground": "#141414",
+          "primary": "#141414",
+          "on_primary": "#FFFFFF",
+          "accent": "#C9A36B",
+          "on_accent": "#141414"
+        }
+      },
+      "scheme-3": {
+        "settings": {
+          "background": "#141414",
+          "background_gradient": "",
+          "foreground": "#FFFFFF",
+          "primary": "#FFFFFF",
+          "on_primary": "#141414",
+          "accent": "#C9A36B",
+          "on_accent": "#141414"
+        }
+      },
+      "scheme-4": {
+        "settings": {
+          "background": "#F6D86B",
+          "background_gradient": "",
+          "foreground": "#141414",
+          "primary": "#141414",
+          "on_primary": "#FFFFFF",
+          "accent": "#141414",
+          "on_accent": "#F6D86B"
+        }
+      },
+      "scheme-5": {
+        "settings": {
+          "background": "#EFE7DC",
+          "background_gradient": "",
+          "foreground": "#141414",
+          "primary": "#141414",
+          "on_primary": "#FFFFFF",
+          "accent": "#8A6A3F",
+          "on_accent": "#FFFFFF"
+        }
+      }
+    },
+    "type_heading_font": "inter_n7",
+    "type_body_font": "inter_n4",
+    "heading_letter_spacing": -30,
+    "heading_line_height": 105,
+    "nav_weight": "500",
+    "button_weight": "600",
+    "card_weight": "500",
+    "page_width": 1360,
+    "radius_card": 16,
+    "radius_media": 16,
+    "radius_input": 24,
+    "radius_button": 40,
+    "swatch_shape": "circle",
+    "card_style": "card",
+    "card_countdown": true,
+    "badge_sold_out_position": "center",
+    "card_image_fit": "cover",
+    "card_show_vendor": true,
+    "card_show_rating": true,
+    "badge_new_days": 30,
+    "button_hover": "darken",
+    "color_badge_sale_bg": "#D93D2B",
+    "color_rating": "#F2A900",
+    "social_instagram": "https://instagram.com/shopify",
+    "social_facebook": "https://facebook.com/shopify",
+    "social_x": "https://x.com/shopify",
+    "social_youtube": "https://youtube.com/shopify"
+  }
+}

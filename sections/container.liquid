@@ -1,0 +1,203 @@
+{% comment %}
+  @description Free-form layout section. Arranges any theme blocks (heading, text, button, image, group, app blocks, custom blocks) in a row or a column, on a chosen color surface.
+  Use when: building new page content from existing blocks; placing a custom block on a page; landing pages; any content that has no dedicated section.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+-%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+>
+  <div class="{% render 'width-classes', width: s.width %}">
+    <div
+      class="{% render 'flex-layout-classes', direction: s.direction, align: s.align, justify: s.justify, wrap: s.wrap, stack_on_mobile: s.stack_on_mobile %} gap-(--section-gap)"
+      style="--section-gap: {{ s.gap }}px;"
+    >
+      {% content_for 'blocks' %}
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "t:sections.container.name",
+  "tag": "section",
+  "class": "section-container",
+  "blocks": [
+    {
+      "type": "@theme"
+    },
+    {
+      "type": "@app"
+    }
+  ],
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:shared.layout"
+    },
+    {
+      "type": "select",
+      "id": "direction",
+      "label": "t:shared.direction.label",
+      "options": [
+        {
+          "value": "column",
+          "label": "t:shared.direction.options.column"
+        },
+        {
+          "value": "row",
+          "label": "t:shared.direction.options.row"
+        }
+      ],
+      "default": "column"
+    },
+    {
+      "type": "checkbox",
+      "id": "wrap",
+      "label": "t:shared.wrap",
+      "default": true,
+      "visible_if": "{{ section.settings.direction == 'row' }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "stack_on_mobile",
+      "label": "t:shared.stack_on_mobile",
+      "default": true,
+      "visible_if": "{{ section.settings.direction == 'row' }}"
+    },
+    {
+      "type": "select",
+      "id": "align",
+      "label": "t:shared.align.label",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        },
+        {
+          "value": "end",
+          "label": "t:shared.align.options.end"
+        },
+        {
+          "value": "stretch",
+          "label": "t:shared.align.options.stretch"
+        }
+      ],
+      "default": "start"
+    },
+    {
+      "type": "select",
+      "id": "justify",
+      "label": "t:shared.justify.label",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.justify.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.justify.options.center"
+        },
+        {
+          "value": "end",
+          "label": "t:shared.justify.options.end"
+        },
+        {
+          "value": "between",
+          "label": "t:shared.justify.options.between"
+        }
+      ],
+      "default": "start"
+    },
+    {
+      "type": "range",
+      "id": "gap",
+      "label": "t:shared.gap",
+      "min": 0,
+      "max": 64,
+      "step": 4,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "select",
+      "id": "width",
+      "label": "t:shared.width.label",
+      "options": [
+        {
+          "value": "page",
+          "label": "t:shared.width.options.page"
+        },
+        {
+          "value": "narrow",
+          "label": "t:shared.width.options.narrow"
+        },
+        {
+          "value": "full",
+          "label": "t:shared.width.options.full"
+        }
+      ],
+      "default": "page"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.container.presets.content",
+      "blocks": [
+        {
+          "type": "heading",
+          "settings": {
+            "text": "Tell your story",
+            "size": "h2"
+          }
+        },
+        {
+          "type": "text"
+        },
+        {
+          "type": "button"
+        }
+      ]
+    },
+    {
+      "name": "t:sections.container.presets.empty"
+    }
+  ]
+}
+{% endschema %}

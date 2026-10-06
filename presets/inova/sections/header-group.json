@@ -1,0 +1,20 @@
+{
+  "type": "header",
+  "name": "t:sections.groups.header",
+  "sections": {
+    "header": {
+      "type": "header",
+      "settings": {
+        "menu": "demo-inova-main",
+        "layout": "logo_center_menu_left",
+        "sticky_mode": "scroll_up",
+        "open_on": "hover",
+        "border": false,
+        "show_country_selector": true
+      }
+    }
+  },
+  "order": [
+    "header"
+  ]
+}

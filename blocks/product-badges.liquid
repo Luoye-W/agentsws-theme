@@ -1,0 +1,75 @@
+{% doc %}
+  @description Badges for the selected variant, styled like the product card badges: sale ("Save 20%" / "Save $10" / "Sale"), "Sold out", automatic "New" for recently published products and the merchant's own labels from the product metafield custom.label (single line text, or a list for several labels). Updates when the variant changes; hidden when there is nothing to show.
+  Use when: product info column, above or next to the title ("show a sale badge", "add a label like Bestseller or Limited edition").
+
+  @example
+  {% content_for 'block', type: 'product-badges', id: 'badges' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  assign product = closest.product
+  assign variant = product.selected_or_first_available_variant
+-%}
+<div class="flex flex-wrap gap-2 empty:hidden" data-swap="badges-{{ block.id }}" {{ block.shopify_attributes }}>
+  {%- if product -%}
+    {%- render 'badges', product: product, variant: variant, sale_style: s.sale_style, show_sold_out: s.show_sold_out, new_days: s.new_days, show_label: s.show_label -%}
+  {%- endif -%}
+</div>
+
+{% schema %}
+{
+  "name": "t:blocks.product_badges.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "select",
+      "id": "sale_style",
+      "label": "t:blocks.product_badges.settings.sale_style.label",
+      "options": [
+        {
+          "value": "percent",
+          "label": "t:blocks.product_badges.settings.sale_style.options.percent"
+        },
+        {
+          "value": "amount",
+          "label": "t:blocks.product_badges.settings.sale_style.options.amount"
+        },
+        {
+          "value": "text",
+          "label": "t:blocks.product_badges.settings.sale_style.options.text"
+        },
+        {
+          "value": "none",
+          "label": "t:blocks.product_badges.settings.sale_style.options.none"
+        }
+      ],
+      "default": "percent"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_sold_out",
+      "label": "t:blocks.product_badges.settings.show_sold_out.label",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "new_days",
+      "label": "t:blocks.product_badges.settings.new_days.label",
+      "info": "t:blocks.product_badges.settings.new_days.info",
+      "min": 0,
+      "max": 90,
+      "step": 1,
+      "unit": "d",
+      "default": 0
+    },
+    {
+      "type": "checkbox",
+      "id": "show_label",
+      "label": "t:blocks.product_badges.settings.show_label.label",
+      "info": "t:blocks.product_badges.settings.show_label.info",
+      "default": true
+    }
+  ],
+  "presets": [{ "name": "t:blocks.product_badges.name" }]
+}
+{% endschema %}

@@ -1,0 +1,91 @@
+{% doc %}
+  @description One piece of contact information: a small uppercase label ("Address", "Email", "Opening hours") over rich text (links, line breaks), with an optional icon and optionally the store's social media icons (Theme settings → Social media). Inside a Contact form section it moves into the details column or the row of cards below the form and follows that section's detail style (plain, tinted box or bordered cards).
+  Use when: address, email, phone, opening hours, "Follow us" on contact pages, in the Map section's info card, or in any Container / Group.
+
+  @example
+  {% content_for 'block', type: 'contact-detail', id: 'address' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  assign label = s.label | strip | escape
+-%}
+<!--aw-detail-->
+{%- if label == blank and s.text == blank and s.show_social == false -%}
+  <div hidden {{ block.shopify_attributes }}></div>
+{%- else -%}
+  <div
+    class="flex min-w-0 gap-3 in-data-[details=cards]:rounded-card in-data-[details=cards]:border in-data-[details=cards]:border-border in-data-[details=cards]:p-6 md:in-data-[details=cards]:p-7"
+    {{ block.shopify_attributes }}
+  >
+    {%- if s.icon != 'none' -%}
+      {%- render 'icon', name: s.icon, class: 'mt-0.5 size-5 shrink-0' -%}
+    {%- endif -%}
+    <div class="flex min-w-0 flex-col gap-2">
+      {%- if label != blank -%}
+        <p class="type-eyebrow text-muted">{{ label }}</p>
+      {%- endif -%}
+      {%- if s.text != blank -%}
+        <div class="rte type-body [overflow-wrap:anywhere]">{{ s.text }}</div>
+      {%- endif -%}
+      {%- if s.show_social -%}
+        {%- capture social_html -%}{%- render 'social-icons', class: 'flex flex-wrap items-center gap-1 -ms-3', icon_class: 'size-5' -%}{%- endcapture -%}
+        {%- if social_html != blank -%}
+          {{ social_html }}
+        {%- elsif request.design_mode -%}
+          <p class="type-xs text-muted">{{ 'blocks.social_links.editor_hint' | t }}</p>
+        {%- endif -%}
+      {%- endif -%}
+    </div>
+  </div>
+{%- endif -%}
+<!--/aw-detail-->
+
+{% schema %}
+{
+  "name": "t:blocks.contact_detail.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "label",
+      "label": "t:blocks.contact_detail.settings.label.label",
+      "default": "Address"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:blocks.contact_detail.settings.text.label",
+      "info": "t:blocks.contact_detail.settings.text.info",
+      "default": "<p>Street and number<br>Postcode, City</p>"
+    },
+    {
+      "type": "select",
+      "id": "icon",
+      "label": "t:blocks.contact_detail.settings.icon.label",
+      "options": [
+        { "value": "none", "label": "t:blocks.contact_detail.settings.icon.options.none" },
+        { "value": "map-pin", "label": "t:blocks.contact_detail.settings.icon.options.map_pin" },
+        { "value": "mail", "label": "t:blocks.contact_detail.settings.icon.options.mail" },
+        { "value": "phone", "label": "t:blocks.contact_detail.settings.icon.options.phone" },
+        { "value": "clock", "label": "t:blocks.contact_detail.settings.icon.options.clock" },
+        { "value": "chat", "label": "t:blocks.contact_detail.settings.icon.options.chat" },
+        { "value": "globe", "label": "t:blocks.contact_detail.settings.icon.options.globe" },
+        { "value": "truck", "label": "t:blocks.contact_detail.settings.icon.options.truck" }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_social",
+      "label": "t:blocks.contact_detail.settings.show_social.label",
+      "info": "t:blocks.contact_detail.settings.show_social.info",
+      "default": false
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:blocks.contact_detail.name"
+    }
+  ]
+}
+{% endschema %}

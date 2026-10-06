@@ -1,0 +1,91 @@
+{
+  "current": {
+    "color_schemes": {
+      "scheme-1": {
+        "settings": {
+          "background": "#FBF8F6",
+          "background_gradient": "",
+          "foreground": "#5E3540",
+          "primary": "#6E3F4A",
+          "on_primary": "#FFFFFF",
+          "accent": "#B9C58E",
+          "on_accent": "#2E1D22"
+        }
+      },
+      "scheme-2": {
+        "settings": {
+          "background": "#F3ECEA",
+          "background_gradient": "",
+          "foreground": "#5E3540",
+          "primary": "#6E3F4A",
+          "on_primary": "#FFFFFF",
+          "accent": "#B9C58E",
+          "on_accent": "#2E1D22"
+        }
+      },
+      "scheme-3": {
+        "settings": {
+          "background": "#2E1D22",
+          "background_gradient": "",
+          "foreground": "#FFFFFF",
+          "primary": "#FFFFFF",
+          "on_primary": "#2E1D22",
+          "accent": "#B9C58E",
+          "on_accent": "#2E1D22"
+        }
+      },
+      "scheme-4": {
+        "settings": {
+          "background": "#6E3F4A",
+          "background_gradient": "linear-gradient(135deg, rgba(110, 63, 74, 1) 0%, rgba(148, 120, 96, 1) 55%, rgba(185, 197, 142, 1) 100%)",
+          "foreground": "#FFFFFF",
+          "primary": "#FFFFFF",
+          "on_primary": "#6E3F4A",
+          "accent": "#B9C58E",
+          "on_accent": "#2E1D22"
+        }
+      },
+      "scheme-5": {
+        "settings": {
+          "background": "#E8E2D9",
+          "background_gradient": "",
+          "foreground": "#5E3540",
+          "primary": "#6E3F4A",
+          "on_primary": "#FFFFFF",
+          "accent": "#6E3F4A",
+          "on_accent": "#FFFFFF"
+        }
+      }
+    },
+    "type_heading_font": "jost_n4",
+    "type_body_font": "jost_n4",
+    "heading_uppercase": true,
+    "heading_line_height": 105,
+    "heading_letter_spacing": 0,
+    "nav_uppercase": true,
+    "nav_weight": "500",
+    "nav_size": 13,
+    "button_uppercase": true,
+    "button_weight": "500",
+    "button_size": 13,
+    "button_letter_spacing": 40,
+    "card_uppercase": true,
+    "card_weight": "400",
+    "card_text_align": "center",
+    "page_width": 1400,
+    "radius_card": 12,
+    "radius_media": 12,
+    "radius_input": 24,
+    "radius_button": 40,
+    "swatch_shape": "circle",
+    "card_image_fit": "contain",
+    "card_show_vendor": false,
+    "badge_new_days": 30,
+    "color_badge_sale_bg": "#D4254B",
+    "color_sale": "#D4254B",
+    "social_instagram": "https://instagram.com/shopify",
+    "social_facebook": "https://facebook.com/shopify",
+    "social_pinterest": "https://pinterest.com/shopify",
+    "social_x": "https://x.com/shopify"
+  }
+}

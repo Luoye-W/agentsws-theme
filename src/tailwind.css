@@ -1,0 +1,293 @@
+/*
+ * agentsws-theme — Tailwind CSS entry point.
+ * Compiled to assets/app.css by `npm run build:css`. Never edit assets/app.css by hand.
+ *
+ * Token flow (no rebuild needed when merchants change settings):
+ *   theme editor settings → snippets/theme-tokens.liquid
+ *     → .surface-<scheme id> classes set --c-* (colors of one color scheme; :root = body scheme)
+ *     → --p-* global status colors, --s-* layout / typography / component settings
+ *   → @theme inline maps Tailwind tokens (bg-bg, text-fg, bg-primary…) to those variables.
+ */
+@import "tailwindcss" source(none);
+@import "./vocab.css";
+
+@source "../layout";
+@source "../sections";
+@source "../blocks";
+@source "../snippets";
+@source "../templates";
+@source "../assets/*.js";
+
+@theme {
+  /* Shopify-style breakpoints: md = tablet/desktop, lg = large desktop. */
+  --breakpoint-md: 750px;
+  --breakpoint-lg: 990px;
+}
+
+@theme inline {
+  --color-*: initial;
+  --color-bg: var(--c-bg);
+  --color-fg: var(--c-fg);
+  --color-muted: var(--c-muted);
+  --color-border: var(--c-border);
+  --color-primary: var(--c-primary);
+  --color-on-primary: var(--c-on-primary);
+  --color-accent: var(--c-accent);
+  --color-on-accent: var(--c-on-accent);
+  --color-sale: var(--p-sale);
+  --color-badge: var(--p-badge-sale-bg);
+  --color-on-badge: var(--p-badge-sale-fg);
+  --color-rating: var(--p-rating);
+  --color-success: var(--p-success);
+  --color-error: var(--p-error);
+  --color-placeholder: var(--p-placeholder);
+  --color-overlay: var(--p-overlay);
+
+  --font-heading: var(--s-font-heading);
+  --font-body: var(--s-font-body);
+
+  --radius-card: var(--s-radius-card);
+  --radius-media: var(--s-radius-media);
+  --radius-input: var(--s-radius-input);
+  --radius-btn: var(--s-radius-btn);
+  --radius-swatch: var(--s-radius-swatch);
+}
+
+/* ---------- Surfaces: .surface-<scheme id> (from theme-tokens) sets --c-*; everything else derives ---------- */
+@layer base {
+  /* Visually hidden text is absolutely positioned; without a horizontal offset it keeps its place in the line and, inside a
+     sideways-scrolling row (tabs, chips, sliders), can sit past the screen edge and widen the page. */
+  .sr-only {
+    inset-inline-start: 0;
+  }
+
+  :root,
+  [class*="surface-"] {
+    --c-muted: color-mix(in srgb, var(--c-fg) 68%, var(--c-bg));
+    --c-border: color-mix(in srgb, var(--c-fg) 16%, var(--c-bg));
+  }
+  [class*="surface-"] {
+    background-color: var(--c-bg);
+    background-image: var(--c-bg-image, none);
+    color: var(--c-fg);
+  }
+
+  html {
+    font-size: calc(var(--s-body-size, 16) / 16 * 100%);
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    font-family: var(--s-font-body);
+    font-weight: var(--s-font-body-weight, 400);
+    letter-spacing: var(--s-body-tracking, 0);
+    background-color: var(--c-bg);
+    color: var(--c-fg);
+    line-height: var(--s-body-leading, 1.6);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--s-font-heading);
+    font-weight: var(--s-font-heading-weight, 600);
+    line-height: var(--s-heading-leading, 1.15);
+    letter-spacing: var(--s-heading-tracking, 0);
+    text-transform: var(--s-heading-case, none);
+    text-wrap: balance;
+  }
+  svg {
+    stroke-width: calc(1.5px * var(--s-icon-stroke, 1));
+  }
+  :focus-visible {
+    outline: 2px solid var(--p-focus, var(--c-fg));
+    outline-offset: 2px;
+  }
+  ::selection {
+    background-color: var(--c-accent);
+    color: var(--c-on-accent);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* ---------- Sticky header: the header section wrapper sticks when the header opts in ---------- */
+@layer components {
+  .section-header:has([data-sticky]) {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+}
+
+/* ---------- Motion (Theme settings → Animations). Pure CSS; off for reduced motion. ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  /* Sections fade up as they scroll into view (scroll-driven animation; browsers without support show them at once). */
+  @supports (animation-timeline: view()) {
+    [data-animate-reveal] main > .shopify-section:not(:first-child) > * {
+      animation: aw-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 35%;
+    }
+  }
+  /* Lazy images fade in once loaded (theme.js adds .is-loaded; only when JavaScript runs). */
+  .js [data-animate-images] img[loading="lazy"]:not(.is-loaded) {
+    opacity: 0;
+  }
+  [data-animate-images] img[loading="lazy"] {
+    transition: opacity 400ms ease;
+  }
+  /* Cross-document page transitions (Theme settings → Animations → Page transitions). */
+  @view-transition {
+    navigation: auto;
+  }
+}
+@keyframes aw-reveal {
+  from { opacity: 0; transform: translateY(32px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---------- Shopify accelerated checkout: the unbranded "Buy it now" button follows the theme ----------
+ * Unlayered on purpose: Shopify's own (unlayered) stylesheet would beat any @layer rule. */
+.shopify-payment-button .shopify-payment-button__button--unbranded {
+  min-height: 3rem;
+  border: var(--s-btn-border, 1px) solid var(--c-fg);
+  border-radius: var(--s-radius-btn);
+  background-color: transparent;
+  color: var(--c-fg);
+  font-family: var(--s-button-font, inherit);
+  font-weight: var(--s-button-weight, 600);
+  letter-spacing: var(--s-button-tracking, 0);
+  text-transform: var(--s-button-case, none);
+}
+.shopify-payment-button .shopify-payment-button__button--unbranded:hover:not([disabled]) {
+  background-color: var(--c-fg);
+  color: var(--c-bg);
+}
+
+/* ---------- Layout ---------- */
+@utility page-width {
+  width: 100%;
+  max-width: calc(var(--s-page-width) + 2 * var(--s-gutter));
+  margin-inline: auto;
+  padding-inline: var(--s-gutter);
+}
+@utility page-width-narrow {
+  width: 100%;
+  max-width: calc(48rem + 2 * var(--s-gutter));
+  margin-inline: auto;
+  padding-inline: var(--s-gutter);
+}
+/* Product grids and card rows use the global grid gap (Theme settings → Layout). */
+@utility grid-gap {
+  column-gap: var(--s-grid-gap);
+  row-gap: calc(var(--s-grid-gap) * 1.5);
+}
+
+/* ---------- Type presets (scale with the "Heading scale" setting) ---------- */
+@utility type-display { font-family: var(--s-font-heading); font-weight: var(--s-font-heading-weight); line-height: calc(var(--s-heading-leading) * 0.95); letter-spacing: var(--s-heading-tracking); text-transform: var(--s-heading-case); font-size: calc(clamp(2.75rem, 6vw, 4.5rem) * var(--s-heading-scale)); }
+@utility type-h1 { font-family: var(--s-font-heading); font-weight: var(--s-font-heading-weight); line-height: var(--s-heading-leading); letter-spacing: var(--s-heading-tracking); text-transform: var(--s-heading-case); font-size: calc(clamp(2.25rem, 4.5vw, 3.25rem) * var(--s-heading-scale)); }
+@utility type-h2 { font-family: var(--s-font-heading); font-weight: var(--s-font-heading-weight); line-height: var(--s-heading-leading); letter-spacing: var(--s-heading-tracking); text-transform: var(--s-heading-case); font-size: calc(clamp(1.75rem, 3.5vw, 2.5rem) * var(--s-heading-scale)); }
+@utility type-h3 { font-family: var(--s-font-heading); font-weight: var(--s-font-heading-weight); line-height: var(--s-heading-leading); letter-spacing: var(--s-heading-tracking); text-transform: var(--s-heading-case); font-size: calc(clamp(1.5rem, 2.5vw, 1.875rem) * var(--s-heading-scale)); }
+@utility type-h4 { font-family: var(--s-font-heading); font-weight: var(--s-font-heading-weight); line-height: var(--s-heading-leading); letter-spacing: var(--s-heading-tracking); text-transform: var(--s-heading-case); font-size: calc(1.375rem * var(--s-heading-scale)); }
+@utility type-h5 { font-family: var(--s-font-heading); font-weight: var(--s-font-heading-weight); line-height: var(--s-heading-leading); letter-spacing: var(--s-heading-tracking); text-transform: var(--s-heading-case); font-size: calc(1.125rem * var(--s-heading-scale)); }
+@utility type-h6 { font-family: var(--s-font-heading); font-weight: var(--s-font-heading-weight); line-height: var(--s-heading-leading); letter-spacing: var(--s-heading-tracking); text-transform: var(--s-heading-case); font-size: calc(1rem * var(--s-heading-scale)); }
+@utility type-lg { font-size: 1.125rem; line-height: var(--s-body-leading); }
+@utility type-body { font-size: 1rem; line-height: var(--s-body-leading); }
+@utility type-sm { font-size: 0.875rem; line-height: 1.5; }
+@utility type-xs { font-size: 0.75rem; line-height: 1.4; }
+@utility type-eyebrow { font-size: 0.75rem; line-height: 1.4; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; }
+/* Role presets (Theme settings → Typography → Navigation / Product cards). */
+@utility type-nav { font-family: var(--s-nav-font); font-weight: var(--s-nav-weight); font-size: var(--s-nav-size); text-transform: var(--s-nav-case); letter-spacing: 0.02em; }
+@utility type-card { font-family: var(--s-card-font); font-weight: var(--s-card-weight); font-size: var(--s-card-size); text-transform: var(--s-card-case); line-height: 1.35; }
+
+/* ---------- Rich text from the editor ---------- */
+@utility rte {
+  & > * + * { margin-top: 0.75em; }
+  & a { text-decoration: underline; text-underline-offset: 0.15em; }
+  & ul { list-style: disc; padding-inline-start: 1.25em; }
+  & ol { list-style: decimal; padding-inline-start: 1.25em; }
+  & strong { font-weight: 700; }
+  & em { font-style: italic; }
+  & blockquote { border-inline-start: 3px solid var(--c-border); padding-inline-start: 1em; }
+}
+
+/* ---------- Buttons (Theme settings → Buttons, Typography → Buttons) ---------- */
+@utility btn {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding-inline: 1.5rem;
+  border: var(--s-btn-border, 1px) solid transparent;
+  border-radius: var(--s-radius-btn);
+  font-family: var(--s-button-font, inherit);
+  font-weight: var(--s-button-weight, 600);
+  font-size: var(--s-button-size, 1rem);
+  letter-spacing: var(--s-button-tracking, 0);
+  text-transform: var(--s-button-case, none);
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: var(--s-btn-shadow, none);
+  clip-path: polygon(0 0, calc(100% - var(--s-btn-cut, 0px)) 0, 100% var(--s-btn-cut, 0px), 100% 100%, 0 100%);
+  transition: background-color 150ms, color 150ms, border-color 150ms, transform 150ms, box-shadow 150ms;
+  &:disabled, &[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; }
+  [data-button-hover="lift"] &:hover:not(:disabled) { transform: translateY(-2px); }
+  [data-button-hover="sweep"] &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-color: currentColor;
+    opacity: 0.14;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 250ms ease;
+  }
+  [data-button-hover="sweep"] &:hover:not(:disabled)::before { transform: scaleX(1); }
+}
+@utility btn-primary {
+  background-color: var(--c-primary);
+  color: var(--c-on-primary);
+  border-color: var(--c-primary);
+  [data-button-style="outline"] & { background-color: transparent; color: var(--c-primary); }
+  [data-button-hover="darken"] &:hover:not(:disabled) { background-color: color-mix(in srgb, var(--c-primary) 85%, var(--c-fg)); }
+  [data-button-style="outline"][data-button-hover="darken"] &:hover:not(:disabled) { background-color: var(--c-primary); color: var(--c-on-primary); }
+}
+@utility btn-secondary {
+  background-color: transparent;
+  color: var(--c-fg);
+  border-color: color-mix(in srgb, var(--c-fg) 40%, transparent);
+  &:hover:not(:disabled) { border-color: var(--c-fg); }
+}
+@utility btn-link {
+  min-height: auto;
+  padding-inline: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  clip-path: none;
+  color: var(--c-fg);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* ---------- Form fields (Theme settings → Inputs) ---------- */
+@utility field {
+  min-height: 2.75rem;
+  width: 100%;
+  border: var(--s-input-border, 1px) solid var(--c-border);
+  border-radius: var(--s-radius-input);
+  background-color: var(--c-bg);
+  color: var(--c-fg);
+  padding-inline: 0.875rem;
+  &::placeholder { color: var(--c-muted); }
+  &:focus-visible { border-color: var(--c-fg); outline-offset: 0; }
+}

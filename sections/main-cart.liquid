@@ -1,0 +1,482 @@
+{% comment %}
+  @description Cart page: heading with an optional "Continue shopping" button, line items (compact, or table columns for quantity and line total, optional vendor), free-shipping progress (Theme settings → Cart) above the lines or in the summary, optional whole-order gift wrap (a product you choose, with an optional gift message saved as a cart attribute), product recommendations, estimated shipping rates by country and postal code, discount codes (several can be combined, each removable), then a summary panel (outlined or tinted) with order note (collapsible or always open, saved as you type), cart discounts, subtotal, optional "agree to terms" checkbox that blocks checkout until ticked, checkout (plus accelerated checkout buttons, hidden while the terms checkbox is required because they would skip it) and accepted payment icons. When empty: a centred message with an icon and a continue-shopping button. Works without JavaScript through the native cart form (discount codes, shipping estimates and gift wrap need it).
+  Use when: cart template only (templates/cart.json).
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+
+  case s.heading_size
+    when 'display'
+      assign heading_class = 'type-display'
+    when 'h1'
+      assign heading_class = 'type-h1'
+    else
+      assign heading_class = 'type-h2'
+  endcase
+
+  if s.summary_style == 'filled'
+    assign summary_class = 'rounded-card bg-fg/[0.03] p-6 md:p-8'
+  else
+    assign summary_class = 'rounded-card border border-border p-6'
+  endif
+
+  assign gift_product = s.gift_wrap_product
+  assign gift_variant = gift_product.selected_or_first_available_variant
+  assign gift_line = 0
+  if gift_product != blank
+    for item in cart.items
+      if item.product_id == gift_product.id
+        assign gift_line = forloop.index
+        break
+      endif
+    endfor
+  endif
+
+  assign applied_codes = ''
+  for discount_code in cart.discount_codes
+    assign applied_codes = applied_codes | append: discount_code.code
+    unless forloop.last
+      assign applied_codes = applied_codes | append: ','
+    endunless
+  endfor
+
+  assign recommendation_limit = settings.cart_recommendations_limit | plus: cart.items.size
+  if recommendation_limit > 10
+    assign recommendation_limit = 10
+  endif
+
+  capture free_shipping
+    render 'cart-free-shipping'
+  endcapture
+  assign free_shipping = free_shipping | strip
+-%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+>
+  <aw-cart-items
+    class="page-width flex flex-col gap-8"
+    data-section="{{ section.id }}"
+    data-change-url="{{ routes.cart_change_url }}"
+    data-update-url="{{ routes.cart_update_url }}"
+    data-item-count="{{ cart.item_count }}"
+    data-error-text="{{ 'general.cart.error' | t | escape }}"
+  >
+    {%- if cart.item_count > 0 -%}
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <h1 class="{{ heading_class }}" tabindex="-1" data-ref="heading">{{ 'general.cart.title' | t }}</h1>
+        {%- if s.show_continue_link -%}
+          <a href="{{ routes.all_products_collection_url }}" class="btn btn-secondary">
+            {%- render 'icon', name: 'arrow-left', class: 'size-4 rtl:rotate-180' -%}
+            {{- 'general.continue_shopping' | t -}}
+          </a>
+        {%- endif -%}
+      </div>
+
+      <form action="{{ routes.cart_url }}" method="post" id="CartForm" class="grid gap-10 lg:grid-cols-12">
+        <div class="flex flex-col gap-6 lg:col-span-8">
+          {%- if s.free_shipping_position == 'lines' and free_shipping != blank -%}
+            {{ free_shipping }}
+          {%- endif -%}
+          {% render 'cart-lines', section_id: section.id, image_sizes: '128px', layout: s.line_layout, show_vendor: s.show_vendor %}
+          <noscript>
+            <button type="submit" class="btn btn-secondary mt-4">{{ 'general.cart.update' | t }}</button>
+          </noscript>
+
+          {%- if gift_product != blank and gift_variant.available -%}
+            {%- assign gift_price = gift_variant.price | money -%}
+            <div class="flex flex-col gap-3 rounded-card border border-border p-5">
+              <label class="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  class="mt-1 size-4 shrink-0 accent-primary"
+                  data-gift-wrap
+                  data-variant="{{ gift_variant.id }}"
+                  data-line="{{ gift_line }}"
+                  data-add-url="{{ routes.cart_add_url }}"
+                  {% if gift_line > 0 %}
+                    checked
+                  {% endif %}
+                >
+                <span class="flex items-center gap-2">
+                  {%- render 'icon', name: 'gift', class: 'size-5 shrink-0' -%}
+                  {{- 'general.cart.gift_wrap' | t: price: gift_price -}}
+                </span>
+              </label>
+              {%- if s.gift_wrap_message and gift_line > 0 -%}
+                {%- assign gift_attribute = 'general.cart.gift_message' | t -%}
+                <label for="GiftMessage-{{ section.id }}" class="type-sm font-medium">{{ gift_attribute }}</label>
+                <textarea
+                  id="GiftMessage-{{ section.id }}"
+                  name="attributes[{{ gift_attribute | escape }}]"
+                  rows="3"
+                  class="field py-3 type-sm"
+                  data-cart-attribute="{{ gift_attribute | escape }}"
+                >{{ cart.attributes[gift_attribute] }}</textarea>
+              {%- endif -%}
+            </div>
+          {%- endif -%}
+
+          {%- if s.show_recommendations and settings.cart_recommendations_limit > 0 -%}
+            <aw-recommendations
+              class="block min-h-px"
+              data-url="{{ routes.product_recommendations_url }}?section_id=cart-recommendations&product_id={{ cart.items.first.product_id }}&limit={{ recommendation_limit }}&intent={{ settings.cart_recommendations_intent }}"
+            ></aw-recommendations>
+          {%- endif -%}
+
+          {%- if s.show_shipping_estimator or s.show_discount -%}
+            <div class="grid gap-4 {% if s.show_shipping_estimator and s.show_discount %}md:grid-cols-2{% endif %} md:items-start">
+              {%- if s.show_shipping_estimator -%}
+                <aw-shipping-estimator
+                  class="block"
+                  data-default-country="{{ customer.default_address.country | default: localization.country.name | escape }}"
+                  data-money-format="{{ shop.money_format | strip_html | escape }}"
+                  data-found-one="{{ 'general.cart.shipping.found.one' | t }}"
+                  data-found-other="{{ 'general.cart.shipping.found.other' | t }}"
+                  data-none="{{ 'general.cart.shipping.none' | t }}"
+                  data-error="{{ 'general.cart.shipping.error' | t }}"
+                >
+                  <details class="group/ship rounded-card border border-border" data-keep-open="shipping">
+                    <summary class="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-5 type-h6 [&::-webkit-details-marker]:hidden">
+                      {{- 'general.cart.shipping.title' | t -}}
+                      {%- render 'icon', name: 'chevron-down', class: 'size-5 transition group-open/ship:rotate-180 motion-reduce:transition-none' -%}
+                    </summary>
+                    <div class="flex flex-col gap-3 px-5 pb-5">
+                      <label class="flex flex-col gap-1 type-sm">
+                        {{- 'general.cart.shipping.country' | t -}}
+                        <select class="field h-12" data-ref="country">{{ country_option_tags }}</select>
+                      </label>
+                      <label class="flex flex-col gap-1 type-sm" data-ref="province-field" hidden>
+                        {{- 'general.cart.shipping.province' | t -}}
+                        <select class="field h-12" data-ref="province"></select>
+                      </label>
+                      <label class="flex flex-col gap-1 type-sm">
+                        {{- 'general.cart.shipping.zip' | t -}}
+                        <input type="text" class="field h-12" autocomplete="postal-code" data-ref="zip">
+                      </label>
+                      <button type="button" class="btn btn-secondary w-full" data-ref="submit">{{ 'general.cart.shipping.submit' | t }}</button>
+                      <div role="status" aria-live="polite" data-ref="result"></div>
+                    </div>
+                  </details>
+                </aw-shipping-estimator>
+              {%- endif -%}
+
+              {%- if s.show_discount -%}
+                <details class="group/discount rounded-card border border-border" data-keep-open="discount" data-discounts data-codes="{{ applied_codes | escape }}" {% if cart.discount_codes.size > 0 %}open{% endif %}>
+                  <summary class="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-5 type-h6 [&::-webkit-details-marker]:hidden">
+                    <span class="flex items-center gap-2">
+                      {{- 'general.cart.discount.title' | t -}}
+                      {%- if cart.discount_codes.size > 0 -%}
+                        <span class="flex size-5 items-center justify-center rounded-full bg-primary type-xs text-on-primary">{{ cart.discount_codes.size }}</span>
+                      {%- endif -%}
+                    </span>
+                    {%- render 'icon', name: 'chevron-down', class: 'size-5 transition group-open/discount:rotate-180 motion-reduce:transition-none' -%}
+                  </summary>
+                  <div class="flex flex-col gap-3 px-5 pb-5">
+                    {%- if cart.discount_codes.size > 0 -%}
+                      <ul class="flex flex-wrap gap-2" role="list">
+                        {%- for discount_code in cart.discount_codes -%}
+                          <li class="inline-flex items-center gap-1 rounded-full border border-border ps-3 type-sm {% unless discount_code.applicable %}text-muted line-through{% endunless %}">
+                            {%- render 'icon', name: 'tag', class: 'size-4' -%}
+                            {{- discount_code.code | escape -}}
+                            <button type="button" class="flex size-9 items-center justify-center rounded-full hover:bg-fg/5" data-discount-remove="{{ discount_code.code | escape }}" aria-label="{{ 'general.cart.discount.remove' | t: code: discount_code.code }}">
+                              {%- render 'icon', name: 'close', class: 'size-4' -%}
+                            </button>
+                          </li>
+                        {%- endfor -%}
+                      </ul>
+                    {%- endif -%}
+                    <label for="DiscountCode-{{ section.id }}" class="sr-only">{{ 'general.cart.discount.label' | t }}</label>
+                    <input
+                      type="text"
+                      id="DiscountCode-{{ section.id }}"
+                      class="field h-12"
+                      placeholder="{{ 'general.cart.discount.label' | t }}"
+                      autocomplete="off"
+                      data-discount-input
+                    >
+                    <p class="type-sm text-error" role="status" data-discount-message data-invalid="{{ 'general.cart.discount.not_applicable' | t }}" hidden></p>
+                    <button type="button" class="btn btn-primary w-full" data-discount-apply>{{ 'general.cart.discount.apply' | t }}</button>
+                  </div>
+                </details>
+              {%- endif -%}
+            </div>
+          {%- endif -%}
+        </div>
+
+        <div class="flex flex-col gap-4 self-start lg:col-span-4 lg:sticky lg:top-[calc(var(--header-h,0px)+1rem)]">
+          <div class="flex flex-col gap-4 {{ summary_class }}">
+            {%- if s.free_shipping_position == 'summary' and free_shipping != blank -%}
+              <div class="rounded-card bg-bg p-4">{{ free_shipping }}</div>
+            {%- endif -%}
+            {%- for discount in cart.cart_level_discount_applications -%}
+              <p class="flex items-center justify-between gap-3 type-sm">
+                <span class="flex items-center gap-2">
+                  {%- render 'icon', name: 'tag', class: 'size-4' -%}
+                  {{- discount.title | escape -}}
+                </span>
+                <span class="rounded-full bg-badge px-2.5 py-0.5 type-xs font-semibold text-on-badge">−{{ discount.total_allocated_amount | money }}</span>
+              </p>
+            {%- endfor -%}
+            <p class="flex items-baseline justify-between">
+              <span class="font-semibold">{{ 'general.cart.subtotal' | t }}</span>
+              <span class="type-h4">{{ cart.total_price | money_with_currency }}</span>
+            </p>
+            <p class="type-xs text-muted">
+              {%- if cart.taxes_included -%}{{ 'general.cart.taxes_included' | t }}{%- else -%}{{ 'general.cart.taxes_excluded' | t }}{%- endif -%}
+            </p>
+            {%- if s.show_note -%}
+              {%- if s.note_style == 'open' -%}
+                <div class="flex flex-col gap-2 border-t border-border pt-4">
+                  <label for="CartNote" class="font-medium">{{ 'general.cart.note_heading' | t }}</label>
+                  <textarea id="CartNote" name="note" rows="4" class="field bg-bg py-3 type-sm" placeholder="{{ 'general.cart.note' | t }}" data-note>{{ cart.note }}</textarea>
+                </div>
+              {%- else -%}
+                <details class="group/note border-t border-border pt-4" data-keep-open="note">
+                  <summary class="flex cursor-pointer list-none items-center justify-between font-medium [&::-webkit-details-marker]:hidden">
+                    {{- 'general.cart.note' | t -}}
+                    {%- render 'icon', name: 'chevron-down', class: 'size-4 transition group-open/note:rotate-180' -%}
+                  </summary>
+                  <label for="CartNote" class="sr-only">{{ 'general.cart.note' | t }}</label>
+                  <textarea id="CartNote" name="note" rows="3" class="field mt-3 py-3 type-sm" data-note>{{ cart.note }}</textarea>
+                </details>
+              {%- endif -%}
+            {%- endif -%}
+            {% render 'cart-terms', id_suffix: section.id %}
+            <p class="type-sm text-error" role="alert" data-ref="error" hidden></p>
+            <button type="submit" name="checkout" class="btn btn-primary w-full">
+              {%- render 'icon', name: 'lock', class: 'size-4' -%}
+              {{- 'general.cart.checkout' | t -}}
+            </button>
+            {%- if additional_checkout_buttons and s.show_accelerated_checkout and settings.cart_show_terms == false -%}
+              <div class="flex flex-col gap-2">{{ content_for_additional_checkout_buttons }}</div>
+            {%- endif -%}
+          </div>
+          {%- if s.show_payment_icons and shop.enabled_payment_types.size > 0 -%}
+            <div class="flex flex-col items-center gap-2">
+              <p class="type-xs text-muted">{{ 'general.cart.we_accept' | t }}</p>
+              <ul class="flex flex-wrap justify-center gap-2" role="list">
+                {%- for type in shop.enabled_payment_types -%}
+                  <li>{{ type | payment_type_svg_tag: class: 'h-6 w-auto' }}</li>
+                {%- endfor -%}
+              </ul>
+            </div>
+          {%- endif -%}
+        </div>
+      </form>
+    {%- else -%}
+      <div class="flex flex-col items-center gap-6 py-10 text-center md:py-16">
+        {%- render 'icon', name: 'cart', class: 'size-12 text-muted' -%}
+        <h1 class="{{ heading_class }} max-w-xl" tabindex="-1" data-ref="heading">{{ 'general.cart.empty' | t }}</h1>
+        <a href="{{ routes.all_products_collection_url }}" class="btn btn-primary min-w-56">{{ 'general.continue_shopping' | t }}</a>
+      </div>
+    {%- endif -%}
+  </aw-cart-items>
+</div>
+<script src="{{ 'c-cart-items.js' | asset_url }}" type="module"></script>
+<script src="{{ 'c-quantity.js' | asset_url }}" type="module"></script>
+{%- if s.show_shipping_estimator -%}
+  <script src="{{ 'c-shipping-estimator.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+{%- if s.show_recommendations -%}
+  <script src="{{ 'c-recommendations.js' | asset_url }}" type="module"></script>
+  <script src="{{ 'c-product-form.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.main_cart.name",
+  "class": "section-main-cart",
+  "settings": [
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "t:sections.main_blog.settings.heading_size.label",
+      "options": [
+        {
+          "value": "display",
+          "label": "t:sections.main_blog.settings.heading_size.options.display"
+        },
+        {
+          "value": "h1",
+          "label": "t:sections.main_blog.settings.heading_size.options.h1"
+        },
+        {
+          "value": "h2",
+          "label": "t:sections.main_blog.settings.heading_size.options.h2"
+        }
+      ],
+      "default": "h2"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_continue_link",
+      "label": "t:sections.main_cart.settings.show_continue_link.label",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:sections.main_cart.settings.lines_header"
+    },
+    {
+      "type": "select",
+      "id": "line_layout",
+      "label": "t:sections.main_cart.settings.line_layout.label",
+      "options": [
+        {
+          "value": "compact",
+          "label": "t:sections.main_cart.settings.line_layout.options.compact"
+        },
+        {
+          "value": "table",
+          "label": "t:sections.main_cart.settings.line_layout.options.table"
+        }
+      ],
+      "default": "compact"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_vendor",
+      "label": "t:sections.main_cart.settings.show_vendor.label",
+      "default": false
+    },
+    {
+      "type": "select",
+      "id": "free_shipping_position",
+      "label": "t:sections.main_cart.settings.free_shipping_position.label",
+      "info": "t:sections.main_cart.settings.free_shipping_position.info",
+      "options": [
+        {
+          "value": "lines",
+          "label": "t:sections.main_cart.settings.free_shipping_position.options.lines"
+        },
+        {
+          "value": "summary",
+          "label": "t:sections.main_cart.settings.free_shipping_position.options.summary"
+        }
+      ],
+      "default": "lines"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_recommendations",
+      "label": "t:sections.main_cart.settings.show_recommendations.label",
+      "info": "t:sections.main_cart.settings.show_recommendations.info",
+      "default": false
+    },
+    {
+      "type": "product",
+      "id": "gift_wrap_product",
+      "label": "t:sections.main_cart.settings.gift_wrap_product.label",
+      "info": "t:sections.main_cart.settings.gift_wrap_product.info"
+    },
+    {
+      "type": "checkbox",
+      "id": "gift_wrap_message",
+      "label": "t:sections.main_cart.settings.gift_wrap_message.label",
+      "info": "t:sections.main_cart.settings.gift_wrap_message.info",
+      "default": true,
+      "visible_if": "{{ section.settings.gift_wrap_product != blank }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_shipping_estimator",
+      "label": "t:sections.main_cart.settings.show_shipping_estimator.label",
+      "info": "t:sections.main_cart.settings.show_shipping_estimator.info",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_discount",
+      "label": "t:sections.main_cart.settings.show_discount.label",
+      "info": "t:sections.main_cart.settings.show_discount.info",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:sections.main_cart.settings.summary_header"
+    },
+    {
+      "type": "select",
+      "id": "summary_style",
+      "label": "t:sections.main_cart.settings.summary_style.label",
+      "options": [
+        {
+          "value": "border",
+          "label": "t:sections.main_cart.settings.summary_style.options.border"
+        },
+        {
+          "value": "filled",
+          "label": "t:sections.main_cart.settings.summary_style.options.filled"
+        }
+      ],
+      "default": "border"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_note",
+      "label": "t:sections.main_cart.settings.show_note.label",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "note_style",
+      "label": "t:sections.main_cart.settings.note_style.label",
+      "options": [
+        {
+          "value": "collapsed",
+          "label": "t:sections.main_cart.settings.note_style.options.collapsed"
+        },
+        {
+          "value": "open",
+          "label": "t:sections.main_cart.settings.note_style.options.open"
+        }
+      ],
+      "default": "collapsed",
+      "visible_if": "{{ section.settings.show_note }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_accelerated_checkout",
+      "label": "t:sections.main_cart.settings.show_accelerated_checkout.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_payment_icons",
+      "label": "t:sections.main_cart.settings.show_payment_icons.label",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,191 @@
+{% comment %}
+  @description Row of large image cards, each with a title, short text and link laid over the bottom of the image. Two to four per row on desktop; swipe row or stack on mobile.
+  Use when: shop-by-category entry points, two-way splits (e.g. "Pro / Lite", "Men / Women"), campaign tiles.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+
+  case s.columns
+    when 2
+      assign cols_class = 'md:grid-cols-2'
+    when 4
+      assign cols_class = 'md:grid-cols-2 lg:grid-cols-4'
+    else
+      assign cols_class = 'md:grid-cols-3'
+  endcase
+
+  case s.ratio
+    when 'square'
+      assign ratio = '1 / 1'
+    when 'landscape'
+      assign ratio = '8 / 5'
+    else
+      assign ratio = '4 / 5'
+  endcase
+
+  if s.mobile_layout == 'slider'
+    assign list_class = 'flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] -mx-(--s-gutter) px-(--s-gutter) scroll-px-(--s-gutter) md:mx-0 md:grid md:overflow-visible md:px-0'
+  else
+    assign list_class = 'grid grid-cols-1'
+  endif
+-%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1)); --card-ratio: {{ ratio }}; --card-overlay: {{ s.overlay_opacity | divided_by: 100.0 }};"
+  data-mobile-layout="{{ s.mobile_layout }}"
+>
+  <div class="page-width flex flex-col gap-8">
+    {%- if s.heading != blank -%}
+      <div class="flex flex-col gap-2">
+        {%- if s.eyebrow != blank -%}<p class="type-eyebrow text-muted">{{ s.eyebrow | escape }}</p>{%- endif -%}
+        <h2 class="type-h2">{{ s.heading }}</h2>
+      </div>
+    {%- endif -%}
+    <ul class="{{ list_class }} {{ cols_class }} gap-4 md:gap-6" role="list">
+      {% content_for 'blocks' %}
+    </ul>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "t:sections.image_cards.name",
+  "tag": "section",
+  "class": "section-image-cards",
+  "blocks": [
+    {
+      "type": "_image-card"
+    }
+  ],
+  "max_blocks": 8,
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:sections.featured_collection.settings.eyebrow.label"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:sections.featured_collection.settings.heading.label"
+    },
+    {
+      "type": "range",
+      "id": "columns",
+      "label": "t:shared.columns_desktop",
+      "min": 2,
+      "max": 4,
+      "step": 1,
+      "default": 3
+    },
+    {
+      "type": "select",
+      "id": "ratio",
+      "label": "t:sections.main_product.settings.media_ratio.label",
+      "options": [
+        {
+          "value": "portrait",
+          "label": "t:shared.ratio.options.portrait"
+        },
+        {
+          "value": "square",
+          "label": "t:shared.ratio.options.square"
+        },
+        {
+          "value": "landscape",
+          "label": "t:shared.ratio.options.landscape"
+        }
+      ],
+      "default": "portrait"
+    },
+    {
+      "type": "select",
+      "id": "mobile_layout",
+      "label": "t:sections.featured_collection.settings.mobile_layout.label",
+      "options": [
+        {
+          "value": "slider",
+          "label": "t:sections.featured_collection.settings.mobile_layout.options.slider"
+        },
+        {
+          "value": "stack",
+          "label": "t:sections.image_cards.settings.mobile_layout_stack"
+        }
+      ],
+      "default": "slider"
+    },
+    {
+      "type": "range",
+      "id": "overlay_opacity",
+      "label": "t:sections.hero.settings.overlay_opacity.label",
+      "min": 0,
+      "max": 90,
+      "step": 5,
+      "unit": "%",
+      "default": 40
+    },
+    {
+      "type": "color_scheme",
+      "id": "text_color_scheme",
+      "label": "t:sections.hero.settings.text_surface.label",
+      "default": "scheme-3",
+      "info": "t:sections.hero.settings.text_surface.info"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.image_cards.name",
+      "blocks": [
+        {
+          "type": "_image-card",
+          "settings": {
+            "title": "Category one"
+          }
+        },
+        {
+          "type": "_image-card",
+          "settings": {
+            "title": "Category two"
+          }
+        },
+        {
+          "type": "_image-card",
+          "settings": {
+            "title": "Category three"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

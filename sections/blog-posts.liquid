@@ -1,0 +1,473 @@
+{% comment %}
+  @description Row of the latest posts from one blog, with heading, optional text and "View all" link. On an article page with no blog chosen it uses the current blog, leaves out the post being read and can list posts that share its tags first ("related posts"). Hidden entirely when there are no posts to show (a hint appears only in the theme editor). Two layouts: a grid (swipe row or stack on mobile), or "lead + list" — the first post large with its text over the image, the next posts as horizontal cards beside it.
+  Use when: "From the blog" on the home page or landing pages, and related / latest posts under an article.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign source_blog = s.blog
+  if source_blog == blank and blog != blank
+    assign source_blog = blog
+  endif
+
+  assign current_handle = ''
+  if article and s.exclude_current
+    assign current_handle = article.handle
+  endif
+
+  case s.columns_desktop
+    when 1
+      assign desktop_cols = 'md:grid-cols-1'
+    when 2
+      assign desktop_cols = 'md:grid-cols-2'
+    when 4
+      assign desktop_cols = 'md:grid-cols-2 lg:grid-cols-4'
+    else
+      assign desktop_cols = 'md:grid-cols-3'
+  endcase
+
+  if s.mobile_layout == 'slider'
+    assign list_class = 'flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] -mx-(--s-gutter) px-(--s-gutter) scroll-px-(--s-gutter) md:mx-0 md:grid md:overflow-visible md:px-0'
+    assign item_class = 'w-[80%] shrink-0 snap-start md:w-auto'
+  elsif s.columns_mobile == '2'
+    assign list_class = 'grid grid-cols-2'
+    assign item_class = ''
+  else
+    assign list_class = 'grid grid-cols-1'
+    assign item_class = ''
+  endif
+
+  assign card_layout = 'stacked'
+  if s.columns_desktop == 1
+    assign card_layout = 'horizontal'
+  endif
+
+  assign is_lead = false
+  if s.layout == 'lead_list'
+    assign is_lead = true
+  endif
+
+  assign show_comments = false
+  if s.show_comments and source_blog.comments_enabled?
+    assign show_comments = true
+  endif
+
+  assign shown_count = 0
+  assign shown_handles = '|'
+-%}
+{%- capture cards -%}
+  {%- if source_blog != blank -%}
+    {%- if s.related_first and article and article.tags.size > 0 -%}
+      {%- for post in source_blog.articles -%}
+        {%- if shown_count >= s.post_count -%}{%- break -%}{%- endif -%}
+        {%- if post.handle == current_handle -%}{%- continue -%}{%- endif -%}
+        {%- assign shares_tag = false -%}
+        {%- for tag in post.tags -%}
+          {%- if article.tags contains tag -%}
+            {%- assign shares_tag = true -%}
+            {%- break -%}
+          {%- endif -%}
+        {%- endfor -%}
+        {%- if shares_tag -%}
+          {%- liquid
+            assign shown_count = shown_count | plus: 1
+            assign post_layout = card_layout
+            assign post_class = item_class
+            assign post_sizes = ''
+            if is_lead
+              if shown_count == 1
+                assign post_layout = 'overlay'
+                assign post_class = 'md:col-span-7 md:row-span-(--lead-rows) md:only:col-span-12'
+                assign post_sizes = '(min-width: 750px) 58vw, 100vw'
+              else
+                assign post_layout = 'horizontal'
+                assign post_class = 'md:col-span-5'
+                if shown_count > 2
+                  assign post_class = 'border-t border-border pt-6 md:col-span-5 md:pt-8'
+                endif
+                assign post_sizes = '(min-width: 750px) 17vw, 100vw'
+              endif
+            endif
+          -%}
+          {%- assign shown_handles = shown_handles | append: post.handle | append: '|' -%}
+          <li class="{{ post_class }}">
+            {% render 'article-card',
+              article: post,
+              blog_url: source_blog.url,
+              layout: post_layout,
+              sizes: post_sizes,
+              overlay_scheme: s.lead_text_scheme,
+              ratio: s.image_ratio,
+              show_tags: s.show_tags,
+              tags_on_image: s.tags_on_image,
+              meta_icons: s.meta_icons,
+              show_date: s.show_date,
+              show_author: s.show_author,
+              show_comments: show_comments,
+              show_reading_time: s.show_reading_time,
+              show_excerpt: s.show_excerpt
+            %}
+          </li>
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endif -%}
+    {%- for post in source_blog.articles -%}
+      {%- if shown_count >= s.post_count -%}{%- break -%}{%- endif -%}
+      {%- if post.handle == current_handle -%}{%- continue -%}{%- endif -%}
+      {%- assign handle_key = '|' | append: post.handle | append: '|' -%}
+      {%- if shown_handles contains handle_key -%}{%- continue -%}{%- endif -%}
+      {%- liquid
+        assign shown_count = shown_count | plus: 1
+        assign post_layout = card_layout
+        assign post_class = item_class
+        assign post_sizes = ''
+        if is_lead
+          if shown_count == 1
+            assign post_layout = 'overlay'
+            assign post_class = 'md:col-span-7 md:row-span-(--lead-rows) md:only:col-span-12'
+            assign post_sizes = '(min-width: 750px) 58vw, 100vw'
+          else
+            assign post_layout = 'horizontal'
+            assign post_class = 'md:col-span-5'
+            if shown_count > 2
+              assign post_class = 'border-t border-border pt-6 md:col-span-5 md:pt-8'
+            endif
+            assign post_sizes = '(min-width: 750px) 17vw, 100vw'
+          endif
+        endif
+      -%}
+      <li class="{{ post_class }}">
+        {% render 'article-card',
+          article: post,
+          blog_url: source_blog.url,
+          layout: post_layout,
+          sizes: post_sizes,
+          overlay_scheme: s.lead_text_scheme,
+          ratio: s.image_ratio,
+          show_tags: s.show_tags,
+          tags_on_image: s.tags_on_image,
+          meta_icons: s.meta_icons,
+          show_date: s.show_date,
+          show_author: s.show_author,
+          show_comments: show_comments,
+          show_reading_time: s.show_reading_time,
+          show_excerpt: s.show_excerpt
+        %}
+      </li>
+    {%- endfor -%}
+  {%- endif -%}
+{%- endcapture -%}
+
+{%- if shown_count > 0 -%}
+  <div
+    class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+    style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+  >
+    <div class="page-width flex flex-col gap-8">
+      {%- liquid
+        assign show_view_all = false
+        if s.show_view_all and source_blog.articles_count > shown_count
+          assign show_view_all = true
+        endif
+      -%}
+      {%- if s.heading != blank or s.text != blank or show_view_all -%}
+        <div class="flex flex-wrap items-end justify-between gap-4">
+          <div class="flex max-w-2xl flex-col gap-2">
+            {%- if s.heading != blank -%}<h2 class="type-h2">{{ s.heading }}</h2>{%- endif -%}
+            {%- if s.text != blank -%}<div class="rte text-muted">{{ s.text }}</div>{%- endif -%}
+          </div>
+          {%- if show_view_all -%}
+            <a href="{{ source_blog.url }}" class="btn btn-secondary">
+              {{- 'blogs.view_all' | t -}}
+              <span class="sr-only">: {{ source_blog.title | escape }}</span>
+            </a>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+      {%- if is_lead -%}
+        {%- assign lead_rows = shown_count | minus: 1 | at_least: 1 -%}
+        <ul
+          class="grid grid-cols-1 gap-6 md:grid-cols-12 md:gap-x-10 md:gap-y-8"
+          style="--lead-rows: {{ lead_rows }}; --overlay-opacity: {{ s.lead_overlay | divided_by: 100.0 }}; --overlay-min-h: 26rem;"
+          role="list"
+        >
+          {{ cards }}
+        </ul>
+      {%- else -%}
+        <ul class="{{ list_class }} {{ desktop_cols }} grid-gap" role="list">
+          {{ cards }}
+        </ul>
+      {%- endif -%}
+    </div>
+  </div>
+{%- elsif request.design_mode -%}
+  <div class="page-width py-8">
+    <p class="rounded-card border border-dashed border-border p-6 text-center type-sm text-muted">
+      {{- 'blogs.editor_empty' | t -}}
+    </p>
+  </div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.blog_posts.name",
+  "tag": "section",
+  "class": "section-blog-posts",
+  "disabled_on": {
+    "groups": [
+      "header",
+      "footer",
+      "custom.overlay"
+    ]
+  },
+  "settings": [
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:sections.featured_collection.settings.heading.label",
+      "default": "From the blog"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:sections.featured_collection.settings.text.label"
+    },
+    {
+      "type": "blog",
+      "id": "blog",
+      "label": "t:sections.blog_posts.settings.blog.label",
+      "info": "t:sections.blog_posts.settings.blog.info"
+    },
+    {
+      "type": "range",
+      "id": "post_count",
+      "label": "t:sections.blog_posts.settings.post_count.label",
+      "min": 1,
+      "max": 12,
+      "step": 1,
+      "default": 3
+    },
+    {
+      "type": "checkbox",
+      "id": "exclude_current",
+      "label": "t:sections.blog_posts.settings.exclude_current.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "related_first",
+      "label": "t:sections.blog_posts.settings.related_first.label",
+      "info": "t:sections.blog_posts.settings.related_first.info",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_view_all",
+      "label": "t:sections.blog_posts.settings.show_view_all.label",
+      "info": "t:sections.blog_posts.settings.show_view_all.info",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "t:shared.layout"
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "t:sections.blog_posts.settings.layout.label",
+      "options": [
+        {
+          "value": "grid",
+          "label": "t:sections.blog_posts.settings.layout.options.grid"
+        },
+        {
+          "value": "lead_list",
+          "label": "t:sections.blog_posts.settings.layout.options.lead_list"
+        }
+      ],
+      "default": "grid"
+    },
+    {
+      "type": "color_scheme",
+      "id": "lead_text_scheme",
+      "label": "t:sections.blog_posts.settings.lead_text_scheme.label",
+      "info": "t:sections.blog_posts.settings.lead_text_scheme.info",
+      "default": "scheme-3",
+      "visible_if": "{{ section.settings.layout == 'lead_list' }}"
+    },
+    {
+      "type": "range",
+      "id": "lead_overlay",
+      "label": "t:sections.hero.settings.overlay_opacity.label",
+      "min": 0,
+      "max": 90,
+      "step": 5,
+      "unit": "%",
+      "default": 60,
+      "visible_if": "{{ section.settings.layout == 'lead_list' }}"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "label": "t:shared.columns_desktop",
+      "min": 1,
+      "max": 4,
+      "step": 1,
+      "default": 3,
+      "visible_if": "{{ section.settings.layout == 'grid' }}"
+    },
+    {
+      "type": "select",
+      "id": "mobile_layout",
+      "label": "t:sections.blog_posts.settings.mobile_layout.label",
+      "options": [
+        {
+          "value": "slider",
+          "label": "t:sections.blog_posts.settings.mobile_layout.options.slider"
+        },
+        {
+          "value": "stack",
+          "label": "t:sections.blog_posts.settings.mobile_layout.options.stack"
+        }
+      ],
+      "default": "slider",
+      "visible_if": "{{ section.settings.layout == 'grid' }}"
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "label": "t:shared.columns_mobile.label",
+      "options": [
+        {
+          "value": "1",
+          "label": "t:shared.columns_mobile.options.one"
+        },
+        {
+          "value": "2",
+          "label": "t:shared.columns_mobile.options.two"
+        }
+      ],
+      "default": "1",
+      "visible_if": "{{ section.settings.layout == 'grid' and section.settings.mobile_layout == 'stack' }}"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.main_blog.settings.card_header"
+    },
+    {
+      "type": "select",
+      "id": "image_ratio",
+      "label": "t:sections.main_blog.settings.image_ratio.label",
+      "options": [
+        {
+          "value": "natural",
+          "label": "t:shared.ratio.options.natural"
+        },
+        {
+          "value": "square",
+          "label": "t:shared.ratio.options.square"
+        },
+        {
+          "value": "portrait",
+          "label": "t:shared.ratio.options.portrait"
+        },
+        {
+          "value": "landscape",
+          "label": "t:shared.ratio.options.landscape"
+        },
+        {
+          "value": "wide",
+          "label": "t:sections.main_blog.settings.image_ratio.options.wide"
+        }
+      ],
+      "default": "landscape"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_tags",
+      "label": "t:sections.main_blog.settings.show_tags.label",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "tags_on_image",
+      "label": "t:sections.main_blog.settings.tags_on_image.label",
+      "default": false,
+      "visible_if": "{{ section.settings.show_tags }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_date",
+      "label": "t:sections.main_blog.settings.show_date.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "meta_icons",
+      "label": "t:sections.main_blog.settings.meta_icons.label",
+      "info": "t:sections.main_blog.settings.meta_icons.info",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_author",
+      "label": "t:sections.main_blog.settings.show_author.label",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_reading_time",
+      "label": "t:sections.main_blog.settings.show_reading_time.label",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_comments",
+      "label": "t:sections.main_blog.settings.show_comments.label",
+      "info": "t:sections.main_blog.settings.show_comments.info",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_excerpt",
+      "label": "t:sections.main_blog.settings.show_excerpt.label",
+      "info": "t:sections.main_blog.settings.show_excerpt.info",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.blog_posts.name"
+    }
+  ]
+}
+{% endschema %}

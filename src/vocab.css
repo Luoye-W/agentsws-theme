@@ -1,0 +1,53 @@
+/*
+ * Closed class vocabulary — ALWAYS compiled into assets/app.css.
+ *
+ * Why: when someone edits Liquid without running the build (Shopify admin code editor,
+ * Sidekick, GitHub web editor), only classes that already exist in app.css will work.
+ * Every class listed here is guaranteed to exist. CLASS_VOCAB.md is generated from this
+ * file by `npm run build:vocab` — do not edit CLASS_VOCAB.md by hand.
+ *
+ * Format: one `@source inline("...")` per line, grouped under a "group: Name" comment.
+ * Brace syntax: {a,b} = alternatives, {1..12} = range, {,md:} = optional prefix.
+ * Keep this list small: every line costs bytes for every shopper.
+ */
+
+/* group: Display & position */
+@source inline("{,md:,lg:}{block,inline-block,flex,inline-flex,grid,hidden,contents}");
+@source inline("{relative,absolute,sticky,inset-0,top-0,bottom-0,start-0,end-0,z-0,z-10,z-20,z-50,overflow-hidden,isolate,sr-only}");
+
+/* group: Flex & grid */
+@source inline("{,md:,lg:}{flex-row,flex-col,flex-wrap,flex-1,shrink-0,grow}");
+@source inline("{,md:,lg:}{items-start,items-center,items-end,items-stretch,justify-start,justify-center,justify-end,justify-between,self-start,self-center,self-end}");
+@source inline("{,md:,lg:}grid-cols-{1..6}");
+@source inline("{,md:,lg:}col-span-{1..6}");
+@source inline("{,md:,lg:}gap-{0,1,2,3,4,6,8,10,12,16}");
+
+/* group: Spacing (logical: ps/pe/ms/me follow reading direction) */
+@source inline("{,md:,lg:}{p,px,py,pt,pb,ps,pe}-{0,1,2,3,4,6,8,12,16,24}");
+@source inline("{,md:,lg:}{m,mx,my,mt,mb}-{0,1,2,3,4,6,8,12,16,24}");
+@source inline("{mx-auto,ms-auto,me-auto}");
+
+/* group: Sizing */
+@source inline("{,md:,lg:}{w-full,w-auto,w-1/2,w-1/3,w-2/3,h-full,h-auto,min-h-screen}");
+@source inline("{max-w-sm,max-w-md,max-w-lg,max-w-xl,max-w-2xl,max-w-3xl,max-w-prose,aspect-square,aspect-video}");
+
+/* group: Typography (semantic presets first; see type-* utilities) */
+@source inline("{type-display,type-h1,type-h2,type-h3,type-h4,type-h5,type-h6,type-body,type-lg,type-sm,type-xs,type-eyebrow,type-nav,type-card}");
+@source inline("{,md:}{text-start,text-center,text-end}");
+@source inline("{font-heading,font-body,font-normal,font-medium,font-semibold,font-bold,uppercase,normal-case,italic,underline,no-underline,line-clamp-1,line-clamp-2,line-clamp-3,truncate,whitespace-nowrap,rte}");
+
+/* group: Color (theme tokens only — no raw palette like red-500) */
+@source inline("{,hover:}{bg,text,border}-{bg,fg,muted,border,primary,on-primary,accent,on-accent,sale,badge,on-badge,rating,success,error,placeholder}");
+@source inline("{bg,text}-{fg,primary}/{5,10,20,50,80}");
+
+/* group: Borders, radius, shadow */
+@source inline("{border,border-0,border-2,border-t,border-b,rounded-none,rounded-card,rounded-media,rounded-input,rounded-btn,rounded-swatch,rounded-full,shadow-sm,shadow-md,shadow-lg}");
+
+/* group: Media */
+@source inline("{object-cover,object-contain,object-center}");
+
+/* group: Components */
+@source inline("{btn,btn-primary,btn-secondary,btn-link,field,page-width,page-width-narrow,grid-gap}");
+
+/* group: State & motion */
+@source inline("{opacity-0,opacity-50,opacity-100,transition,duration-150,duration-300,cursor-pointer,pointer-events-none,focus-visible:outline-2}");

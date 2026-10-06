@@ -1,0 +1,192 @@
+{% comment %}
+  @description Age gate shown before the store can be used: heading, text, optional image, "confirm" and "leave" buttons. Only an explicit confirm is remembered (for N days); Escape, clicks outside and the browser cannot dismiss it. "Leave" goes to the link you set, or explains that the store cannot be used. Blocks page scroll, keeps keyboard focus inside and sits above everything else. In the theme editor it opens while the section is selected and can be closed there.
+  Use when: the "Overlays" section group only, for stores that legally require visitors to confirm their age.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign heading_id = 'AgeGateHeading-' | append: section.id
+
+  if s.backdrop == 'blur'
+    assign backdrop_class = 'backdrop:bg-overlay backdrop:backdrop-blur-xl'
+  else
+    assign backdrop_class = 'backdrop:bg-bg'
+  endif
+-%}
+<aw-popup
+  data-section-id="{{ section.id }}"
+  data-key="age"
+  data-delay="0"
+  data-days="{{ s.frequency_days }}"
+  data-require-confirm
+  {% if s.test_mode %}
+    data-test-mode
+  {% endif %}
+>
+  <aw-modal
+    id="AgeGate-{{ section.id }}"
+    {% unless request.design_mode %}
+      data-blocking
+    {% endunless %}
+  >
+    <dialog
+      data-ref="dialog"
+      class="m-auto mb-0 max-h-[90dvh] w-full max-w-none overflow-y-auto rounded-t-card p-0 surface-{{ s.color_scheme }} {{ backdrop_class }} md:mb-auto md:w-[calc(100%-4rem)] md:max-w-xl md:rounded-card"
+      aria-labelledby="{{ heading_id }}"
+    >
+      <div class="flex flex-col {% if s.text_alignment == 'center' %}items-center text-center{% endif %}">
+        {%- if s.image != blank -%}
+          {%- assign image_alt = s.image.alt | escape -%}
+          {{
+            s.image
+            | image_url: width: 1200
+            | image_tag: widths: '600, 900, 1200', sizes: '(min-width: 750px) 36rem, 100vw', loading: 'lazy', alt: image_alt, class: 'aspect-[2/1] w-full object-cover'
+          }}
+        {%- endif -%}
+        <div class="flex w-full flex-col gap-4 p-6 md:p-10 {% if s.text_alignment == 'center' %}items-center{% endif %}">
+          <h2 id="{{ heading_id }}" class="type-h3">{{ s.heading | escape }}</h2>
+          {%- if s.text != blank -%}<div class="rte text-muted">{{ s.text }}</div>{%- endif -%}
+          <div class="mt-2 grid w-full gap-3 md:grid-cols-2">
+            <button type="button" class="btn btn-primary" data-popup-confirm>{{ s.confirm_label | escape }}</button>
+            {%- if s.decline_url != blank -%}
+              <a href="{{ s.decline_url }}" class="btn btn-secondary" data-popup-decline>{{ s.decline_label | escape }}</a>
+            {%- else -%}
+              <button type="button" class="btn btn-secondary" data-popup-decline>{{ s.decline_label | escape }}</button>
+            {%- endif -%}
+          </div>
+          {%- liquid
+            assign declined_message = s.declined_message
+            if declined_message == blank
+              assign declined_message = 'popups.age.declined' | t
+            endif
+          -%}
+          <p class="type-sm text-error" tabindex="-1" role="alert" data-popup-declined hidden>{{ declined_message | escape }}</p>
+        </div>
+      </div>
+    </dialog>
+  </aw-modal>
+</aw-popup>
+<script src="{{ 'c-modal.js' | asset_url }}" type="module"></script>
+<script src="{{ 'c-popup.js' | asset_url }}" type="module"></script>
+
+{% schema %}
+{
+  "name": "t:sections.age_verification.name",
+  "class": "section-age-verification",
+  "enabled_on": {
+    "groups": ["custom.overlay"]
+  },
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "test_mode",
+      "label": "t:sections.newsletter_popup.settings.test_mode.label",
+      "info": "t:sections.age_verification.settings.test_mode.info",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "frequency_days",
+      "label": "t:sections.age_verification.settings.frequency_days.label",
+      "info": "t:sections.age_verification.settings.frequency_days.info",
+      "min": 1,
+      "max": 90,
+      "step": 1,
+      "unit": "d",
+      "default": 30
+    },
+    {
+      "type": "header",
+      "content": "t:sections.newsletter_popup.settings.content_header"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "t:sections.featured_collection.settings.heading.label",
+      "default": "Confirm your age"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:sections.featured_collection.settings.text.label",
+      "default": "<p>You must be of legal age in your country to view this store. Are you of legal age?</p>"
+    },
+    {
+      "type": "text",
+      "id": "confirm_label",
+      "label": "t:sections.age_verification.settings.confirm_label.label",
+      "default": "Yes, enter"
+    },
+    {
+      "type": "text",
+      "id": "decline_label",
+      "label": "t:sections.age_verification.settings.decline_label.label",
+      "default": "No, leave"
+    },
+    {
+      "type": "url",
+      "id": "decline_url",
+      "label": "t:sections.age_verification.settings.decline_url.label",
+      "info": "t:sections.age_verification.settings.decline_url.info"
+    },
+    {
+      "type": "text",
+      "id": "declined_message",
+      "label": "t:sections.age_verification.settings.declined_message.label",
+      "default": "Sorry, you must be of legal age to view this store.",
+      "visible_if": "{{ section.settings.decline_url == blank }}"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:sections.age_verification.settings.image.label"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "select",
+      "id": "backdrop",
+      "label": "t:sections.age_verification.settings.backdrop.label",
+      "options": [
+        {
+          "value": "solid",
+          "label": "t:sections.age_verification.settings.backdrop.options.solid"
+        },
+        {
+          "value": "blur",
+          "label": "t:sections.age_verification.settings.backdrop.options.blur"
+        }
+      ],
+      "default": "solid"
+    },
+    {
+      "type": "select",
+      "id": "text_alignment",
+      "label": "t:shared.text_alignment",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.age_verification.name"
+    }
+  ]
+}
+{% endschema %}

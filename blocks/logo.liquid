@@ -1,0 +1,55 @@
+{% doc %}
+  @description The store logo from Theme settings → Logo (normal or light/inverse version, for dark backgrounds) linking to the home page, with its own width. Falls back to the store name as text when no logo is uploaded.
+  Use when: footer brand column, landing-page headers, "about us" blocks.
+
+  @example
+  {% content_for 'block', type: 'logo', id: 'footer-logo' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  assign image = settings.logo
+  if s.version == 'inverse' and settings.logo_inverse != blank
+    assign image = settings.logo_inverse
+  endif
+-%}
+<a href="{{ routes.root_url }}" class="inline-flex items-center type-h4 no-underline" style="--logo-block-width: {{ s.width }}px;" {{ block.shopify_attributes }}>
+  {%- if image -%}
+    {{ image | image_url: width: 600 | image_tag: widths: '150, 300, 450, 600', sizes: '(min-width: 750px) 300px, 50vw', class: 'block h-auto w-(--logo-block-width) max-w-full', alt: shop.name, loading: 'lazy' }}
+  {%- else -%}
+    {{ shop.name }}
+  {%- endif -%}
+</a>
+
+{% schema %}
+{
+  "name": "t:blocks.logo.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:sections.header.settings.logo_hint"
+    },
+    {
+      "type": "select",
+      "id": "version",
+      "label": "t:blocks.logo.settings.version.label",
+      "options": [
+        { "value": "default", "label": "t:blocks.logo.settings.version.options.default" },
+        { "value": "inverse", "label": "t:blocks.logo.settings.version.options.inverse" }
+      ],
+      "default": "default"
+    },
+    {
+      "type": "range",
+      "id": "width",
+      "label": "t:blocks.logo.settings.width.label",
+      "min": 40,
+      "max": 300,
+      "step": 5,
+      "unit": "px",
+      "default": 120
+    }
+  ],
+  "presets": [{ "name": "t:blocks.logo.name" }]
+}
+{% endschema %}

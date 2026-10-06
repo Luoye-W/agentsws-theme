@@ -1,0 +1,313 @@
+{% comment %}
+  @description Countdown to a real deadline: the merchant types the end date (YYYY-MM-DD) and time (HH:MM, store time zone); with an impossible or missing date the section stays hidden on the storefront (the editor shows a hint). Two looks: a banner (optional background image with overlay, heading, text, large timer, button) or a slim one-line bar that also fits in the header group. After the deadline the timer disappears and either an "ended" message shows or the whole section hides — also when the page was cached before the deadline.
+  Use when: a sale, drop or pre-order window that really ends at a specific time. Never for fake urgency: no looping or per-visitor timers.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+
+  if s.when_ended == 'hide_section'
+    assign timer_when_ended = 'hide-section'
+  else
+    assign timer_when_ended = 'message'
+  endif
+
+  capture timer_state
+    render 'countdown-timer', end_date: s.end_date, end_time: s.end_time, mode: 'state'
+  endcapture
+  assign timer_state = timer_state | strip
+
+  comment
+    No valid deadline → the section never shows on the storefront (a "Sale ends in" heading without a real timer would mislead).
+  endcomment
+  assign show_section = true
+  if timer_state == 'invalid'
+    assign show_section = false
+  endif
+  if timer_state == 'ended' and s.when_ended == 'hide_section'
+    assign show_section = false
+  endif
+  if request.design_mode
+    assign show_section = true
+  endif
+
+  if s.alignment == 'center'
+    assign align_class = 'items-center text-center'
+    assign timer_align = 'center'
+  else
+    assign align_class = 'items-start text-start'
+    assign timer_align = 'start'
+  endif
+
+  assign overlay = s.overlay_opacity | divided_by: 100.0
+  assign image_alt = s.image.alt | escape
+-%}
+{%- if show_section -%}
+  {%- if s.layout == 'bar' -%}
+    <div
+      class="surface-{{ s.color_scheme }} pt-(--section-pt) pb-(--section-pb)"
+      style="--section-pt: {{ s.padding_top }}px; --section-pb: {{ s.padding_bottom }}px;"
+    >
+      <div class="page-width flex flex-wrap items-center justify-center gap-x-6 gap-y-2 type-sm">
+        {%- if request.design_mode and timer_state == 'ended' and s.when_ended == 'hide_section' -%}
+          <p class="text-muted">{{ 'sections.countdown.editor_ended_hidden' | t }}</p>
+        {%- endif -%}
+        {%- if s.heading != blank and timer_state != 'ended' -%}
+          <p class="font-semibold">{{ s.heading }}</p>
+        {%- endif -%}
+        {%- render 'countdown-timer',
+          end_date: s.end_date,
+          end_time: s.end_time,
+          ended_message: s.ended_message,
+          when_ended: timer_when_ended,
+          style: 'compact',
+          align: 'center'
+        -%}
+        {%- if s.button_label != blank and s.button_link != blank -%}
+          <a href="{{ s.button_link }}" class="font-semibold underline underline-offset-4">{{ s.button_label | escape }}</a>
+        {%- endif -%}
+      </div>
+    </div>
+  {%- else -%}
+    <div
+      class="surface-{{ s.color_scheme }} relative isolate overflow-hidden pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+      style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1)); --countdown-overlay: {{ overlay }};"
+    >
+      {%- if s.image != blank -%}
+        <div class="absolute inset-0 -z-10">
+          {{ s.image | image_url: width: 3000 | image_tag: widths: '750, 1100, 1500, 2000, 3000', sizes: '100vw', loading: 'lazy', class: 'size-full object-cover', alt: image_alt }}
+          <div class="absolute inset-0 bg-[rgb(0_0_0/var(--countdown-overlay))]" aria-hidden="true"></div>
+        </div>
+      {%- endif -%}
+      <div class="page-width flex flex-col gap-5 {{ align_class }}">
+        {%- if request.design_mode and timer_state == 'ended' and s.when_ended == 'hide_section' -%}
+          <p class="type-sm rounded-card border border-border p-3 text-muted">{{ 'sections.countdown.editor_ended_hidden' | t }}</p>
+        {%- endif -%}
+        {%- if s.eyebrow != blank -%}
+          <p class="type-eyebrow">{{ s.eyebrow | escape }}</p>
+        {%- endif -%}
+        {%- if s.heading != blank -%}
+          <h2 class="type-h1 max-w-3xl">{{ s.heading }}</h2>
+        {%- endif -%}
+        {%- if s.text != blank -%}
+          <div class="rte type-lg max-w-2xl">{{ s.text }}</div>
+        {%- endif -%}
+        {%- render 'countdown-timer',
+          end_date: s.end_date,
+          end_time: s.end_time,
+          ended_message: s.ended_message,
+          when_ended: timer_when_ended,
+          style: 'standard',
+          size: s.timer_size,
+          align: timer_align
+        -%}
+        {%- if s.button_label != blank and s.button_link != blank -%}
+          <a href="{{ s.button_link }}" class="btn btn-primary mt-2">{{ s.button_label | escape }}</a>
+        {%- endif -%}
+      </div>
+    </div>
+  {%- endif -%}
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.countdown.name",
+  "tag": "section",
+  "class": "section-countdown",
+  "enabled_on": {
+    "templates": ["*"],
+    "groups": ["header"]
+  },
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:sections.countdown.settings.real_deadline_notice"
+    },
+    {
+      "type": "text",
+      "id": "end_date",
+      "label": "t:sections.countdown.settings.end_date.label",
+      "info": "t:sections.countdown.settings.end_date.info",
+      "placeholder": "2026-12-31"
+    },
+    {
+      "type": "text",
+      "id": "end_time",
+      "label": "t:sections.countdown.settings.end_time.label",
+      "info": "t:sections.countdown.settings.end_time.info",
+      "placeholder": "18:00"
+    },
+    {
+      "type": "select",
+      "id": "when_ended",
+      "label": "t:sections.countdown.settings.when_ended.label",
+      "options": [
+        {
+          "value": "message",
+          "label": "t:sections.countdown.settings.when_ended.options.message"
+        },
+        {
+          "value": "hide_section",
+          "label": "t:sections.countdown.settings.when_ended.options.hide_section"
+        }
+      ],
+      "default": "message"
+    },
+    {
+      "type": "richtext",
+      "id": "ended_message",
+      "label": "t:sections.countdown.settings.ended_message.label",
+      "info": "t:sections.countdown.settings.ended_message.info",
+      "visible_if": "{{ section.settings.when_ended == 'message' }}"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.countdown.settings.content_header"
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "t:sections.countdown.settings.layout.label",
+      "info": "t:sections.countdown.settings.layout.info",
+      "options": [
+        {
+          "value": "banner",
+          "label": "t:sections.countdown.settings.layout.options.banner"
+        },
+        {
+          "value": "bar",
+          "label": "t:sections.countdown.settings.layout.options.bar"
+        }
+      ],
+      "default": "banner"
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:shared.section_heading.eyebrow",
+      "visible_if": "{{ section.settings.layout == 'banner' }}"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:shared.section_heading.heading",
+      "default": "Sale ends in"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:blocks.text.settings.text.label",
+      "visible_if": "{{ section.settings.layout == 'banner' }}"
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "t:blocks.button.settings.label.label"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "t:blocks.button.settings.link.label",
+      "visible_if": "{{ section.settings.button_label != blank }}"
+    },
+    {
+      "type": "select",
+      "id": "alignment",
+      "label": "t:shared.text_alignment",
+      "visible_if": "{{ section.settings.layout == 'banner' }}",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "select",
+      "id": "timer_size",
+      "label": "t:sections.countdown.settings.timer_size.label",
+      "visible_if": "{{ section.settings.layout == 'banner' }}",
+      "options": [
+        {
+          "value": "sm",
+          "label": "t:sections.countdown.settings.timer_size.options.sm"
+        },
+        {
+          "value": "md",
+          "label": "t:sections.countdown.settings.timer_size.options.md"
+        },
+        {
+          "value": "lg",
+          "label": "t:sections.countdown.settings.timer_size.options.lg"
+        }
+      ],
+      "default": "md"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:sections.countdown.settings.image.label",
+      "visible_if": "{{ section.settings.layout == 'banner' }}"
+    },
+    {
+      "type": "range",
+      "id": "overlay_opacity",
+      "label": "t:sections.hero.settings.overlay_opacity.label",
+      "min": 0,
+      "max": 90,
+      "step": 5,
+      "unit": "%",
+      "default": 40,
+      "visible_if": "{{ section.settings.layout == 'banner' and section.settings.image != blank }}"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "info": "t:sections.countdown.settings.color_scheme.info",
+      "default": "scheme-3"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.countdown.name"
+    },
+    {
+      "name": "t:sections.countdown.presets.bar",
+      "settings": {
+        "layout": "bar",
+        "padding_top": 8,
+        "padding_bottom": 8
+      }
+    }
+  ]
+}
+{% endschema %}

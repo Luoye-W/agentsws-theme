@@ -1,0 +1,113 @@
+{% doc %}
+  @description Promotion tile inside a product grid: image (separate mobile image optional) or muted looping Shopify video with a pause button, darkening overlay, and optional eyebrow, heading, text and button. Spans 1 or 2 columns and 1 or 2 rows from tablet up; always the full row on phones. Without a button label the whole tile is the link (image tiles only).
+  Use when: rendered by snippets/results-grid for a section's local "promo" blocks (main-collection). Pass the block; it outputs a grid <li>.
+
+  @param {object} block - The promo block (settings: image, image_mobile, video, eyebrow, heading, text, button_label, link, color_scheme, overlay_opacity, column_span, row_span, content_position, content_alignment)
+
+  @example
+  {% render 'promo-tile', block: block %}
+{% enddoc %}
+{%- liquid
+  assign bs = block.settings
+  assign overlay = bs.overlay_opacity | divided_by: 100.0
+  assign has_video = false
+  if bs.video != blank
+    assign has_video = true
+  endif
+
+  case bs.content_position
+    when 'top'
+      assign position_class = 'justify-start'
+    when 'bottom'
+      assign position_class = 'justify-end'
+    else
+      assign position_class = 'justify-center'
+  endcase
+
+  case bs.content_alignment
+    when 'start'
+      assign align_class = 'items-start text-start'
+    when 'end'
+      assign align_class = 'items-end text-end'
+    else
+      assign align_class = 'items-center text-center'
+  endcase
+
+  if bs.column_span == '2'
+    assign heading_class = 'type-h3 lg:type-h2'
+    assign image_sizes = '(min-width: 990px) 50vw, 100vw'
+  else
+    assign heading_class = 'type-h4'
+    assign image_sizes = '(min-width: 990px) 25vw, (min-width: 750px) 33vw, 100vw'
+  endif
+
+  assign stretch = false
+  if bs.link != blank and bs.button_label == blank and has_video == false
+    assign stretch = true
+  endif
+  assign video_label = bs.heading | strip_html | default: bs.eyebrow
+-%}
+<li
+  class="promo-tile group surface-{{ bs.color_scheme }} relative isolate flex min-h-72 overflow-hidden rounded-card col-span-full md:col-span-(--promo-cols) md:row-span-(--promo-rows) {{ position_class }} flex-col"
+  style="--promo-cols: {{ bs.column_span }}; --promo-rows: {{ bs.row_span }}; --promo-overlay: {{ overlay }};"
+  {{ block.shopify_attributes }}
+>
+  {%- if has_video -%}
+    {%- render 'video-player', video: bs.video, cover: bs.image, autoplay: true, loop: true, description: video_label, sizes: image_sizes, class: 'absolute inset-0 -z-10 size-full' -%}
+  {%- elsif bs.image != blank -%}
+    <picture class="absolute inset-0 -z-10">
+      {%- if bs.image_mobile != blank -%}
+        <source
+          media="(max-width: 749px)"
+          srcset="{{ bs.image_mobile | image_url: width: 750 }} 750w, {{ bs.image_mobile | image_url: width: 1100 }} 1100w"
+          sizes="100vw"
+          width="{{ bs.image_mobile.width }}"
+          height="{{ bs.image_mobile.height }}"
+        >
+      {%- endif -%}
+      {{
+        bs.image
+        | image_url: width: 1600
+        | image_tag:
+          widths: '400, 600, 800, 1100, 1600',
+          sizes: image_sizes,
+          loading: 'lazy',
+          alt: '',
+          class: 'size-full object-cover transition duration-500 motion-safe:group-hover:scale-[1.03]'
+      }}
+    </picture>
+  {%- else -%}
+    {{ 'lifestyle-2' | placeholder_svg_tag: 'absolute inset-0 -z-10 size-full bg-placeholder object-cover opacity-60' }}
+  {%- endif -%}
+  <div class="pointer-events-none absolute inset-0 -z-[5] bg-[rgb(0_0_0/var(--promo-overlay))]" aria-hidden="true"></div>
+
+  {%- if bs.eyebrow != blank or bs.heading != blank or bs.text != blank or bs.button_label != blank -%}
+    <div class="pointer-events-none flex flex-col gap-3 bg-transparent p-6 md:p-8 {{ align_class }}">
+      {%- if bs.eyebrow != blank -%}
+        <p class="type-eyebrow">{{ bs.eyebrow | escape }}</p>
+      {%- endif -%}
+      {%- if bs.heading != blank -%}
+        <h2 class="{{ heading_class }} max-w-xl">
+          {%- if stretch -%}
+            <a href="{{ bs.link }}" class="pointer-events-auto no-underline after:absolute after:inset-0 after:z-[1] focus-visible:outline-none after:focus-visible:outline-2 after:focus-visible:-outline-offset-4">{{ bs.heading }}</a>
+          {%- else -%}
+            {{ bs.heading }}
+          {%- endif -%}
+        </h2>
+      {%- endif -%}
+      {%- if bs.text != blank -%}
+        <div class="rte max-w-md opacity-90">{{ bs.text }}</div>
+      {%- endif -%}
+      {%- if bs.button_label != blank and bs.link != blank -%}
+        <a href="{{ bs.link }}" class="btn btn-secondary pointer-events-auto mt-2">
+          {{- bs.button_label | escape -}}
+          {%- render 'icon', name: 'arrow-right', class: 'size-4 rtl:rotate-180' -%}
+        </a>
+      {%- endif -%}
+    </div>
+  {%- elsif bs.link != blank and has_video == false -%}
+    <a href="{{ bs.link }}" class="absolute inset-0 z-[1] focus-visible:outline-2 focus-visible:-outline-offset-4">
+      <span class="sr-only">{{ bs.image.alt | default: bs.link | escape }}</span>
+    </a>
+  {%- endif -%}
+</li>

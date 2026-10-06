@@ -1,0 +1,80 @@
+{% doc %}
+  @description Product badges as small pills: "Sold out", sale ("Save 20%" / "Save $10" / "Sale"), automatic "New" for recently published products, and the merchant's own labels from the product metafield custom.label (single line text, or a list of single line texts for several labels). Prints only the pills, no wrapper — capture it and skip the wrapper when the result is blank.
+  Use when: product cards (media corner) and the product page badges block. Defaults follow Theme settings → Product cards → Badges.
+
+  @param {object} product - The product
+  @param {object} [variant] - Base sale / sold out on this variant instead of the whole product (product page)
+  @param {string} [sale_style] - 'percent', 'amount', 'text' or 'none'; default Theme settings → Sale badge
+  @param {boolean} [show_sold_out] - Default Theme settings → Show "Sold out" badge
+  @param {number} [new_days] - "New" for products published within this many days (0 = off); default Theme settings
+  @param {boolean} [show_label] - Show custom.label metafield labels, default true
+
+  @example
+  {% capture badges %}{% render 'badges', product: product %}{% endcapture %}
+{% enddoc %}
+{%- liquid
+  assign style = sale_style | default: settings.badge_sale
+  assign sold_out_badge = show_sold_out
+  if sold_out_badge == nil
+    assign sold_out_badge = settings.badge_sold_out
+  endif
+  assign days = new_days
+  if days == nil
+    assign days = settings.badge_new_days
+  endif
+  assign labels_on = show_label
+  if labels_on == nil
+    assign labels_on = true
+  endif
+
+  if variant
+    assign is_available = variant.available
+    assign price = variant.price
+    assign compare_at = variant.compare_at_price | default: 0
+  else
+    assign is_available = product.available
+    assign price = product.price_min
+    assign compare_at = product.compare_at_price_min | default: 0
+  endif
+-%}
+{%- if is_available == false -%}
+  {%- if sold_out_badge -%}
+    <span class="rounded-btn bg-fg px-2 py-1 type-xs font-semibold text-bg">{{ 'products.product.sold_out' | t }}</span>
+  {%- endif -%}
+{%- elsif compare_at > price and style != 'none' -%}
+  {%- liquid
+    case style
+      when 'percent'
+        assign saving = compare_at | minus: price | times: 100.0 | divided_by: compare_at | round
+        assign sale_text = 'products.product.save_percent' | t: percent: saving
+      when 'amount'
+        assign saving = compare_at | minus: price | money_without_trailing_zeros
+        assign sale_text = 'products.product.save_amount' | t: amount: saving
+      else
+        assign sale_text = 'products.product.on_sale' | t
+    endcase
+  -%}
+  <span class="rounded-btn bg-badge px-2 py-1 type-xs font-semibold text-on-badge">{{ sale_text }}</span>
+{%- endif -%}
+{%- if days > 0 and product.published_at -%}
+  {%- liquid
+    assign now_seconds = 'now' | date: '%s' | plus: 0
+    assign published_seconds = product.published_at | date: '%s' | plus: 0
+    assign age_days = now_seconds | minus: published_seconds | divided_by: 86400
+  -%}
+  {%- if age_days < days -%}
+    <span class="rounded-btn bg-accent px-2 py-1 type-xs font-semibold text-on-accent">{{ 'products.product.new' | t }}</span>
+  {%- endif -%}
+{%- endif -%}
+{%- if labels_on -%}
+  {%- assign label_field = product.metafields.custom.label -%}
+  {%- if label_field.type contains 'list' -%}
+    {%- for label in label_field.value -%}
+      {%- if label != blank -%}
+        <span class="rounded-btn border border-border bg-bg px-2 py-1 type-xs font-semibold text-fg">{{ label | escape }}</span>
+      {%- endif -%}
+    {%- endfor -%}
+  {%- elsif label_field.value != blank -%}
+    <span class="rounded-btn border border-border bg-bg px-2 py-1 type-xs font-semibold text-fg">{{ label_field.value | escape }}</span>
+  {%- endif -%}
+{%- endif -%}

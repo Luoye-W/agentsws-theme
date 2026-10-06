@@ -1,0 +1,49 @@
+{
+  "$comment": "Pages captured by `npm run verify:preview`. Add a page here when you change a template that is not listed.",
+  "viewports": [
+    {
+      "name": "mobile",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 900
+    }
+  ],
+  "pages": [
+    {
+      "name": "home",
+      "path": "/"
+    },
+    {
+      "name": "404",
+      "path": "/pages/this-page-does-not-exist"
+    },
+    {
+      "name": "blog",
+      "path": "/blogs/news"
+    },
+    {
+      "name": "collections",
+      "path": "/collections"
+    },
+    {
+      "name": "login",
+      "path": "/account/login"
+    },
+    {
+      "name": "register",
+      "path": "/account/register"
+    },
+    {
+      "name": "contact",
+      "path": "/pages/contact"
+    },
+    {
+      "name": "about",
+      "path": "/pages/about"
+    }
+  ]
+}

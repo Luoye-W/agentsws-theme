@@ -1,0 +1,279 @@
+{% comment %}
+  @description Row of big numbers with a label under each ("150K+ orders shipped", "4.8/5 average rating"). Numbers are typed as text; when they scroll into view the digits count up from zero while prefixes, suffixes, decimals and thousands separators stay exactly as typed. Screen readers get the final value; reduced motion shows it at once. Optional heading group, 2–5 columns, plain / bordered / filled cards.
+  Use when: trust figures, impact numbers, product facts worth highlighting — only numbers you can back up.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign heading_id = 'StatsHeading-' | append: section.id
+
+  case s.columns
+    when 2
+      assign cols_class = 'md:grid-cols-2'
+    when 3
+      assign cols_class = 'md:grid-cols-3'
+    when 5
+      assign cols_class = 'md:grid-cols-3 lg:grid-cols-5'
+    else
+      assign cols_class = 'md:grid-cols-2 lg:grid-cols-4'
+  endcase
+
+  if s.columns_mobile == '2'
+    assign mobile_cols_class = 'grid-cols-2'
+  else
+    assign mobile_cols_class = 'grid-cols-1'
+  endif
+
+  if s.card_style == 'plain'
+    assign gap_class = 'gap-x-6 gap-y-10'
+  else
+    assign gap_class = 'gap-4 md:gap-6'
+  endif
+-%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+  data-card="{{ s.card_style }}"
+  data-align="{{ s.text_alignment }}"
+  data-number-size="{{ s.number_size }}"
+>
+  <div class="page-width flex flex-col gap-8 md:gap-10">
+    {%- if request.design_mode -%}
+      <p class="type-sm flex items-start gap-2 rounded-card border border-border p-3 text-muted">
+        {%- render 'icon', name: 'shield', class: 'size-5' -%}
+        {{- 'sections.stats.editor_notice' | t -}}
+      </p>
+    {%- endif -%}
+    {%- render 'section-heading',
+      eyebrow: s.eyebrow,
+      heading: s.heading,
+      text: s.description,
+      alignment: s.heading_alignment,
+      link_label: s.link_label,
+      link: s.link,
+      heading_id: heading_id
+    -%}
+    <dl class="grid {{ mobile_cols_class }} {{ cols_class }} {{ gap_class }}">
+      {% content_for 'blocks' %}
+    </dl>
+  </div>
+</div>
+{%- if s.animate -%}
+  <script src="{{ 'c-counter.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.stats.name",
+  "tag": "section",
+  "class": "section-stats",
+  "disabled_on": {
+    "groups": ["header"]
+  },
+  "blocks": [
+    {
+      "type": "_stat"
+    }
+  ],
+  "max_blocks": 10,
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:shared.section_heading.header"
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:shared.section_heading.eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:shared.section_heading.heading"
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "t:shared.section_heading.description"
+    },
+    {
+      "type": "select",
+      "id": "heading_alignment",
+      "label": "t:shared.section_heading.alignment",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "text",
+      "id": "link_label",
+      "label": "t:shared.section_heading.link_label"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "t:shared.section_heading.link",
+      "visible_if": "{{ section.settings.link_label != blank }}"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.layout"
+    },
+    {
+      "type": "range",
+      "id": "columns",
+      "label": "t:shared.columns_desktop",
+      "min": 2,
+      "max": 5,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "label": "t:shared.columns_mobile.label",
+      "options": [
+        {
+          "value": "1",
+          "label": "t:shared.columns_mobile.options.one"
+        },
+        {
+          "value": "2",
+          "label": "t:shared.columns_mobile.options.two"
+        }
+      ],
+      "default": "2"
+    },
+    {
+      "type": "select",
+      "id": "card_style",
+      "label": "t:shared.card_style.label",
+      "options": [
+        {
+          "value": "plain",
+          "label": "t:shared.card_style.options.plain"
+        },
+        {
+          "value": "bordered",
+          "label": "t:shared.card_style.options.bordered"
+        },
+        {
+          "value": "filled",
+          "label": "t:shared.card_style.options.filled"
+        }
+      ],
+      "default": "plain"
+    },
+    {
+      "type": "select",
+      "id": "text_alignment",
+      "label": "t:shared.text_alignment",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "select",
+      "id": "number_size",
+      "label": "t:sections.stats.settings.number_size.label",
+      "options": [
+        {
+          "value": "medium",
+          "label": "t:sections.stats.settings.number_size.options.medium"
+        },
+        {
+          "value": "large",
+          "label": "t:sections.stats.settings.number_size.options.large"
+        },
+        {
+          "value": "display",
+          "label": "t:sections.stats.settings.number_size.options.display"
+        }
+      ],
+      "default": "large"
+    },
+    {
+      "type": "checkbox",
+      "id": "animate",
+      "label": "t:sections.stats.settings.animate.label",
+      "info": "t:sections.stats.settings.animate.info",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "duration",
+      "label": "t:sections.stats.settings.duration.label",
+      "min": 0.5,
+      "max": 5,
+      "step": 0.5,
+      "unit": "s",
+      "default": 2,
+      "visible_if": "{{ section.settings.animate }}"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.stats.name",
+      "blocks": [
+        {
+          "type": "_stat"
+        },
+        {
+          "type": "_stat"
+        },
+        {
+          "type": "_stat"
+        },
+        {
+          "type": "_stat"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

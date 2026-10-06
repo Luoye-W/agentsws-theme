@@ -1,0 +1,77 @@
+{% doc %}
+  @description Product name as the page heading (h1 on product pages, h2 elsewhere, e.g. in a featured product section), with an optional vendor (brand) line above it that links to all of that vendor's products. Optionally shows the selected variant's price on the same line (title start, price end; stacked on narrow columns), updated when the variant changes — use it instead of a separate Price block.
+  Use when: product info column; any section that has a product (featured product).
+
+  @example
+  {% content_for 'block', type: 'product-title', id: 'title' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  assign product = closest.product
+
+  case s.size
+    when 'h1'
+      assign size_class = 'type-h1'
+    when 'h3'
+      assign size_class = 'type-h3'
+    else
+      assign size_class = 'type-h2'
+  endcase
+
+  assign title_tag = 'h2'
+  if template.name == 'product'
+    assign title_tag = 'h1'
+  endif
+-%}
+<div class="flex flex-col gap-2" {{ block.shopify_attributes }}>
+  {%- if s.show_vendor and product.vendor != blank -%}
+    <p class="type-eyebrow text-muted">
+      <span class="sr-only">{{ 'products.product.vendor' | t }}:</span>
+      <a href="{{ product.vendor | url_for_vendor }}" class="no-underline hover:underline">{{ product.vendor | escape }}</a>
+    </p>
+  {%- endif -%}
+  {%- if s.inline_price and product -%}
+    <div class="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+      <{{ title_tag }} class="{{ size_class }} min-w-0">{{ product.title | escape }}</{{ title_tag }}>
+      <div class="shrink-0" data-swap="title-price-{{ block.id }}">
+        {% render 'price', product: product, variant: product.selected_or_first_available_variant, size: 'lg' %}
+      </div>
+    </div>
+  {%- else -%}
+    <{{ title_tag }} class="{{ size_class }}">{{ product.title | escape }}</{{ title_tag }}>
+  {%- endif -%}
+</div>
+
+{% schema %}
+{
+  "name": "t:blocks.product_title.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "select",
+      "id": "size",
+      "label": "t:blocks.heading.settings.size.label",
+      "options": [
+        { "value": "h1", "label": "t:blocks.heading.settings.size.options.h1" },
+        { "value": "h2", "label": "t:blocks.heading.settings.size.options.h2" },
+        { "value": "h3", "label": "t:blocks.heading.settings.size.options.h3" }
+      ],
+      "default": "h2"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_vendor",
+      "label": "t:blocks.product_title.settings.show_vendor.label",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "inline_price",
+      "label": "t:blocks.product_title.settings.inline_price.label",
+      "info": "t:blocks.product_title.settings.inline_price.info",
+      "default": false
+    }
+  ],
+  "presets": [{ "name": "t:blocks.product_title.name" }]
+}
+{% endschema %}

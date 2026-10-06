@@ -1,0 +1,262 @@
+{% comment %}
+  @description Row of partner, press or certification logos as a wrapping grid or a slowly scrolling strip. The strip has a pause button, pauses on hover and keyboard focus, and stays still for visitors who prefer reduced motion. Logos can be grayscale (color on hover); each logo has a brand name used as its alt text and link name, so linked logos are reachable and named for keyboard and screen-reader users.
+  Use when: "As seen in" press bars, retailer or partner logos, certifications and awards, payment or shipping partner rows.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign heading_id = 'LogoListHeading-' | append: section.id
+
+  case s.speed
+    when 'slow'
+      assign speed = 25
+    when 'fast'
+      assign speed = 70
+    else
+      assign speed = 40
+  endcase
+
+  case s.heading_alignment
+    when 'center'
+      assign justify_class = 'justify-center'
+    else
+      assign justify_class = 'justify-start'
+  endcase
+-%}
+{%- capture logo_blocks -%}{% content_for 'blocks' %}{%- endcapture -%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1)); --logo-h: {{ s.logo_height }}px; --logo-gap: {{ s.gap }}px;"
+  data-grayscale="{{ s.grayscale }}"
+>
+  <div class="page-width flex flex-col gap-8 md:gap-10">
+    {%- render 'section-heading',
+      eyebrow: s.eyebrow,
+      heading: s.heading,
+      text: s.description,
+      alignment: s.heading_alignment,
+      heading_id: heading_id
+    -%}
+    {%- if s.layout == 'marquee' -%}
+      <aw-marquee class="flex flex-col gap-4" data-speed="{{ speed }}">
+        <div class="overflow-hidden" data-ref="row" data-direction="{{ s.direction }}">
+          <div class="flex flex-wrap justify-center in-data-[state=running]:w-max in-data-[state=running]:flex-nowrap" data-ref="track" dir="ltr">
+            <ul
+              class="flex shrink-0 flex-wrap items-center justify-center gap-x-(--logo-gap) gap-y-6 in-data-[state=running]:flex-nowrap in-data-[state=running]:pe-(--logo-gap)"
+              role="list"
+              data-ref="group"
+              {% if s.heading != blank %}
+                aria-labelledby="{{ heading_id }}"
+              {% endif %}
+            >
+              {{ logo_blocks }}
+            </ul>
+          </div>
+        </div>
+        {%- render 'marquee-toggle' -%}
+      </aw-marquee>
+      <script src="{{ 'c-marquee.js' | asset_url }}" type="module"></script>
+    {%- else -%}
+      <ul
+        class="flex flex-wrap items-center {{ justify_class }} gap-x-(--logo-gap) gap-y-8"
+        role="list"
+        {% if s.heading != blank %}
+          aria-labelledby="{{ heading_id }}"
+        {% endif %}
+      >
+        {{ logo_blocks }}
+      </ul>
+    {%- endif -%}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "t:sections.logo_list.name",
+  "tag": "section",
+  "class": "section-logo-list",
+  "disabled_on": {
+    "groups": ["header"]
+  },
+  "blocks": [
+    {
+      "type": "_logo"
+    }
+  ],
+  "max_blocks": 24,
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:shared.section_heading.header"
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:shared.section_heading.eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:shared.section_heading.heading",
+      "default": "As featured in"
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "t:shared.section_heading.description"
+    },
+    {
+      "type": "select",
+      "id": "heading_alignment",
+      "label": "t:shared.section_heading.alignment",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.layout"
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "t:sections.logo_list.settings.layout.label",
+      "options": [
+        {
+          "value": "grid",
+          "label": "t:sections.logo_list.settings.layout.options.grid"
+        },
+        {
+          "value": "marquee",
+          "label": "t:sections.logo_list.settings.layout.options.marquee"
+        }
+      ],
+      "default": "grid"
+    },
+    {
+      "type": "range",
+      "id": "logo_height",
+      "label": "t:sections.logo_list.settings.logo_height.label",
+      "min": 16,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "gap",
+      "label": "t:shared.gap",
+      "min": 16,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    },
+    {
+      "type": "checkbox",
+      "id": "grayscale",
+      "label": "t:sections.logo_list.settings.grayscale.label",
+      "info": "t:sections.logo_list.settings.grayscale.info",
+      "default": false
+    },
+    {
+      "type": "select",
+      "id": "direction",
+      "label": "t:shared.marquee.direction.label",
+      "visible_if": "{{ section.settings.layout == 'marquee' }}",
+      "options": [
+        {
+          "value": "left",
+          "label": "t:shared.marquee.direction.options.left"
+        },
+        {
+          "value": "right",
+          "label": "t:shared.marquee.direction.options.right"
+        }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "select",
+      "id": "speed",
+      "label": "t:shared.marquee.speed.label",
+      "visible_if": "{{ section.settings.layout == 'marquee' }}",
+      "options": [
+        {
+          "value": "slow",
+          "label": "t:shared.marquee.speed.options.slow"
+        },
+        {
+          "value": "medium",
+          "label": "t:shared.marquee.speed.options.medium"
+        },
+        {
+          "value": "fast",
+          "label": "t:shared.marquee.speed.options.fast"
+        }
+      ],
+      "default": "slow"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.logo_list.name",
+      "blocks": [
+        {
+          "type": "_logo"
+        },
+        {
+          "type": "_logo"
+        },
+        {
+          "type": "_logo"
+        },
+        {
+          "type": "_logo"
+        },
+        {
+          "type": "_logo"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

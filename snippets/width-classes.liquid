@@ -1,0 +1,16 @@
+{% doc %}
+  @description Outputs the wrapper class for a section content width setting.
+
+  @param {string} width - 'page', 'narrow' or 'full'
+
+  @example
+  <div class="{% render 'width-classes', width: section.settings.width %}"></div>
+{% enddoc %}
+{%- case width -%}
+  {%- when 'narrow' -%}
+    page-width-narrow
+  {%- when 'full' -%}
+    w-full
+  {%- else -%}
+    page-width
+{%- endcase -%}

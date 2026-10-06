@@ -1,0 +1,237 @@
+{
+  "sections": {
+    "intro": {
+      "type": "rich-text",
+      "settings": {
+        "width": "page",
+        "alignment": "start",
+        "alignment_mobile": "start",
+        "gap": "medium",
+        "padding_top": 48,
+        "padding_bottom": 24
+      },
+      "blocks": {
+        "h": {
+          "type": "heading",
+          "settings": {
+            "text": "FAQs",
+            "size": "display",
+            "tag": "h1",
+            "alignment": "left"
+          }
+        },
+        "t": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Demo copy \u2014 welcome your customers and explain what this page covers.<br>Answers below are placeholders for your own policies.</p>",
+            "size": "body",
+            "muted": false,
+            "alignment": "left"
+          }
+        }
+      },
+      "block_order": [
+        "h",
+        "t"
+      ]
+    },
+    "faq": {
+      "type": "faq",
+      "settings": {
+        "heading": "",
+        "open_mode": "single",
+        "style": "lines",
+        "group_style": "cards",
+        "layout": "standard",
+        "width": "page",
+        "contact_heading": "Didn't find your answer?",
+        "contact_text": "<p>Send us a message and we'll get back to you.</p>",
+        "contact_form": true,
+        "contact_field_labels": "inside",
+        "contact_button_label": "Send message",
+        "contact_style": "plain",
+        "padding_top": 32,
+        "padding_bottom": 96
+      },
+      "blocks": {
+        "g1": {
+          "type": "group",
+          "settings": {
+            "heading": "Shipping & returns",
+            "text": "<p>Common questions about delivery, returns and exchanges.</p>"
+          }
+        },
+        "g1q1": {
+          "type": "item",
+          "settings": {
+            "question": "Do you ship internationally?",
+            "answer": "<p>Demo answer \u2014 list the countries you ship to and link to your shipping policy.</p>"
+          }
+        },
+        "g1q2": {
+          "type": "item",
+          "settings": {
+            "question": "When will my order ship?",
+            "answer": "<p>Demo answer \u2014 describe your usual handling time and how customers are notified.</p>"
+          }
+        },
+        "g1q3": {
+          "type": "item",
+          "settings": {
+            "question": "What is your return policy?",
+            "answer": "<p>Demo answer \u2014 summarise the return window and link to the full refund policy.</p>"
+          }
+        },
+        "g1q4": {
+          "type": "item",
+          "settings": {
+            "question": "How long does delivery take?",
+            "answer": "<p>Demo answer \u2014 give typical delivery times per region.</p>"
+          }
+        },
+        "g2": {
+          "type": "group",
+          "settings": {
+            "heading": "Orders",
+            "text": "<p>Common questions about placing and changing orders.</p>"
+          }
+        },
+        "g2q1": {
+          "type": "item",
+          "settings": {
+            "question": "How do I place an order?",
+            "answer": "<p>Demo answer \u2014 add products to the cart and check out; payment is handled by Shopify.</p>"
+          }
+        },
+        "g2q2": {
+          "type": "item",
+          "settings": {
+            "question": "How do I know my order is confirmed?",
+            "answer": "<p>Demo answer \u2014 customers receive an order confirmation email after checkout.</p>"
+          }
+        },
+        "g2q3": {
+          "type": "item",
+          "settings": {
+            "question": "Can I change the shipping address after ordering?",
+            "answer": "<p>Demo answer \u2014 explain how quickly customers should contact you.</p>"
+          }
+        },
+        "g2q4": {
+          "type": "item",
+          "settings": {
+            "question": "Can I change the billing address after ordering?",
+            "answer": "<p>Demo answer \u2014 explain what you can and cannot change after checkout.</p>"
+          }
+        },
+        "g3": {
+          "type": "group",
+          "settings": {
+            "heading": "Products",
+            "text": "<p>Common questions about the products themselves.</p>"
+          }
+        },
+        "g3q1": {
+          "type": "item",
+          "settings": {
+            "question": "Which size or model should I choose?",
+            "answer": "<p>Demo answer \u2014 link to a size guide or comparison page.</p>"
+          }
+        },
+        "g3q2": {
+          "type": "item",
+          "settings": {
+            "question": "Where can I find care instructions?",
+            "answer": "<p>Demo answer \u2014 point to the product page tabs or a care guide.</p>"
+          }
+        },
+        "g3q3": {
+          "type": "item",
+          "settings": {
+            "question": "Do you offer gift cards?",
+            "answer": "<p>Demo answer \u2014 say whether gift cards are available and where to buy them.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "g1",
+        "g1q1",
+        "g1q2",
+        "g1q3",
+        "g1q4",
+        "g2",
+        "g2q1",
+        "g2q2",
+        "g2q3",
+        "g2q4",
+        "g3",
+        "g3q1",
+        "g3q2",
+        "g3q3"
+      ]
+    },
+    "services": {
+      "type": "multicolumn",
+      "settings": {
+        "heading": "",
+        "columns": 4,
+        "columns_mobile": "2",
+        "mobile_layout": "stack",
+        "card_style": "plain",
+        "icon_position": "start",
+        "icon_size": 28,
+        "padding_top": 32,
+        "padding_bottom": 32
+      },
+      "blocks": {
+        "c1": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "chat",
+            "heading": "Customer service",
+            "text": "<p>Real people answer within one business day.</p>"
+          }
+        },
+        "c2": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "truck",
+            "heading": "Shipping",
+            "text": "<p>Describe your delivery promise here.</p>"
+          }
+        },
+        "c3": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "gift",
+            "heading": "Refer a friend",
+            "text": "<p>Explain your referral offer here.</p>"
+          }
+        },
+        "c4": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "lock",
+            "heading": "Secure payment",
+            "text": "<p>Payments are processed by Shopify.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "c1",
+        "c2",
+        "c3",
+        "c4"
+      ]
+    }
+  },
+  "order": [
+    "intro",
+    "faq",
+    "services"
+  ]
+}

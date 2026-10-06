@@ -1,0 +1,168 @@
+{% layout none %}
+{%- comment -%}
+  Gift card page (the link in the gift card email). Shopify requires this template to be Liquid, not JSON, and it has
+  no sections. Shows the card image with the balance, the code with Copy and Print, a QR code for scanning at a
+  point of sale, the expiry date, the disabled / expired state and an Apple Wallet button when Shopify offers one.
+{%- endcomment -%}
+{%- liquid
+  assign locale_root = request.locale.iso_code | split: '-' | first
+  assign rtl_locales = 'ar,he,fa,ur,ps,sd,yi,ug,ku' | split: ','
+  assign text_direction = 'ltr'
+  if rtl_locales contains locale_root
+    assign text_direction = 'rtl'
+  endif
+
+  if settings.currency_code
+    assign balance = gift_card.balance | money_with_currency
+    assign initial_value = gift_card.initial_value | money_with_currency
+  else
+    assign balance = gift_card.balance | money
+    assign initial_value = gift_card.initial_value | money
+  endif
+  assign initial_value_plain = gift_card.initial_value | money_without_trailing_zeros | strip_html
+  assign card_image = gift_card.product.featured_image
+
+  assign status = 'active'
+  if gift_card.enabled == false
+    assign status = 'disabled'
+  elsif gift_card.expired
+    assign status = 'expired'
+  endif
+-%}
+<!doctype html>
+<html lang="{{ request.locale.iso_code }}" dir="{{ text_direction }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>{{ 'gift_card.page_title' | t: value: initial_value_plain, shop: shop.name }}</title>
+    <meta name="description" content="{{ 'gift_card.subtext' | t | escape }}">
+    {%- if settings.favicon != blank %}
+      <link rel="icon" type="image/png" href="{{ settings.favicon | image_url: width: 32, height: 32 }}">
+    {%- endif %}
+    {% render 'theme-tokens' %}
+    {{ 'app.css' | asset_url | stylesheet_tag }}
+    <script type="importmap">
+      {
+        "imports": {
+          "@aw/component": "{{ 'component.js' | asset_url }}",
+          "@aw/events": "{{ 'events.js' | asset_url }}"
+        }
+      }
+    </script>
+    <script src="{{ 'vendor/qrcode.js' | shopify_asset_url }}" defer></script>
+    <script src="{{ 'c-gift-card.js' | asset_url }}" type="module"></script>
+    {{ content_for_header }}
+  </head>
+
+  <body
+    class="surface-{{ settings.body_color_scheme }} font-body"
+    data-button-style="{{ settings.button_style }}"
+    data-button-hover="{{ settings.button_hover }}"
+  >
+    <a class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:start-2 focus:z-50 btn btn-primary print:hidden" href="#MainContent">
+      {{- 'general.accessibility.skip_to_content' | t -}}
+    </a>
+
+    <header class="flex justify-center py-8 md:py-10">
+      <a href="{{ routes.root_url }}" class="no-underline" style="--logo-w: {{ settings.logo_width }}px; --logo-h: {{ settings.logo_max_height }}px;">
+        {%- if settings.logo != blank -%}
+          {%- assign logo_alt = settings.logo.alt | default: shop.name | escape -%}
+          {{
+            settings.logo
+            | image_url: width: 600
+            | image_tag: widths: '200, 300, 400, 600', sizes: '200px', alt: logo_alt, class: 'h-auto w-(--logo-w) max-h-(--logo-h) object-contain'
+          }}
+        {%- else -%}
+          <span class="type-h4">{{ shop.name | escape }}</span>
+        {%- endif -%}
+      </a>
+    </header>
+
+    <main id="MainContent" tabindex="-1" class="pb-16 md:pb-24">
+      <aw-gift-card
+        class="page-width-narrow flex flex-col items-center gap-8 text-center"
+        data-copied="{{ 'gift_card.copy_success' | t | escape }}"
+        data-copy-failed="{{ 'gift_card.copy_failed' | t | escape }}"
+      >
+        <div class="flex flex-col items-center gap-3">
+          <h1 class="type-h2">{{ 'gift_card.title' | t }}</h1>
+          {%- case status -%}
+            {%- when 'disabled' -%}
+              <p class="rounded-full border border-error px-3 py-1 type-sm font-semibold text-error">{{ 'gift_card.disabled' | t }}</p>
+            {%- when 'expired' -%}
+              {%- assign expired_on = gift_card.expires_on | date: format: 'date' -%}
+              <p class="rounded-full border border-error px-3 py-1 type-sm font-semibold text-error">{{ 'gift_card.expired_on' | t: date: expired_on }}</p>
+            {%- else -%}
+              {%- if gift_card.expires_on -%}
+                {%- assign expires_on = gift_card.expires_on | date: format: 'date' -%}
+                <p class="type-sm text-muted">{{ 'gift_card.expires_on' | t: date: expires_on }}</p>
+              {%- endif -%}
+          {%- endcase -%}
+        </div>
+
+        <div class="relative w-full max-w-md pb-7">
+          {%- if card_image -%}
+            {{
+              card_image
+              | image_url: width: 1000
+              | image_tag: widths: '400, 600, 800, 1000', sizes: '(min-width: 750px) 28rem, 90vw', alt: '', class: 'w-full rounded-card', loading: 'eager'
+            }}
+          {%- else -%}
+            <img src="{{ 'gift-card/card.svg' | shopify_asset_url }}" alt="" width="570" height="356" class="h-auto w-full" loading="eager">
+          {%- endif -%}
+          <p class="absolute bottom-0 start-1/2 -translate-x-1/2 rtl:translate-x-1/2 rounded-full border border-border bg-bg px-6 py-2 shadow-md">
+            <span class="sr-only">{{ 'gift_card.balance' | t }}: </span>
+            <span class="type-h4 {% if status != 'active' %}text-muted line-through{% endif %}">{{ balance }}</span>
+          </p>
+        </div>
+        {%- if gift_card.balance != gift_card.initial_value -%}
+          <p class="-mt-4 type-sm text-muted">{{ 'gift_card.initial_value' | t: value: initial_value }}</p>
+        {%- endif -%}
+
+        {%- if status == 'active' -%}
+          <div class="flex w-full max-w-md flex-col gap-3">
+            <p class="type-sm text-muted" id="GiftCardCodeLabel">{{ 'gift_card.code_label' | t }}</p>
+            <p
+              class="select-all rounded-card border-2 border-dashed border-border px-4 py-4 font-mono type-h4 tracking-wider break-all"
+              aria-labelledby="GiftCardCodeLabel"
+              data-ref="code"
+            >
+              {{- gift_card.code | format_code -}}
+            </p>
+            <div class="grid grid-cols-2 gap-3 print:hidden">
+              <button type="button" class="btn btn-secondary" data-ref="copy" hidden>{{ 'gift_card.copy' | t }}</button>
+              <button type="button" class="btn btn-secondary" data-ref="print" hidden>{{ 'gift_card.print' | t }}</button>
+            </div>
+            <p class="min-h-6 type-sm text-success" role="status" data-ref="status"></p>
+          </div>
+
+          <div class="flex w-full max-w-md flex-col items-center gap-4 rounded-card border border-border p-6">
+            <p class="type-sm font-semibold">{{ 'gift_card.qr_label' | t }}</p>
+            <div
+              class="flex size-36 items-center justify-center bg-[#fff] p-1.5 [&_img]:size-full"
+              data-ref="qr"
+              data-identifier="{{ gift_card.qr_identifier }}"
+              data-alt="{{ 'gift_card.qr_alt' | t | escape }}"
+            ></div>
+            {%- if gift_card.pass_url -%}
+              <a href="{{ gift_card.pass_url }}" class="print:hidden">
+                <img
+                  src="{{ 'gift-card/add-to-apple-wallet.svg' | shopify_asset_url }}"
+                  width="120"
+                  height="40"
+                  alt="{{ 'gift_card.apple_wallet' | t | escape }}"
+                  loading="lazy"
+                >
+              </a>
+            {%- endif -%}
+          </div>
+        {%- else -%}
+          <p class="max-w-md text-muted">{{ 'gift_card.inactive_help' | t }}</p>
+        {%- endif -%}
+
+        <a href="{{ routes.root_url }}" class="btn btn-primary print:hidden">{{ 'gift_card.shop_link' | t }}</a>
+      </aw-gift-card>
+    </main>
+  </body>
+</html>

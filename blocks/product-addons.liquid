@@ -1,0 +1,218 @@
+{% doc %}
+  @description "Frequently bought together" / add-ons: up to 4 hand-picked products, each with a checkbox and (for products with options) a variant menu, optionally led by the product on the page in its selected variant. A live total and one "Add selected" button put every ticked item in the cart in a single request, then open the cart drawer. Sold-out items cannot be ticked. Hidden when no add-on products are chosen. Prices are shown as they are — no invented bundle discount. Style "Collapsible card" puts the list in a tinted card whose heading row (with an optional icon, e.g. "Popular upgrades") opens and closes it.
+  Use when: accessories, refills, warranties or "complete the set" offers on the product page. Real bundle discounts come from Shopify discounts (they apply at checkout).
+
+  @example
+  {% content_for 'block', type: 'product-addons', id: 'addons' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  assign product = closest.product
+  assign current_variant = product.selected_or_first_available_variant
+  assign addon_count = 0
+  for item in s.products limit: 4
+    if item.id != product.id
+      assign addon_count = addon_count | plus: 1
+    endif
+  endfor
+  assign uid = section.id | append: '-' | append: block.id
+
+  if s.style == 'card'
+    assign list_class = 'flex flex-col gap-2'
+    assign row_class = 'flex items-center gap-3 rounded-card bg-bg p-3'
+  else
+    assign list_class = 'flex flex-col divide-y divide-border rounded-card border border-border'
+    assign row_class = 'flex items-center gap-3 p-3'
+  endif
+-%}
+{%- if addon_count > 0 -%}
+  <aw-product-addons
+    class="flex flex-col gap-3"
+    data-section="{{ section.id }}"
+    data-cart-add-url="{{ routes.cart_add_url }}"
+    data-cart-url="{{ routes.cart_url }}"
+    data-cart-type="{{ settings.cart_type }}"
+    data-money-format="{{ shop.money_format | strip_html | escape }}"
+    data-error-text="{{ 'general.cart.error' | t | escape }}"
+    {{ block.shopify_attributes }}
+  >
+    {%- if s.style == 'card' -%}
+      <details class="group/addons rounded-card bg-fg/5 px-2 pb-2" {% if s.start_open %}open{% endif %}>
+        <summary class="flex min-h-12 cursor-pointer list-none items-center gap-3 px-2 [&::-webkit-details-marker]:hidden">
+          {%- if s.icon != 'none' -%}
+            {%- render 'icon', name: s.icon, class: 'size-5' -%}
+          {%- endif -%}
+          <span class="flex-1 type-sm font-semibold" id="AddonsHeading-{{ uid }}">{{ s.heading | escape }}</span>
+          <span class="transition group-open/addons:rotate-45" aria-hidden="true">
+            {%- render 'icon', name: 'plus', class: 'size-4' -%}
+          </span>
+        </summary>
+    {%- elsif s.heading != blank -%}
+      <h2 class="type-h6" id="AddonsHeading-{{ uid }}">{{ s.heading | escape }}</h2>
+    {%- endif -%}
+    <ul class="{{ list_class }}" role="list" {% if s.heading != blank %}aria-labelledby="AddonsHeading-{{ uid }}"{% endif %}>
+      {%- if s.include_current and product -%}
+        <li class="{{ row_class }}" data-ref="row" data-current data-variant-id="{{ current_variant.id }}" data-price="{{ current_variant.price }}" data-quantity="{{ current_variant.quantity_rule.min | default: 1 }}">
+          <input
+            type="checkbox"
+            id="Addon-{{ uid }}-current"
+            class="size-5 shrink-0 accent-primary"
+            data-ref="check"
+            {% if current_variant.available %}checked{% else %}disabled{% endif %}
+          >
+          <div class="size-14 shrink-0 overflow-hidden rounded-media bg-placeholder">
+            {%- if product.featured_media -%}
+              {{ product.featured_media | image_url: width: 160 | image_tag: widths: '56, 112, 160', sizes: '56px', loading: 'lazy', class: 'size-full object-contain', alt: '' }}
+            {%- endif -%}
+          </div>
+          <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+            <label for="Addon-{{ uid }}-current" class="line-clamp-2 type-sm font-semibold">
+              <span class="text-muted">{{ 'blocks.product_addons.this_item' | t }}</span>
+              {{ product.title | escape }}
+            </label>
+            {%- unless product.has_only_default_variant -%}
+              <p class="type-xs text-muted" data-ref="variant-title">{{ current_variant.title | escape }}</p>
+            {%- endunless -%}
+          </div>
+          <span class="shrink-0 type-sm font-semibold" data-ref="price">{{ current_variant.price | money }}</span>
+          <script type="application/json" data-ref="variants">
+            [
+              {%- for variant in product.variants -%}
+                {"id": {{ variant.id }}, "price": {{ variant.price }}, "available": {{ variant.available }}, "title": {{ variant.title | json }}, "min": {{ variant.quantity_rule.min | default: 1 }}}{% unless forloop.last %},{% endunless %}
+              {%- endfor -%}
+            ]
+          </script>
+        </li>
+      {%- endif -%}
+      {%- for item in s.products limit: 4 -%}
+        {%- if item.id == product.id -%}{%- continue -%}{%- endif -%}
+        {%- liquid
+          assign item_variant = item.selected_or_first_available_variant
+          assign row_id = 'Addon-' | append: uid | append: '-' | append: forloop.index
+        -%}
+        <li class="{{ row_class }}" data-ref="row" data-variant-id="{{ item_variant.id }}" data-price="{{ item_variant.price }}" data-quantity="{{ item_variant.quantity_rule.min | default: 1 }}">
+          <input
+            type="checkbox"
+            id="{{ row_id }}"
+            class="size-5 shrink-0 accent-primary"
+            data-ref="check"
+            {% if item.available %}{% if s.preselect %}checked{% endif %}{% else %}disabled{% endif %}
+          >
+          <div class="size-14 shrink-0 overflow-hidden rounded-media bg-placeholder">
+            {%- if item.featured_media -%}
+              {{ item.featured_media | image_url: width: 160 | image_tag: widths: '56, 112, 160', sizes: '56px', loading: 'lazy', class: 'size-full object-contain', alt: '' }}
+            {%- endif -%}
+          </div>
+          <div class="flex min-w-0 flex-1 flex-col gap-1">
+            <label for="{{ row_id }}" class="line-clamp-2 type-sm font-semibold">{{ item.title | escape }}</label>
+            {%- if item.available == false -%}
+              <p class="type-xs text-muted">{{ 'products.product.sold_out' | t }}</p>
+            {%- elsif item.has_only_default_variant == false -%}
+              <label for="{{ row_id }}-variant" class="sr-only">{{ 'blocks.product_addons.variant_label' | t: product: item.title }}</label>
+              <select id="{{ row_id }}-variant" class="field h-9 min-h-9 max-w-full type-xs" data-ref="variant">
+                {%- for variant in item.variants -%}
+                  <option
+                    value="{{ variant.id }}"
+                    data-price="{{ variant.price }}"
+                    data-quantity="{{ variant.quantity_rule.min | default: 1 }}"
+                    {% if variant == item_variant %}selected{% endif %}
+                    {% unless variant.available %}disabled{% endunless %}
+                  >
+                    {{- variant.title | escape -}}
+                    {%- unless variant.available %} — {{ 'products.product.sold_out' | t }}{% endunless -%}
+                  </option>
+                {%- endfor -%}
+              </select>
+            {%- endif -%}
+          </div>
+          <span class="shrink-0 type-sm font-semibold" data-ref="price">{{ item_variant.price | money }}</span>
+        </li>
+      {%- endfor -%}
+    </ul>
+    <div class="flex flex-wrap items-center justify-between gap-3{% if s.style == 'card' %} px-1 pt-3{% endif %}">
+      <p class="type-sm">
+        {{ 'blocks.product_addons.total' | t }}
+        <span class="type-h6" data-ref="total" aria-live="polite"></span>
+      </p>
+      <button type="button" class="btn btn-primary aria-busy:opacity-70" data-ref="add">
+        {{ 'blocks.product_addons.add_selected' | t }}
+        <span data-ref="count"></span>
+      </button>
+    </div>
+    <p class="type-sm text-error" role="alert" data-ref="error" hidden></p>
+    {%- if s.style == 'card' -%}
+      </details>
+    {%- endif -%}
+  </aw-product-addons>
+  <script src="{{ 'c-product-addons.js' | asset_url }}" type="module"></script>
+{%- elsif request.design_mode -%}
+  <p class="type-xs text-muted" {{ block.shopify_attributes }}>{{ 'blocks.product_addons.empty' | t }}</p>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:blocks.product_addons.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "t:blocks.product_addons.settings.heading.label",
+      "default": "Frequently bought together"
+    },
+    {
+      "type": "product_list",
+      "id": "products",
+      "label": "t:blocks.product_addons.settings.products.label",
+      "info": "t:blocks.product_addons.settings.products.info",
+      "limit": 4
+    },
+    {
+      "type": "checkbox",
+      "id": "include_current",
+      "label": "t:blocks.product_addons.settings.include_current.label",
+      "info": "t:blocks.product_addons.settings.include_current.info",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "preselect",
+      "label": "t:blocks.product_addons.settings.preselect.label",
+      "default": false
+    },
+    {
+      "type": "select",
+      "id": "style",
+      "label": "t:blocks.product_addons.settings.style.label",
+      "options": [
+        { "value": "list", "label": "t:blocks.product_addons.settings.style.options.list" },
+        { "value": "card", "label": "t:blocks.product_addons.settings.style.options.card" }
+      ],
+      "default": "list"
+    },
+    {
+      "type": "select",
+      "id": "icon",
+      "label": "t:blocks.feature.settings.icon.label",
+      "options": [
+        { "value": "none", "label": "t:blocks.product_icon_item.settings.icon.options.none" },
+        { "value": "gift", "label": "t:blocks.product_icon_item.settings.icon.options.gift" },
+        { "value": "sparkle", "label": "t:blocks.product_addons.settings.icon.options.sparkle" },
+        { "value": "box", "label": "t:shared.icon_choice.options.box" },
+        { "value": "bolt", "label": "t:blocks.feature.settings.icon.options.bolt" },
+        { "value": "star", "label": "t:blocks.feature.settings.icon.options.star" }
+      ],
+      "default": "gift",
+      "visible_if": "{{ block.settings.style == 'card' }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "start_open",
+      "label": "t:blocks.product_addons.settings.start_open.label",
+      "default": true,
+      "visible_if": "{{ block.settings.style == 'card' }}"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.product_addons.name" }]
+}
+{% endschema %}

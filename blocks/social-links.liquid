@@ -1,0 +1,84 @@
+{% doc %}
+  @description Row of social media icons linking to the accounts filled in under Theme settings → Social media (12 networks). Optional small heading. Shows a hint in the theme editor while no account is set; shows nothing to shoppers.
+  Use when: footer ("Follow us"), contact pages, about sections, anywhere a follow row is needed.
+
+  @example
+  {% content_for 'block', type: 'social-links', id: 'social' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  case s.icon_size
+    when 'small'
+      assign icon_class = 'size-4'
+      assign link_class = 'flex size-9 items-center justify-center rounded-btn hover:bg-fg/5'
+    when 'large'
+      assign icon_class = 'size-7'
+      assign link_class = 'flex size-12 items-center justify-center rounded-btn hover:bg-fg/5'
+    else
+      assign icon_class = 'size-5'
+      assign link_class = 'flex size-11 items-center justify-center rounded-btn hover:bg-fg/5'
+  endcase
+  case s.alignment
+    when 'center'
+      assign list_class = '-mx-2 flex flex-wrap items-center justify-center'
+    when 'end'
+      assign list_class = '-mx-2 flex flex-wrap items-center justify-end'
+    else
+      assign list_class = '-mx-2 flex flex-wrap items-center justify-start'
+  endcase
+-%}
+{%- capture icons -%}
+  {% render 'social-icons', class: list_class, icon_class: icon_class, link_class: link_class %}
+{%- endcapture -%}
+{%- assign icons = icons | strip -%}
+<div class="flex flex-col gap-2" {{ block.shopify_attributes }}>
+  {%- if icons != blank -%}
+    {%- if s.heading != blank -%}
+      <h2 class="type-eyebrow">{{ s.heading | escape }}</h2>
+    {%- endif -%}
+    {{ icons }}
+  {%- elsif request.design_mode -%}
+    <p class="type-xs text-muted">{{ 'blocks.social_links.editor_hint' | t }}</p>
+  {%- endif -%}
+</div>
+
+{% schema %}
+{
+  "name": "t:blocks.social_links.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:blocks.social_links.settings.hint"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "t:sections.featured_collection.settings.heading.label"
+    },
+    {
+      "type": "select",
+      "id": "icon_size",
+      "label": "t:blocks.social_links.settings.icon_size.label",
+      "options": [
+        { "value": "small", "label": "t:blocks.social_links.settings.icon_size.options.small" },
+        { "value": "medium", "label": "t:blocks.social_links.settings.icon_size.options.medium" },
+        { "value": "large", "label": "t:blocks.social_links.settings.icon_size.options.large" }
+      ],
+      "default": "medium"
+    },
+    {
+      "type": "select",
+      "id": "alignment",
+      "label": "t:shared.text_alignment",
+      "options": [
+        { "value": "start", "label": "t:shared.align.options.start" },
+        { "value": "center", "label": "t:shared.align.options.center" },
+        { "value": "end", "label": "t:shared.align.options.end" }
+      ],
+      "default": "start"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.social_links.name" }]
+}
+{% endschema %}

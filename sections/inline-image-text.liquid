@@ -1,0 +1,250 @@
+{% comment %}
+  @description Big centred statement with small rounded images between the words, like "We make [chair photo] furniture for [sofa photo] real homes". Type the sentence once and put [image1], [image2] … where the "Image" blocks should appear (first block = [image1]); images without a placeholder follow the last word. Italic words get the heading highlight. Images are sized relative to the text, so they shrink with it on mobile, and settle from a slight zoom as they scroll in (not with reduced motion).
+  Use when: a brand statement or collection intro that mixes words and product or lifestyle pictures; a playful manifesto line between sections.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+
+  case s.size
+    when 'display'
+      assign size_class = 'type-display'
+    when 'h1'
+      assign size_class = 'type-h1'
+    when 'h3'
+      assign size_class = 'type-h3'
+    else
+      assign size_class = 'type-h2'
+  endcase
+
+  case s.alignment
+    when 'left'
+      assign align_class = 'text-start'
+    when 'right'
+      assign align_class = 'text-end'
+    else
+      assign align_class = 'text-center'
+  endcase
+
+  assign statement = s.text
+  assign trailing_images = ''
+  for block in section.blocks
+    assign token = '[image' | append: forloop.index | append: ']'
+    assign image_alt = block.settings.image.alt | escape
+    case block.settings.shape
+      when 'circle'
+        assign shape_class = 'aspect-square rounded-full'
+      when 'rectangle'
+        assign shape_class = 'aspect-[4/3] rounded-media'
+      else
+        assign shape_class = 'aspect-[2/1] rounded-full'
+    endcase
+    capture media
+      echo '<span class="inline-image-text__media relative mx-[0.12em] inline-block h-(--inline-image-text-h) overflow-hidden bg-placeholder align-middle ' | append: shape_class | append: '" ' | append: block.shopify_attributes | append: '>'
+      if block.settings.image != blank
+        echo block.settings.image | image_url: width: 480 | image_tag: widths: '120, 240, 360, 480', sizes: '(min-width: 750px) 200px, 120px', loading: 'lazy', alt: image_alt, class: 'size-full object-cover'
+      else
+        echo 'image' | placeholder_svg_tag: 'size-full'
+      endif
+      echo '</span>'
+    endcapture
+    if statement contains token
+      assign statement = statement | replace: token, media
+    else
+      assign trailing_images = trailing_images | append: ' ' | append: media
+    endif
+  endfor
+
+  comment
+    Placeholders without a matching block (e.g. [image4] with three blocks) are removed.
+  endcomment
+  assign statement = statement | remove: '[image1]' | remove: '[image2]' | remove: '[image3]' | remove: '[image4]' | remove: '[image5]' | remove: '[image6]' | append: trailing_images
+  assign heading_class = size_class | append: ' ' | append: align_class | append: ' leading-[1.25]'
+-%}
+<div
+  class="inline-image-text surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1)); --inline-image-text-h: {{ s.image_height | divided_by: 100.0 }}em;"
+>
+  <div class="{% render 'width-classes', width: s.width %}">
+    {%- if s.text != blank -%}
+      {%- render 'highlight-text', text: statement, style: s.heading_highlight, tag: s.tag, class: heading_class -%}
+    {%- elsif request.design_mode -%}
+      <p class="type-body text-center text-muted">{{ 'sections.inline_image_text.editor_empty' | t }}</p>
+    {%- endif -%}
+  </div>
+</div>
+
+{% stylesheet %}
+  /* Images settle from a slight zoom as they scroll into view; shown at rest with reduced motion or without support. */
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .inline-image-text__media img,
+      .inline-image-text__media svg {
+        animation: inline-image-text-settle linear both;
+        animation-timeline: view();
+        animation-range: entry 0% cover 45%;
+      }
+    }
+  }
+  @keyframes inline-image-text-settle {
+    from {
+      scale: 1.3;
+    }
+    to {
+      scale: 1;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.inline_image_text.name",
+  "tag": "section",
+  "class": "section-inline-image-text",
+  "max_blocks": 6,
+  "blocks": [
+    {
+      "type": "image",
+      "name": "t:sections.inline_image_text.blocks.image.name",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "t:sections.hero.settings.image.label",
+          "info": "t:sections.inline_image_text.blocks.image.settings.image.info"
+        },
+        {
+          "type": "select",
+          "id": "shape",
+          "label": "t:sections.inline_image_text.blocks.image.settings.shape.label",
+          "options": [
+            { "value": "pill", "label": "t:sections.inline_image_text.blocks.image.settings.shape.options.pill" },
+            { "value": "circle", "label": "t:sections.inline_image_text.blocks.image.settings.shape.options.circle" },
+            { "value": "rectangle", "label": "t:sections.inline_image_text.blocks.image.settings.shape.options.rectangle" }
+          ],
+          "default": "pill"
+        }
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "type": "inline_richtext",
+      "id": "text",
+      "label": "t:sections.inline_image_text.settings.text.label",
+      "info": "t:sections.inline_image_text.settings.text.info",
+      "default": "Made for <em>play</em> [image1] built to last [image2] and shared with the people you love"
+    },
+    {
+      "type": "select",
+      "id": "heading_highlight",
+      "label": "t:shared.heading_highlight.label",
+      "info": "t:shared.heading_highlight.info",
+      "options": [
+        { "value": "none", "label": "t:shared.heading_highlight.options.none" },
+        { "value": "color", "label": "t:shared.heading_highlight.options.color" },
+        { "value": "marker", "label": "t:shared.heading_highlight.options.marker" },
+        { "value": "underline", "label": "t:shared.heading_highlight.options.underline" },
+        { "value": "outline", "label": "t:shared.heading_highlight.options.outline" },
+        { "value": "circle", "label": "t:shared.heading_highlight.options.circle" },
+        { "value": "squiggle", "label": "t:shared.heading_highlight.options.squiggle" }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.layout"
+    },
+    {
+      "type": "select",
+      "id": "size",
+      "label": "t:blocks.heading.settings.size.label",
+      "options": [
+        { "value": "display", "label": "t:blocks.heading.settings.size.options.display" },
+        { "value": "h1", "label": "t:blocks.heading.settings.size.options.h1" },
+        { "value": "h2", "label": "t:blocks.heading.settings.size.options.h2" },
+        { "value": "h3", "label": "t:blocks.heading.settings.size.options.h3" }
+      ],
+      "default": "h1"
+    },
+    {
+      "type": "select",
+      "id": "tag",
+      "label": "t:blocks.heading.settings.tag.label",
+      "info": "t:blocks.heading.settings.tag.info",
+      "options": [
+        { "value": "h2", "label": "H2" },
+        { "value": "h3", "label": "H3" },
+        { "value": "p", "label": "t:blocks.heading.settings.tag.options.p" }
+      ],
+      "default": "h2"
+    },
+    {
+      "type": "range",
+      "id": "image_height",
+      "label": "t:sections.inline_image_text.settings.image_height.label",
+      "info": "t:sections.inline_image_text.settings.image_height.info",
+      "min": 60,
+      "max": 140,
+      "step": 5,
+      "unit": "%",
+      "default": 90
+    },
+    {
+      "type": "text_alignment",
+      "id": "alignment",
+      "label": "t:shared.text_alignment",
+      "default": "center"
+    },
+    {
+      "type": "select",
+      "id": "width",
+      "label": "t:shared.width.label",
+      "options": [
+        { "value": "narrow", "label": "t:shared.width.options.narrow" },
+        { "value": "page", "label": "t:shared.width.options.page" },
+        { "value": "full", "label": "t:shared.width.options.full" }
+      ],
+      "default": "page"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 72
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 96
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.inline_image_text.name",
+      "blocks": [
+        { "type": "image", "settings": { "shape": "pill" } },
+        { "type": "image", "settings": { "shape": "circle" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

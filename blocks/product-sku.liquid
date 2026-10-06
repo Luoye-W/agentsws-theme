@@ -1,0 +1,37 @@
+{% doc %}
+  @description SKU (stock keeping unit) of the selected variant, e.g. "SKU: TS-BLK-M". Updates when the variant changes; hidden while the variant has no SKU.
+  Use when: product info column, for stores whose shoppers quote part numbers (spare parts, B2B, electronics).
+
+  @example
+  {% content_for 'block', type: 'product-sku', id: 'sku' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  assign product = closest.product
+  assign variant = product.selected_or_first_available_variant
+-%}
+<p class="type-xs text-muted empty:hidden" data-swap="sku-{{ block.id }}" {{ block.shopify_attributes }}>
+  {%- if variant.sku != blank -%}
+    {%- if s.show_label -%}
+      {{- 'products.product.sku' | t: sku: variant.sku -}}
+    {%- else -%}
+      {{- variant.sku | escape -}}
+    {%- endif -%}
+  {%- endif -%}
+</p>
+
+{% schema %}
+{
+  "name": "t:blocks.product_sku.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_label",
+      "label": "t:blocks.product_sku.settings.show_label.label",
+      "default": true
+    }
+  ],
+  "presets": [{ "name": "t:blocks.product_sku.name" }]
+}
+{% endschema %}

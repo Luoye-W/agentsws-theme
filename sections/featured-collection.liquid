@@ -1,0 +1,257 @@
+{% comment %}
+  @description Heading, optional text and "View all" link above products from one collection: a grid, or on desktop a one-row carousel with previous / next buttons next to the heading. On mobile the grid can become a swipeable row. Cards can show spec icons (custom.highlights metafield) and the rating as a chip on the image.
+  Use when: showing products on the home page or landing pages ("Best sellers", "New arrivals", a product line).
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign products_collection = s.collection
+
+  case s.columns_desktop
+    when 2
+      assign desktop_cols = 'md:grid-cols-2'
+    when 3
+      assign desktop_cols = 'md:grid-cols-3'
+    when 5
+      assign desktop_cols = 'md:grid-cols-3 lg:grid-cols-5'
+    else
+      assign desktop_cols = 'md:grid-cols-3 lg:grid-cols-4'
+  endcase
+
+  comment
+    Carousel: one row on desktop (columns_desktop cards per view, 3 on tablets) scrolled with the buttons beside the
+    heading. On phones it follows mobile_layout: a swipe row, or a 2-column grid.
+  endcomment
+  assign carousel = false
+  if s.layout == 'carousel'
+    assign carousel = true
+  endif
+  if carousel
+    assign desktop_cols = ''
+    if s.mobile_layout == 'slider'
+      assign list_class = 'flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] -mx-(--s-gutter) px-(--s-gutter) scroll-px-(--s-gutter) md:mx-0 md:px-0 md:scroll-px-0'
+      assign item_class = 'w-[72%] shrink-0 snap-start md:w-[calc((100%-var(--s-grid-gap)*(min(var(--per-view),3)-1))/min(var(--per-view),3))] lg:w-[calc((100%-var(--s-grid-gap)*(var(--per-view)-1))/var(--per-view))]'
+    else
+      assign list_class = 'grid grid-cols-2 md:flex md:snap-x md:snap-mandatory md:overflow-x-auto md:[scrollbar-width:none]'
+      assign item_class = 'md:shrink-0 md:snap-start md:w-[calc((100%-var(--s-grid-gap)*(min(var(--per-view),3)-1))/min(var(--per-view),3))] lg:w-[calc((100%-var(--s-grid-gap)*(var(--per-view)-1))/var(--per-view))]'
+    endif
+  elsif s.mobile_layout == 'slider'
+    assign list_class = 'flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] -mx-(--s-gutter) px-(--s-gutter) scroll-px-(--s-gutter) md:mx-0 md:grid md:overflow-visible md:px-0'
+    assign item_class = 'w-[72%] shrink-0 snap-start md:w-auto'
+  else
+    assign list_class = 'grid grid-cols-2'
+    assign item_class = ''
+  endif
+
+  assign uses_slider = false
+  if carousel or s.mobile_layout == 'slider'
+    assign uses_slider = true
+  endif
+  assign heading_id = 'FeaturedCollectionHeading-' | append: section.id
+-%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1)); --per-view: {{ s.columns_desktop }};"
+>
+  <aw-slider class="page-width flex flex-col gap-8">
+    {%- if s.heading != blank or s.text != blank or s.show_view_all or carousel -%}
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div class="flex max-w-2xl flex-col gap-2">
+          {%- if s.eyebrow != blank -%}<p class="type-eyebrow text-muted">{{ s.eyebrow | escape }}</p>{%- endif -%}
+          {%- if s.heading != blank -%}<h2 class="type-h2" id="{{ heading_id }}">{{ s.heading }}</h2>{%- endif -%}
+          {%- if s.text != blank -%}<div class="rte text-muted">{{ s.text }}</div>{%- endif -%}
+        </div>
+        <div class="flex items-center gap-4">
+          {%- if s.show_view_all and products_collection != blank -%}
+            <a href="{{ products_collection.url }}" class="btn btn-secondary">
+              {{- 'sections.featured_collection.view_all' | t -}}
+              <span class="sr-only">: {{ products_collection.title | escape }}</span>
+            </a>
+          {%- endif -%}
+          {%- if carousel -%}
+            {%- render 'slider-buttons', class: 'max-md:hidden' -%}
+          {%- endif -%}
+        </div>
+      </div>
+    {%- endif -%}
+
+    <ul
+      class="{{ list_class }} {{ desktop_cols }} grid-gap"
+      role="list"
+      data-ref="track"
+      {% if carousel and s.heading != blank %}
+        aria-labelledby="{{ heading_id }}"
+      {% endif %}
+    >
+      {%- if products_collection != blank -%}
+        {%- for product in products_collection.products limit: s.products_to_show -%}
+          <li class="{{ item_class }}">
+            {% render 'product-card',
+              product: product,
+              sizes: '(min-width: 990px) 25vw, (min-width: 750px) 33vw, 72vw',
+              quick_add: s.card_quick_add,
+              show_highlights: s.card_show_highlights,
+              rating_chip: s.card_rating_chip
+            %}
+          </li>
+        {%- endfor -%}
+      {%- else -%}
+        {%- for i in (1..4) -%}
+          <li class="{{ item_class }} flex flex-col gap-3">
+            <div class="aspect-square overflow-hidden rounded-card bg-fg/5">{{ 'product-1' | placeholder_svg_tag: 'size-full' }}</div>
+            <p class="type-body font-medium">{{ 'sections.featured_collection.placeholder_title' | t }}</p>
+          </li>
+        {%- endfor -%}
+      {%- endif -%}
+    </ul>
+  </aw-slider>
+</div>
+
+{%- if uses_slider -%}
+  <script src="{{ 'c-slider.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+{%- if section.settings.card_quick_add -%}
+  <script src="{{ 'c-quick-add.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.featured_collection.name",
+  "class": "section-featured-collection",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:sections.featured_collection.settings.eyebrow.label"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:sections.featured_collection.settings.heading.label",
+      "default": "Featured products"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:sections.featured_collection.settings.text.label"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "t:sections.featured_collection.settings.collection.label"
+    },
+    {
+      "type": "range",
+      "id": "products_to_show",
+      "label": "t:sections.featured_collection.settings.products_to_show.label",
+      "min": 2,
+      "max": 16,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "label": "t:shared.columns_desktop",
+      "min": 2,
+      "max": 5,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "t:sections.featured_collection.settings.layout.label",
+      "info": "t:sections.featured_collection.settings.layout.info",
+      "options": [
+        {
+          "value": "grid",
+          "label": "t:sections.featured_collection.settings.layout.options.grid"
+        },
+        {
+          "value": "carousel",
+          "label": "t:sections.featured_collection.settings.layout.options.carousel"
+        }
+      ],
+      "default": "grid"
+    },
+    {
+      "type": "select",
+      "id": "mobile_layout",
+      "label": "t:sections.featured_collection.settings.mobile_layout.label",
+      "options": [
+        {
+          "value": "slider",
+          "label": "t:sections.featured_collection.settings.mobile_layout.options.slider"
+        },
+        {
+          "value": "grid",
+          "label": "t:sections.featured_collection.settings.mobile_layout.options.grid"
+        }
+      ],
+      "default": "slider"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_view_all",
+      "label": "t:sections.featured_collection.settings.show_view_all.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "card_quick_add",
+      "label": "t:shared.card_quick_add.label",
+      "info": "t:shared.card_quick_add.info",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "card_show_highlights",
+      "label": "t:shared.card_show_highlights.label",
+      "info": "t:shared.card_show_highlights.info",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "card_rating_chip",
+      "label": "t:shared.card_rating_chip.label",
+      "info": "t:shared.card_rating_chip.info",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.featured_collection.name"
+    }
+  ]
+}
+{% endschema %}

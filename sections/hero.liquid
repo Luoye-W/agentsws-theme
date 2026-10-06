@@ -1,0 +1,388 @@
+{% comment %}
+  @description Full-width banner: background image (separate mobile image optional) or looping video, darkening overlay, and any blocks (heading, text, buttons, groups) placed in one of nine positions. Can also sit inside the page width as a rounded card with space around it.
+  Use when: first screen of the home page, campaign landing pages, collection intros — any large image with text on top.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign desktop_image = s.image
+  assign mobile_image = s.image_mobile | default: s.image
+
+  case s.height
+    when 'small'
+      assign height_class = 'min-h-[50svh] md:min-h-[480px]'
+    when 'large'
+      assign height_class = 'min-h-[85svh] md:min-h-[720px]'
+    when 'full'
+      assign height_class = 'min-h-[calc(100svh-var(--header-h,0px)+var(--transparent-header-offset,0px))]'
+    when 'adapt'
+      assign height_class = 'aspect-(--hero-ratio-mobile) md:aspect-(--hero-ratio)'
+    else
+      assign height_class = 'min-h-[70svh] md:min-h-[600px]'
+  endcase
+
+  case s.position
+    when 'top_left'
+      assign position_class = 'items-start justify-start text-start'
+    when 'top_center'
+      assign position_class = 'items-start justify-center text-center'
+    when 'top_right'
+      assign position_class = 'items-start justify-end text-end'
+    when 'middle_center'
+      assign position_class = 'items-center justify-center text-center'
+    when 'middle_right'
+      assign position_class = 'items-center justify-end text-end'
+    when 'bottom_left'
+      assign position_class = 'items-end justify-start text-start'
+    when 'bottom_center'
+      assign position_class = 'items-end justify-center text-center'
+    when 'bottom_right'
+      assign position_class = 'items-end justify-end text-end'
+    else
+      assign position_class = 'items-center justify-start text-start'
+  endcase
+
+  case s.mobile_position
+    when 'top'
+      assign mobile_position_class = 'max-md:items-start'
+    when 'bottom'
+      assign mobile_position_class = 'max-md:items-end'
+    else
+      assign mobile_position_class = 'max-md:items-center'
+  endcase
+
+  case s.content_align
+    when 'center'
+      assign content_align_class = 'items-center'
+    when 'end'
+      assign content_align_class = 'items-end'
+    else
+      assign content_align_class = 'items-start'
+  endcase
+
+  assign ratio_desktop = desktop_image.aspect_ratio | default: 2
+  assign ratio_mobile = mobile_image.aspect_ratio | default: 0.75
+  assign overlay = s.overlay_opacity | divided_by: 100.0
+  assign image_alt = desktop_image.alt | escape
+
+  assign loading = 'lazy'
+  assign fetch_priority = 'auto'
+  if section.index <= 2
+    assign loading = 'eager'
+    assign fetch_priority = 'high'
+  endif
+  assign transparent = s.transparent_header
+  assign inset = false
+  if s.full_width == false
+    assign inset = true
+    assign transparent = false
+  endif
+-%}
+{%- if inset -%}
+  <div class="surface-{{ s.color_scheme }} pt-(--hero-inset-pt) pb-(--hero-inset-pb)" style="--hero-inset-pt: {{ s.inset_padding_top }}px; --hero-inset-pb: {{ s.inset_padding_bottom }}px;">
+  <div class="page-width">
+{%- endif -%}
+<div
+  class="relative isolate flex overflow-hidden surface-{{ s.text_color_scheme }} {{ height_class }} {% if transparent %}pt-[var(--transparent-header-offset,0px)]{% endif %}{% if inset %} rounded-media{% endif %}"
+  style="--hero-ratio: {{ ratio_desktop }}; --hero-ratio-mobile: {{ ratio_mobile }}; --hero-overlay: {{ overlay }};"
+  {% if transparent %}
+    data-transparent-header
+  {% endif %}
+>
+  <div class="absolute inset-0 -z-10 bg-bg">
+    {%- if s.video != blank -%}
+      {{
+        s.video
+        | video_tag:
+          autoplay: true,
+          loop: true,
+          muted: true,
+          playsinline: true,
+          controls: false,
+          preload: 'metadata',
+          image_size: '2400x',
+          class: 'size-full object-cover'
+      }}
+    {%- elsif desktop_image != blank -%}
+      <picture>
+        {%- if s.image_mobile != blank -%}
+          <source
+            media="(max-width: 749px)"
+            srcset="{{ mobile_image | image_url: width: 750 }} 750w, {{ mobile_image | image_url: width: 1080 }} 1080w, {{ mobile_image | image_url: width: 1500 }} 1500w"
+            sizes="100vw"
+            width="{{ mobile_image.width }}"
+            height="{{ mobile_image.height }}"
+          >
+        {%- endif -%}
+        {{
+          desktop_image
+          | image_url: width: 3000
+          | image_tag:
+            widths: '750, 1100, 1500, 1800, 2400, 3000',
+            sizes: '100vw',
+            loading: loading,
+            fetchpriority: fetch_priority,
+            class: 'size-full object-cover',
+            alt: image_alt
+        }}
+      </picture>
+    {%- elsif request.design_mode -%}
+      {{ 'hero-apparel-1' | placeholder_svg_tag: 'size-full object-cover opacity-40' }}
+    {%- endif -%}
+    <div class="absolute inset-0 bg-[rgb(0_0_0/var(--hero-overlay))]" aria-hidden="true"></div>
+  </div>
+
+  <div class="page-width flex w-full {{ position_class }} {{ mobile_position_class }} py-12 md:py-20">
+    <div class="flex max-w-2xl flex-col gap-5 {{ content_align_class }} bg-transparent">
+      {% content_for 'blocks' %}
+    </div>
+  </div>
+</div>
+{%- if inset -%}
+  </div>
+  </div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.hero.name",
+  "tag": "section",
+  "class": "section-hero",
+  "blocks": [
+    {
+      "type": "@theme"
+    },
+    {
+      "type": "@app"
+    }
+  ],
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:sections.hero.settings.image.label"
+    },
+    {
+      "type": "image_picker",
+      "id": "image_mobile",
+      "label": "t:sections.hero.settings.image_mobile.label",
+      "info": "t:sections.hero.settings.image_mobile.info"
+    },
+    {
+      "type": "video",
+      "id": "video",
+      "label": "t:sections.hero.settings.video.label",
+      "info": "t:sections.hero.settings.video.info"
+    },
+    {
+      "type": "select",
+      "id": "height",
+      "label": "t:sections.hero.settings.height.label",
+      "options": [
+        {
+          "value": "adapt",
+          "label": "t:sections.hero.settings.height.options.adapt"
+        },
+        {
+          "value": "small",
+          "label": "t:sections.hero.settings.height.options.small"
+        },
+        {
+          "value": "medium",
+          "label": "t:sections.hero.settings.height.options.medium"
+        },
+        {
+          "value": "large",
+          "label": "t:sections.hero.settings.height.options.large"
+        },
+        {
+          "value": "full",
+          "label": "t:sections.hero.settings.height.options.full"
+        }
+      ],
+      "default": "large"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.hero.settings.content_header"
+    },
+    {
+      "type": "select",
+      "id": "position",
+      "label": "t:sections.hero.settings.position.label",
+      "options": [
+        {
+          "value": "top_left",
+          "label": "t:sections.hero.settings.position.options.top_left"
+        },
+        {
+          "value": "top_center",
+          "label": "t:sections.hero.settings.position.options.top_center"
+        },
+        {
+          "value": "top_right",
+          "label": "t:sections.hero.settings.position.options.top_right"
+        },
+        {
+          "value": "middle_left",
+          "label": "t:sections.hero.settings.position.options.middle_left"
+        },
+        {
+          "value": "middle_center",
+          "label": "t:sections.hero.settings.position.options.middle_center"
+        },
+        {
+          "value": "middle_right",
+          "label": "t:sections.hero.settings.position.options.middle_right"
+        },
+        {
+          "value": "bottom_left",
+          "label": "t:sections.hero.settings.position.options.bottom_left"
+        },
+        {
+          "value": "bottom_center",
+          "label": "t:sections.hero.settings.position.options.bottom_center"
+        },
+        {
+          "value": "bottom_right",
+          "label": "t:sections.hero.settings.position.options.bottom_right"
+        }
+      ],
+      "default": "middle_left"
+    },
+    {
+      "type": "select",
+      "id": "mobile_position",
+      "label": "t:sections.hero.settings.mobile_position.label",
+      "options": [
+        {
+          "value": "top",
+          "label": "t:sections.hero.settings.mobile_position.options.top"
+        },
+        {
+          "value": "middle",
+          "label": "t:sections.hero.settings.mobile_position.options.middle"
+        },
+        {
+          "value": "bottom",
+          "label": "t:sections.hero.settings.mobile_position.options.bottom"
+        }
+      ],
+      "default": "top"
+    },
+    {
+      "type": "select",
+      "id": "content_align",
+      "label": "t:sections.hero.settings.content_align.label",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        },
+        {
+          "value": "end",
+          "label": "t:shared.align.options.end"
+        }
+      ],
+      "default": "start"
+    },
+    {
+      "type": "color_scheme",
+      "id": "text_color_scheme",
+      "label": "t:sections.hero.settings.text_surface.label",
+      "default": "scheme-3",
+      "info": "t:sections.hero.settings.text_surface.info"
+    },
+    {
+      "type": "range",
+      "id": "overlay_opacity",
+      "label": "t:sections.hero.settings.overlay_opacity.label",
+      "min": 0,
+      "max": 90,
+      "step": 5,
+      "unit": "%",
+      "default": 30
+    },
+    {
+      "type": "checkbox",
+      "id": "transparent_header",
+      "label": "t:sections.hero.settings.transparent_header.label",
+      "info": "t:sections.hero.settings.transparent_header.info",
+      "default": false,
+      "visible_if": "{{ section.settings.full_width }}"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.layout"
+    },
+    {
+      "type": "checkbox",
+      "id": "full_width",
+      "label": "t:sections.hero.settings.full_width.label",
+      "info": "t:sections.hero.settings.full_width.info",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "inset_padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 16,
+      "visible_if": "{{ section.settings.full_width == false }}"
+    },
+    {
+      "type": "range",
+      "id": "inset_padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 16,
+      "visible_if": "{{ section.settings.full_width == false }}"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:sections.hero.settings.color_scheme.label",
+      "info": "t:sections.hero.settings.color_scheme.info",
+      "default": "scheme-1",
+      "visible_if": "{{ section.settings.full_width == false }}"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.hero.name",
+      "blocks": [
+        {
+          "type": "heading",
+          "settings": {
+            "text": "Image banner",
+            "size": "display",
+            "tag": "h2"
+          }
+        },
+        {
+          "type": "text",
+          "settings": {
+            "text": "<p>Pair a large image with a short message and a call to action.</p>",
+            "size": "lg"
+          }
+        },
+        {
+          "type": "button",
+          "settings": {
+            "label": "Shop now"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

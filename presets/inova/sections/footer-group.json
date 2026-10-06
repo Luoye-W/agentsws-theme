@@ -1,0 +1,53 @@
+{
+  "type": "footer",
+  "name": "t:sections.groups.footer",
+  "sections": {
+    "footer": {
+      "type": "footer",
+      "settings": {
+        "color_scheme": "scheme-4",
+        "show_payment_icons": true,
+        "show_policy_links": true
+      },
+      "blocks": {
+        "signup": {
+          "type": "email-signup",
+          "settings": {
+            "heading": "Join our newsletter",
+            "button_style": "arrow",
+            "consent": "You can unsubscribe at any time."
+          }
+        },
+        "shop": {
+          "type": "menu",
+          "settings": {
+            "heading": "Shop",
+            "menu": "demo-inova-main"
+          }
+        },
+        "help": {
+          "type": "menu",
+          "settings": {
+            "heading": "Help",
+            "menu": "footer"
+          }
+        },
+        "social": {
+          "type": "social-links",
+          "settings": {
+            "heading": "Follow us"
+          }
+        }
+      },
+      "block_order": [
+        "signup",
+        "shop",
+        "help",
+        "social"
+      ]
+    }
+  },
+  "order": [
+    "footer"
+  ]
+}

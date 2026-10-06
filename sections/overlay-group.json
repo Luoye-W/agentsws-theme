@@ -1,0 +1,32 @@
+{
+  "type": "custom.overlay",
+  "name": "t:sections.groups.overlay",
+  "sections": {
+    "newsletter_popup": {
+      "type": "newsletter-popup",
+      "disabled": true,
+      "settings": {}
+    },
+    "floating_bar": {
+      "type": "floating-bar",
+      "disabled": true,
+      "settings": {}
+    },
+    "age_verification": {
+      "type": "age-verification",
+      "disabled": true,
+      "settings": {}
+    },
+    "cookie_banner": {
+      "type": "cookie-banner",
+      "disabled": true,
+      "settings": {}
+    }
+  },
+  "order": [
+    "newsletter_popup",
+    "floating_bar",
+    "age_verification",
+    "cookie_banner"
+  ]
+}

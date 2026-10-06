@@ -1,0 +1,77 @@
+{% doc %}
+  @description One logo in a Logo list section: image shown at the section's logo height (width follows the image, capped so wide logos stay balanced), a brand name used as alt text and link name, and an optional link (same or new tab). Without an image the brand name is shown as a simple text wordmark at the logo height; with neither, a placeholder logo.
+  Use when: only inside the "logo-list" section.
+
+  @example
+  {% content_for 'block', type: '_logo', id: 'logo-1' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  assign brand = s.name | default: s.image.alt | escape
+-%}
+{%- capture logo_html -%}
+  {%- if s.image != blank -%}
+    {{ s.image | image_url: width: 480 | image_tag: widths: '160, 240, 320, 480', sizes: '240px', loading: 'lazy', class: 'h-(--logo-h) w-auto max-w-[calc(var(--logo-h)*4)] object-contain', alt: brand }}
+  {%- elsif brand != blank -%}
+    <span class="flex h-(--logo-h) items-center font-heading text-[length:calc(var(--logo-h)*0.6)] leading-none font-semibold whitespace-nowrap text-muted">{{ brand }}</span>
+  {%- else -%}
+    {{ 'logo' | placeholder_svg_tag: 'h-(--logo-h) w-[calc(var(--logo-h)*3)] text-muted' }}
+  {%- endif -%}
+{%- endcapture -%}
+<li
+  class="flex shrink-0 items-center transition in-data-[grayscale=true]:opacity-70 in-data-[grayscale=true]:grayscale hover:opacity-100 hover:grayscale-0 focus-within:opacity-100 focus-within:grayscale-0"
+  {{ block.shopify_attributes }}
+>
+  {%- if s.link != blank -%}
+    <a
+      href="{{ s.link }}"
+      class="block rounded-btn"
+      {% if s.open_in_new_tab %}
+        target="_blank" rel="noopener"
+      {% endif %}
+    >
+      {{- logo_html -}}
+      {%- if s.open_in_new_tab -%}<span class="sr-only"> {{ 'general.accessibility.new_window' | t }}</span>{%- endif -%}
+    </a>
+  {%- else -%}
+    {{ logo_html }}
+  {%- endif -%}
+</li>
+
+{% schema %}
+{
+  "name": "t:blocks.logo.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:blocks.logo.settings.image.label",
+      "info": "t:blocks.logo.settings.image.info"
+    },
+    {
+      "type": "text",
+      "id": "name",
+      "label": "t:blocks.logo.settings.name.label",
+      "info": "t:blocks.logo.settings.name.info"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "t:blocks.button.settings.link.label"
+    },
+    {
+      "type": "checkbox",
+      "id": "open_in_new_tab",
+      "label": "t:blocks.button.settings.open_in_new_tab.label",
+      "default": false,
+      "visible_if": "{{ block.settings.link != blank }}"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:blocks.logo.name"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,512 @@
+{% comment %}
+  @description "Build your bundle": up to 12 chosen products as cards (image, rating chip, vendor, title, price, variant menu, "Add to bundle" button) next to a "Your bundle" panel — sticky in the right column on desktop, a bar stuck to the bottom of the screen on phones that opens to show the list. The panel lists the picked items with Remove buttons, a progress bar toward the minimum number of items, the note text (e.g. "Add 3 products to save 30%"), the total and one "Add bundle to cart" button that stays disabled until the minimum is reached and adds everything in one request. Changes are announced to screen readers; the selection survives page reloads in the same tab. The theme never applies a discount itself — create an automatic discount in Shopify admin to honour the note.
+  Use when: home or landing pages that sell "pick any 3" / "mix and match" sets. For a fixed set of add-ons on the product page use the product-addons block.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign min_items = s.min_items
+  assign max_items = s.max_items
+  if max_items < min_items
+    assign max_items = min_items
+  endif
+
+  case s.columns_desktop
+    when 2
+      assign desktop_cols = 'md:grid-cols-2'
+    when 4
+      assign desktop_cols = 'md:grid-cols-2 xl:grid-cols-4'
+    else
+      assign desktop_cols = 'md:grid-cols-2 xl:grid-cols-3'
+  endcase
+  if s.columns_mobile == '2'
+    assign mobile_cols = 'grid-cols-2'
+  else
+    assign mobile_cols = 'grid-cols-1'
+  endif
+
+  assign heading_id = 'BundleHeading-' | append: section.id
+  assign panel_heading_id = 'BundlePanelHeading-' | append: section.id
+  assign list_id = 'BundleList-' | append: section.id
+  assign product_count = s.products.count | default: 0
+
+  assign added_template = 'sections.bundle_builder.announce_added' | t: title: '[title]', count: '[count]', max: '[max]'
+  assign removed_template = 'sections.bundle_builder.announce_removed' | t: title: '[title]', count: '[count]', max: '[max]'
+  assign progress_template = 'sections.bundle_builder.progress' | t: count: '[count]', min: '[min]'
+  assign ready_template = 'sections.bundle_builder.ready' | t: count: '[count]'
+  assign full_template = 'sections.bundle_builder.full' | t: max: '[max]'
+  assign remove_template = 'sections.bundle_builder.remove' | t: title: '[title]'
+  assign need_template = 'sections.bundle_builder.need_more' | t: count: '[count]'
+-%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+>
+  <aw-bundle-builder
+    class="page-width flex flex-col gap-8"
+    data-section="{{ section.id }}"
+    data-min="{{ min_items }}"
+    data-max="{{ max_items }}"
+    {% if s.allow_duplicates %}
+      data-allow-duplicates
+    {% endif %}
+    data-cart-add-url="{{ routes.cart_add_url }}"
+    data-cart-url="{{ routes.cart_url }}"
+    data-cart-type="{{ settings.cart_type }}"
+    data-money-format="{{ shop.money_format | strip_html | escape }}"
+    data-total-format="{{ shop.money_with_currency_format | strip_html | escape }}"
+    data-error-text="{{ 'general.cart.error' | t | escape }}"
+    data-added-text="{{ added_template | escape }}"
+    data-removed-text="{{ removed_template | escape }}"
+    data-progress-text="{{ progress_template | escape }}"
+    data-ready-text="{{ ready_template | escape }}"
+    data-full-text="{{ full_template | escape }}"
+    data-remove-text="{{ remove_template | escape }}"
+    data-need-text="{{ need_template | escape }}"
+    data-add-text="{{ 'sections.bundle_builder.add' | t | escape }}"
+    data-in-bundle-text="{{ 'sections.bundle_builder.in_bundle' | t | escape }}"
+    data-sold-out-text="{{ 'products.product.sold_out' | t | escape }}"
+  >
+    {%- render 'section-heading',
+      eyebrow: s.eyebrow,
+      heading: s.heading,
+      text: s.description,
+      alignment: s.heading_alignment,
+      heading_id: heading_id
+    -%}
+
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,24rem)] lg:gap-10">
+      <ul class="grid {{ mobile_cols }} {{ desktop_cols }} grid-gap" role="list" {% if s.heading != blank %}aria-labelledby="{{ heading_id }}"{% endif %}>
+        {%- if product_count > 0 -%}
+          {%- for item in s.products limit: 12 -%}
+            {%- liquid
+              assign variant = item.selected_or_first_available_variant
+              assign card_id = 'Bundle-' | append: section.id | append: '-' | append: item.id
+              assign image = variant.featured_image | default: item.featured_image
+              assign image_alt = image.alt | default: item.title | escape
+              assign slot_image = ''
+              if image
+                assign slot_image = image | image_url: width: 160
+              endif
+            -%}
+            <li
+              class="flex flex-col gap-4 rounded-card border border-border p-3"
+              data-ref="card"
+              data-product-id="{{ item.id }}"
+              data-title="{{ item.title | escape }}"
+              data-url="{{ item.url }}"
+            >
+              <div class="relative aspect-square overflow-hidden rounded-media bg-placeholder" data-ref="media">
+                {%- if image -%}
+                  {{
+                    image
+                    | image_url: width: 900
+                    | image_tag:
+                      widths: '300, 450, 600, 900',
+                      sizes: '(min-width: 1200px) 22vw, (min-width: 750px) 40vw, 90vw',
+                      loading: 'lazy',
+                      class: 'size-full object-contain',
+                      alt: image_alt
+                  }}
+                {%- else -%}
+                  {{ 'product-1' | placeholder_svg_tag: 'size-full' }}
+                {%- endif -%}
+                {%- if s.show_rating -%}
+                  {%- assign item_rating = item.metafields.reviews.rating.value -%}
+                  {% render 'rating-chip', rating: item_rating %}
+                {%- endif -%}
+              </div>
+
+              <div class="flex flex-1 flex-col gap-3 px-1">
+                <div class="flex flex-col gap-1 border-b border-border pb-3">
+                  {%- if s.show_vendor and item.vendor != blank -%}
+                    <p class="type-xs uppercase tracking-wider text-muted">{{ item.vendor | escape }}</p>
+                  {%- endif -%}
+                  <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                    <h3 class="type-card" id="{{ card_id }}-title">
+                      <a href="{{ item.url }}" class="no-underline hover:underline">{{ item.title | escape }}</a>
+                    </h3>
+                    <p class="type-sm font-semibold" data-ref="price">{{ variant.price | money }}</p>
+                  </div>
+                </div>
+
+                {%- if item.has_only_default_variant -%}
+                  <input
+                    type="hidden"
+                    data-ref="variant"
+                    value="{{ variant.id }}"
+                    data-price="{{ variant.price }}"
+                    data-image="{{ slot_image }}"
+                    data-variant-title=""
+                    {% if variant.available %}
+                      data-available
+                    {% endif %}
+                  >
+                {%- else -%}
+                  <div class="flex flex-col gap-1.5">
+                    {%- assign option_names = item.options | join: ' / ' -%}
+                    <label for="{{ card_id }}-variant" class="type-sm">{{ option_names | escape }}</label>
+                    <div class="relative">
+                      <select id="{{ card_id }}-variant" class="field h-11 w-full appearance-none pe-10 type-sm" data-ref="variant">
+                        {%- for option_variant in item.variants -%}
+                          {%- liquid
+                            assign option_image = option_variant.featured_image | default: item.featured_image
+                            assign option_slot = ''
+                            assign option_large = ''
+                            if option_image
+                              assign option_slot = option_image | image_url: width: 160
+                              assign option_large = option_image | image_url: width: 900
+                            endif
+                          -%}
+                          <option
+                            value="{{ option_variant.id }}"
+                            data-price="{{ option_variant.price }}"
+                            data-price-text="{{ option_variant.price | money | escape }}"
+                            data-image="{{ option_slot }}"
+                            data-image-large="{{ option_large }}"
+                            data-variant-title="{{ option_variant.title | escape }}"
+                            {% if option_variant.available %}
+                              data-available
+                            {% endif %}
+                            {% if option_variant == variant %}
+                              selected
+                            {% endif %}
+                          >
+                            {{- option_variant.title | escape -}}
+                            {%- unless option_variant.available %} — {{ 'products.product.sold_out' | t }}{% endunless -%}
+                          </option>
+                        {%- endfor -%}
+                      </select>
+                      {%- render 'icon', name: 'chevron-down', class: 'pointer-events-none absolute top-1/2 end-3 size-4 -translate-y-1/2' -%}
+                    </div>
+                  </div>
+                {%- endif -%}
+
+                <button
+                  type="button"
+                  class="btn btn-primary mt-auto w-full aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                  data-ref="add"
+                  aria-describedby="{{ card_id }}-title"
+                  {% unless variant.available %}
+                    aria-disabled="true"
+                  {% endunless %}
+                >
+                  {%- if variant.available -%}
+                    {{ 'sections.bundle_builder.add' | t }}
+                  {%- else -%}
+                    {{ 'products.product.sold_out' | t }}
+                  {%- endif -%}
+                </button>
+              </div>
+            </li>
+          {%- endfor -%}
+        {%- else -%}
+          {%- for i in (1..3) -%}
+            <li class="flex flex-col gap-4 rounded-card border border-border p-3">
+              <div class="aspect-square overflow-hidden rounded-media bg-fg/5">{{ 'product-1' | placeholder_svg_tag: 'size-full' }}</div>
+              <p class="type-card px-1">{{ 'sections.featured_collection.placeholder_title' | t }}</p>
+              <button type="button" class="btn btn-primary w-full" disabled>{{ 'sections.bundle_builder.add' | t }}</button>
+            </li>
+          {%- endfor -%}
+        {%- endif -%}
+      </ul>
+
+      <section
+        class="surface-{{ s.panel_color_scheme }} sticky bottom-0 z-20 -mx-(--s-gutter) flex flex-col gap-4 border-t border-border px-(--s-gutter) pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-lg lg:top-[calc(var(--header-h,0px)+1.5rem)] lg:bottom-auto lg:mx-0 lg:max-h-[calc(100dvh-var(--header-h,0px)-3rem)] lg:self-start lg:rounded-card lg:border-2 lg:border-fg lg:p-6 lg:shadow-none"
+        aria-labelledby="{{ panel_heading_id }}"
+        data-ref="panel"
+      >
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex min-w-0 flex-col gap-1">
+            <h2 class="type-h4 lg:type-h2" id="{{ panel_heading_id }}" tabindex="-1">{{ s.panel_heading | escape }}</h2>
+            {%- if s.note != blank -%}
+              <p class="type-sm text-muted">{{ s.note | escape }}</p>
+            {%- endif -%}
+          </div>
+          <button
+            type="button"
+            class="flex size-11 shrink-0 items-center justify-center rounded-full border border-border lg:hidden"
+            data-ref="toggle"
+            aria-expanded="false"
+            aria-controls="{{ list_id }}"
+          >
+            <span class="sr-only">{{ 'sections.bundle_builder.toggle' | t }}</span>
+            {%- render 'icon', name: 'chevron-down', class: 'size-5 rotate-180 transition in-aria-expanded:rotate-0' -%}
+          </button>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <div
+            class="h-1.5 overflow-hidden rounded-full bg-fg/10"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="{{ min_items }}"
+            aria-valuenow="0"
+            aria-labelledby="{{ list_id }}-progress"
+            data-ref="progress"
+          >
+            <div class="h-full w-(--progress) rounded-full bg-primary transition-[width] duration-300 motion-reduce:transition-none" style="--progress: 0%;" data-ref="progress-bar"></div>
+          </div>
+          <p class="type-xs text-muted" id="{{ list_id }}-progress" data-ref="progress-text">
+            {{- 'sections.bundle_builder.progress' | t: count: 0, min: min_items -}}
+          </p>
+        </div>
+
+        <ul
+          id="{{ list_id }}"
+          class="hidden min-h-0 flex-col gap-3 overflow-y-auto overscroll-contain in-data-open:flex max-lg:max-h-[45dvh] lg:flex"
+          role="list"
+          data-ref="list"
+        >
+          {%- for i in (1..min_items) -%}
+            <li class="flex items-center gap-3" data-empty>
+              <div class="size-16 shrink-0 rounded-media bg-fg/5"></div>
+              <div class="flex flex-1 flex-col gap-2" aria-hidden="true">
+                <span class="h-3 w-2/3 rounded-full bg-fg/5"></span>
+                <span class="h-3 w-1/3 rounded-full bg-fg/5"></span>
+              </div>
+              <span class="sr-only">{{ 'sections.bundle_builder.empty_slot' | t }}</span>
+            </li>
+          {%- endfor -%}
+        </ul>
+
+        <template data-ref="item-template">
+          <li class="flex items-center gap-3" data-item>
+            <div class="size-16 shrink-0 overflow-hidden rounded-media bg-placeholder">
+              <img alt="" class="size-full object-contain" width="64" height="64" loading="lazy" data-slot="image" hidden>
+            </div>
+            <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+              <a href="" class="line-clamp-2 type-sm font-semibold no-underline hover:underline" data-slot="title"></a>
+              <p class="type-xs text-muted" data-slot="variant"></p>
+              <p class="type-xs font-semibold" data-slot="price"></p>
+            </div>
+            <button type="button" class="shrink-0 type-xs text-muted underline hover:text-fg min-h-11 px-2" data-slot="remove">
+              {{- 'sections.bundle_builder.remove_label' | t -}}
+            </button>
+          </li>
+        </template>
+        <template data-ref="empty-template">
+          <li class="flex items-center gap-3" data-empty>
+            <div class="size-16 shrink-0 rounded-media bg-fg/5"></div>
+            <div class="flex flex-1 flex-col gap-2" aria-hidden="true">
+              <span class="h-3 w-2/3 rounded-full bg-fg/5"></span>
+              <span class="h-3 w-1/3 rounded-full bg-fg/5"></span>
+            </div>
+            <span class="sr-only">{{ 'sections.bundle_builder.empty_slot' | t }}</span>
+          </li>
+        </template>
+
+        <div class="flex flex-col gap-3 border-t border-border pt-4">
+          <p class="flex items-baseline justify-between gap-4">
+            <span class="type-h6">{{ 'sections.bundle_builder.total' | t }}</span>
+            <span class="type-h5" data-ref="total">{{ 0 | money_with_currency }}</span>
+          </p>
+          <button
+            type="button"
+            class="btn btn-primary h-12 w-full aria-busy:opacity-70 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+            data-ref="submit"
+            aria-disabled="true"
+            aria-describedby="{{ list_id }}-progress"
+          >
+            {{- 'sections.bundle_builder.submit' | t -}}
+          </button>
+          <p class="type-sm text-error" role="alert" data-ref="error" hidden></p>
+        </div>
+        <p class="sr-only" aria-live="polite" data-ref="status"></p>
+      </section>
+    </div>
+
+    {%- if request.design_mode -%}
+      <p class="type-xs text-muted">{{ 'sections.bundle_builder.editor_hint' | t }}</p>
+    {%- endif -%}
+  </aw-bundle-builder>
+</div>
+<script src="{{ 'c-bundle-builder.js' | asset_url }}" type="module"></script>
+
+{% schema %}
+{
+  "name": "t:sections.bundle_builder.name",
+  "tag": "section",
+  "class": "section-bundle-builder",
+  "disabled_on": {
+    "groups": ["header", "footer"],
+    "templates": ["password"]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:shared.section_heading.header"
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:shared.section_heading.eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:shared.section_heading.heading",
+      "default": "Build your bundle"
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "t:shared.section_heading.description"
+    },
+    {
+      "type": "select",
+      "id": "heading_alignment",
+      "label": "t:shared.section_heading.alignment",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.bundle_builder.settings.header_products"
+    },
+    {
+      "type": "product_list",
+      "id": "products",
+      "label": "t:sections.bundle_builder.settings.products.label",
+      "limit": 12
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "label": "t:shared.columns_desktop",
+      "min": 2,
+      "max": 4,
+      "step": 1,
+      "default": 3
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "label": "t:shared.columns_mobile.label",
+      "options": [
+        {
+          "value": "1",
+          "label": "t:shared.columns_mobile.options.one"
+        },
+        {
+          "value": "2",
+          "label": "t:shared.columns_mobile.options.two"
+        }
+      ],
+      "default": "1"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_vendor",
+      "label": "t:sections.bundle_builder.settings.show_vendor.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_rating",
+      "label": "t:sections.bundle_builder.settings.show_rating.label",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "t:sections.bundle_builder.settings.header_rules"
+    },
+    {
+      "type": "paragraph",
+      "content": "t:sections.bundle_builder.settings.discount_info"
+    },
+    {
+      "type": "range",
+      "id": "min_items",
+      "label": "t:sections.bundle_builder.settings.min_items.label",
+      "min": 1,
+      "max": 10,
+      "step": 1,
+      "default": 3
+    },
+    {
+      "type": "range",
+      "id": "max_items",
+      "label": "t:sections.bundle_builder.settings.max_items.label",
+      "info": "t:sections.bundle_builder.settings.max_items.info",
+      "min": 1,
+      "max": 12,
+      "step": 1,
+      "default": 6
+    },
+    {
+      "type": "checkbox",
+      "id": "allow_duplicates",
+      "label": "t:sections.bundle_builder.settings.allow_duplicates.label",
+      "info": "t:sections.bundle_builder.settings.allow_duplicates.info",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:sections.bundle_builder.settings.header_panel"
+    },
+    {
+      "type": "text",
+      "id": "panel_heading",
+      "label": "t:sections.bundle_builder.settings.panel_heading.label",
+      "default": "Your bundle"
+    },
+    {
+      "type": "text",
+      "id": "note",
+      "label": "t:sections.bundle_builder.settings.note.label",
+      "info": "t:sections.bundle_builder.settings.note.info",
+      "default": "Add 3 products to your bundle"
+    },
+    {
+      "type": "color_scheme",
+      "id": "panel_color_scheme",
+      "label": "t:sections.bundle_builder.settings.panel_color_scheme.label",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.bundle_builder.name"
+    }
+  ]
+}
+{% endschema %}

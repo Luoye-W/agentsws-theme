@@ -1,0 +1,154 @@
+{% comment %}
+  @description Row of short selling points, each with an icon (built-in set or uploaded image), a title and one line of text. Optional heading above.
+  Use when: key product facts ("Bluetooth 5.4", "IPX7 washable"), store promises (shipping, returns, secure checkout), "why us" rows.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+
+  case s.columns
+    when 2
+      assign cols_class = 'grid-cols-1 md:grid-cols-2'
+    when 3
+      assign cols_class = 'grid-cols-1 md:grid-cols-3'
+    when 5
+      assign cols_class = 'grid-cols-2 md:grid-cols-3 lg:grid-cols-5'
+    else
+      assign cols_class = 'grid-cols-2 lg:grid-cols-4'
+  endcase
+
+  case s.alignment
+    when 'center'
+      assign align_class = 'text-center'
+    else
+      assign align_class = 'text-start'
+  endcase
+-%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+  data-align="{{ s.alignment }}"
+>
+  <div class="page-width flex flex-col gap-10 {{ align_class }}">
+    {%- if s.heading != blank -%}
+      <h2 class="type-h2 {% if s.alignment == 'center' %}mx-auto{% endif %} max-w-3xl">{{ s.heading }}</h2>
+    {%- endif -%}
+    <ul class="grid {{ cols_class }} gap-x-6 gap-y-10" role="list">
+      {% content_for 'blocks' %}
+    </ul>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "t:sections.features.name",
+  "tag": "section",
+  "class": "section-features",
+  "blocks": [
+    {
+      "type": "_feature"
+    }
+  ],
+  "max_blocks": 10,
+  "settings": [
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:sections.featured_collection.settings.heading.label"
+    },
+    {
+      "type": "range",
+      "id": "columns",
+      "label": "t:shared.columns_desktop",
+      "min": 2,
+      "max": 5,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "select",
+      "id": "alignment",
+      "label": "t:shared.text_alignment",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        }
+      ],
+      "default": "start"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-2"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.features.name",
+      "blocks": [
+        {
+          "type": "_feature",
+          "settings": {
+            "icon": "truck",
+            "title": "Fast shipping",
+            "text": "Describe your delivery promise."
+          }
+        },
+        {
+          "type": "_feature",
+          "settings": {
+            "icon": "return",
+            "title": "Easy returns",
+            "text": "Explain your return window."
+          }
+        },
+        {
+          "type": "_feature",
+          "settings": {
+            "icon": "lock",
+            "title": "Secure checkout",
+            "text": "Payments are encrypted."
+          }
+        },
+        {
+          "type": "_feature",
+          "settings": {
+            "icon": "chat",
+            "title": "Support",
+            "text": "Tell customers how to reach you."
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

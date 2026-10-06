@@ -1,0 +1,377 @@
+{% comment %}
+  @description Large image beside a column of blocks (eyebrow, heading, text, buttons, feature lists). Image left or right on desktop, stacked on mobile. Image style "overlap" layers a second, smaller image over the first, both slightly rotated (0–8°) in opposite directions like a collage; the small image drifts a little while scrolling (not with reduced motion). Layout "Card" joins image and text into one rounded card: the text sits on a panel in its own color scheme and the image fills the other half edge to edge.
+  Use when: spotlighting one product or story ("Meet the X1 Pro"), brand story, about-page chapters.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+
+  case s.image_ratio
+    when 'portrait'
+      assign ratio = '4 / 5'
+    when 'landscape'
+      assign ratio = '4 / 3'
+    when 'natural'
+      assign ratio = s.image.aspect_ratio | default: 1
+    else
+      assign ratio = '1 / 1'
+  endcase
+  assign ratio_second = ratio
+  if s.image_ratio == 'natural'
+    assign ratio_second = s.second_image.aspect_ratio | default: 0.8
+  endif
+
+  if s.image_width == 'wide'
+    assign media_class = 'md:col-span-7'
+    assign text_class = 'md:col-span-5'
+  else
+    assign media_class = 'md:col-span-6'
+    assign text_class = 'md:col-span-6'
+  endif
+
+  if s.image_position == 'end'
+    assign order_class = 'md:order-2'
+  else
+    assign order_class = ''
+  endif
+
+  case s.align
+    when 'start'
+      assign align_class = 'self-start'
+    when 'end'
+      assign align_class = 'self-end'
+    else
+      assign align_class = 'self-center'
+  endcase
+
+  if s.image_fit == 'contain'
+    assign fit_class = 'size-full object-contain'
+  else
+    assign fit_class = 'size-full object-cover'
+  endif
+  assign image_alt = s.image.alt | escape
+  assign second_alt = s.second_image.alt | escape
+
+  if s.layout == 'card'
+    assign grid_class = 'grid grid-cols-1 overflow-hidden rounded-card md:grid-cols-12'
+    assign media_round = ''
+    assign text_pad = 'surface-' | append: s.card_color_scheme | append: ' bg-bg self-stretch justify-center p-6 md:p-10 lg:p-16'
+    assign align_class = ''
+    case s.align
+      when 'start'
+        assign text_pad = text_pad | append: ' md:justify-start'
+      when 'end'
+        assign text_pad = text_pad | append: ' md:justify-end'
+    endcase
+  else
+    assign grid_class = 'grid grid-cols-1 gap-8 md:grid-cols-12 md:gap-12 lg:gap-16'
+    assign media_round = 'rounded-media'
+    assign text_pad = ''
+  endif
+-%}
+<div
+  class="surface-{{ s.color_scheme }} overflow-x-clip pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+>
+  <div class="page-width {{ grid_class }}">
+    {%- if s.image_style == 'overlap' -%}
+      <div
+        class="image-with-text__stack {{ media_class }} {{ order_class }} relative px-[3%] py-[5%]"
+        style="--image-with-text-tilt: {{ s.image_rotation }}deg;"
+      >
+        <div class="image-with-text__main ms-auto w-3/4 overflow-hidden rounded-media bg-fg/5" style="aspect-ratio: {{ ratio }};">
+          {%- if s.image -%}
+            {{
+              s.image
+              | image_url: width: 1600
+              | image_tag: widths: '400, 600, 800, 1000, 1300, 1600', sizes: '(min-width: 750px) 42vw, 75vw', class: fit_class, alt: image_alt, loading: 'lazy'
+            }}
+          {%- else -%}
+            {{ 'lifestyle-1' | placeholder_svg_tag: 'size-full' }}
+          {%- endif -%}
+        </div>
+        <div class="absolute start-[3%] top-1/2 z-[1] w-[35%] -translate-y-1/2 md:w-[40%]">
+          <div class="image-with-text__second overflow-hidden rounded-media bg-fg/5 shadow-lg" style="aspect-ratio: {{ ratio_second }};">
+            {%- if s.second_image -%}
+              {{
+                s.second_image
+                | image_url: width: 1000
+                | image_tag: widths: '300, 450, 600, 800, 1000', sizes: '(min-width: 750px) 22vw, 35vw', class: fit_class, alt: second_alt, loading: 'lazy'
+              }}
+            {%- else -%}
+              {{ 'lifestyle-2' | placeholder_svg_tag: 'size-full bg-placeholder' }}
+            {%- endif -%}
+          </div>
+        </div>
+      </div>
+    {%- else -%}
+      <div class="{{ media_class }} {{ order_class }} overflow-hidden {{ media_round }} bg-fg/5" style="aspect-ratio: {{ ratio }};">
+        {%- if s.image -%}
+          {{
+            s.image
+            | image_url: width: 2000
+            | image_tag: widths: '500, 750, 1000, 1300, 1600, 2000', sizes: '(min-width: 750px) 55vw, 100vw', class: fit_class, alt: image_alt, loading: 'lazy'
+          }}
+        {%- else -%}
+          {{ 'lifestyle-1' | placeholder_svg_tag: 'size-full' }}
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+    <div class="{{ text_class }} {{ align_class }} {{ text_pad }} flex flex-col items-start gap-5">
+      {% content_for 'blocks' %}
+    </div>
+  </div>
+</div>
+
+{% stylesheet %}
+  /* Overlap style: the large image leans one way, the small one the other (mirrored for right-to-left). */
+  .image-with-text__stack {
+    --image-with-text-dir: 1;
+  }
+  [dir='rtl'] .image-with-text__stack {
+    --image-with-text-dir: -1;
+  }
+  .image-with-text__main {
+    rotate: calc(var(--image-with-text-tilt, 0deg) * 0.75 * var(--image-with-text-dir));
+  }
+  .image-with-text__second {
+    rotate: calc(var(--image-with-text-tilt, 0deg) * -1 * var(--image-with-text-dir));
+  }
+  /* The small image drifts slightly against the large one while scrolling; static with reduced motion. */
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .image-with-text__second {
+        animation: image-with-text-drift linear both;
+        animation-timeline: view();
+        animation-range: cover;
+      }
+    }
+  }
+  @keyframes image-with-text-drift {
+    from {
+      transform: translateY(12%);
+    }
+    to {
+      transform: translateY(-12%);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:sections.image_with_text.name",
+  "tag": "section",
+  "class": "section-image-with-text",
+  "blocks": [
+    {
+      "type": "@theme"
+    },
+    {
+      "type": "@app"
+    }
+  ],
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:sections.hero.settings.image.label"
+    },
+    {
+      "type": "select",
+      "id": "image_style",
+      "label": "t:sections.image_with_text.settings.image_style.label",
+      "info": "t:sections.image_with_text.settings.image_style.info",
+      "options": [
+        { "value": "single", "label": "t:sections.image_with_text.settings.image_style.options.single" },
+        { "value": "overlap", "label": "t:sections.image_with_text.settings.image_style.options.overlap" }
+      ],
+      "default": "single"
+    },
+    {
+      "type": "image_picker",
+      "id": "second_image",
+      "label": "t:sections.image_with_text.settings.second_image.label",
+      "info": "t:sections.image_with_text.settings.second_image.info",
+      "visible_if": "{{ section.settings.image_style == 'overlap' }}"
+    },
+    {
+      "type": "range",
+      "id": "image_rotation",
+      "label": "t:sections.image_with_text.settings.image_rotation.label",
+      "info": "t:sections.image_with_text.settings.image_rotation.info",
+      "min": 0,
+      "max": 8,
+      "step": 1,
+      "unit": "°",
+      "default": 4,
+      "visible_if": "{{ section.settings.image_style == 'overlap' }}"
+    },
+    {
+      "type": "select",
+      "id": "image_position",
+      "label": "t:sections.image_with_text.settings.image_position.label",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:sections.image_with_text.settings.image_position.options.start"
+        },
+        {
+          "value": "end",
+          "label": "t:sections.image_with_text.settings.image_position.options.end"
+        }
+      ],
+      "default": "start"
+    },
+    {
+      "type": "select",
+      "id": "image_width",
+      "label": "t:sections.main_product.settings.media_width.label",
+      "options": [
+        {
+          "value": "half",
+          "label": "t:sections.main_product.settings.media_width.options.medium"
+        },
+        {
+          "value": "wide",
+          "label": "t:sections.main_product.settings.media_width.options.large"
+        }
+      ],
+      "default": "half"
+    },
+    {
+      "type": "select",
+      "id": "image_ratio",
+      "label": "t:sections.main_product.settings.media_ratio.label",
+      "options": [
+        {
+          "value": "square",
+          "label": "t:shared.ratio.options.square"
+        },
+        {
+          "value": "portrait",
+          "label": "t:shared.ratio.options.portrait"
+        },
+        {
+          "value": "landscape",
+          "label": "t:shared.ratio.options.landscape"
+        },
+        {
+          "value": "natural",
+          "label": "t:shared.ratio.options.natural"
+        }
+      ],
+      "default": "square"
+    },
+    {
+      "type": "select",
+      "id": "image_fit",
+      "label": "t:shared.fit.label",
+      "options": [
+        {
+          "value": "cover",
+          "label": "t:shared.fit.options.cover"
+        },
+        {
+          "value": "contain",
+          "label": "t:shared.fit.options.contain"
+        }
+      ],
+      "default": "cover"
+    },
+    {
+      "type": "select",
+      "id": "align",
+      "label": "t:shared.align.label",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        },
+        {
+          "value": "end",
+          "label": "t:shared.align.options.end"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "t:sections.image_with_text.settings.layout.label",
+      "info": "t:sections.image_with_text.settings.layout.info",
+      "options": [
+        { "value": "standard", "label": "t:sections.image_with_text.settings.layout.options.standard" },
+        { "value": "card", "label": "t:sections.image_with_text.settings.layout.options.card" }
+      ],
+      "default": "standard"
+    },
+    {
+      "type": "color_scheme",
+      "id": "card_color_scheme",
+      "label": "t:sections.image_with_text.settings.card_color_scheme.label",
+      "default": "scheme-2",
+      "visible_if": "{{ section.settings.layout == 'card' }}"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.image_with_text.name",
+      "blocks": [
+        {
+          "type": "heading",
+          "settings": {
+            "text": "Image with text",
+            "size": "h2"
+          }
+        },
+        {
+          "type": "text",
+          "settings": {
+            "text": "<p>Tell the story behind a product, a collection or your brand.</p>",
+            "muted": true
+          }
+        },
+        {
+          "type": "button",
+          "settings": {
+            "label": "Learn more"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,48 @@
+{% doc %}
+  @description Article tags as small pill links to "this blog, filtered by tag". When the article has a color metafield custom.tag_color, the pills use that color with automatically chosen readable text; otherwise the theme's neutral pill style.
+  Use when: article cards and the article page header.
+
+  @param {object} article - The article
+  @param {string} [blog_url] - URL of the article's blog; without it the tags are plain text
+  @param {number} [limit] - Maximum tags to show, default 3
+  @param {boolean} [on_image] - The pills sit on a photo: use a solid background (page colour) instead of the translucent tint when the article has no tag colour
+
+  @example
+  {% render 'article-tags', article: article, blog_url: blog.url %}
+{% enddoc %}
+{%- liquid
+  assign max_tags = limit | default: 3
+  assign tag_color = article.metafields.custom.tag_color.value
+  assign pill_class = 'bg-fg/[0.06] text-fg'
+  if on_image
+    assign pill_class = 'bg-bg text-fg shadow-sm'
+  endif
+  assign pill_style = ''
+  if tag_color != blank
+    assign tag_brightness = tag_color | color_brightness
+    assign tag_text = '#ffffff'
+    if tag_brightness > 150
+      assign tag_text = '#000000'
+    endif
+    assign pill_class = 'bg-(--tag-bg) text-(--tag-fg)'
+    assign pill_style = '--tag-bg: ' | append: tag_color | append: '; --tag-fg: ' | append: tag_text | append: ';'
+  endif
+-%}
+{%- if article.tags.size > 0 -%}
+  <ul class="flex flex-wrap gap-1.5" role="list" {% if pill_style != blank %}style="{{ pill_style }}"{% endif %}>
+    {%- for tag in article.tags limit: max_tags -%}
+      <li>
+        {%- if blog_url != blank -%}
+          <a
+            href="{{ blog_url }}/tagged/{{ tag | handle }}"
+            class="relative z-10 inline-flex rounded-full px-2.5 py-0.5 type-xs font-medium no-underline transition-transform hover:scale-105 {{ pill_class }}"
+          >
+            <span class="sr-only">{{ 'blogs.filter.tag_label' | t }}: </span>{{ tag | escape }}
+          </a>
+        {%- else -%}
+          <span class="inline-flex rounded-full px-2.5 py-0.5 type-xs font-medium {{ pill_class }}">{{ tag | escape }}</span>
+        {%- endif -%}
+      </li>
+    {%- endfor -%}
+  </ul>
+{%- endif -%}

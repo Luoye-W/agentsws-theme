@@ -1,0 +1,143 @@
+{% doc %}
+  @description Inline video: a Shopify-hosted video with native controls (optionally muted autoplay + loop, paused when off screen and for reduced motion) or a YouTube / Vimeo link that shows a cover image and play button and only loads the player when clicked. Fixed aspect ratio, so the page does not jump. A description names the video for screen readers.
+  Use when: a product demo, how-to or brand film inside any section that accepts theme blocks (container, rich text, group, collapsible rows).
+
+  @example
+  {% content_for 'block', type: 'video', id: 'demo-video' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+
+  case s.ratio
+    when 'square'
+      assign ratio = '1 / 1'
+    when 'portrait'
+      assign ratio = '4 / 5'
+    when 'vertical'
+      assign ratio = '9 / 16'
+    when 'natural'
+      assign ratio = s.video.aspect_ratio | default: '16 / 9'
+    else
+      assign ratio = '16 / 9'
+  endcase
+
+  case s.width
+    when 'narrow'
+      assign width_class = 'max-w-xl'
+    when 'medium'
+      assign width_class = 'max-w-3xl'
+    else
+      assign width_class = ''
+  endcase
+-%}
+<div class="w-full {{ width_class }}" {{ block.shopify_attributes }}>
+  {%- render 'video-media',
+    video: s.video,
+    video_url: s.video_url,
+    poster: s.poster,
+    description: s.description,
+    autoplay: s.autoplay,
+    loop: s.loop,
+    ratio: ratio,
+    sizes: '(min-width: 990px) 60vw, 100vw'
+  -%}
+</div>
+
+{% schema %}
+{
+  "name": "t:blocks.video.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "video",
+      "id": "video",
+      "label": "t:blocks.video.settings.video.label"
+    },
+    {
+      "type": "video_url",
+      "id": "video_url",
+      "label": "t:blocks.video.settings.video_url.label",
+      "info": "t:blocks.video.settings.video_url.info",
+      "accept": ["youtube", "vimeo"]
+    },
+    {
+      "type": "image_picker",
+      "id": "poster",
+      "label": "t:blocks.video.settings.poster.label",
+      "info": "t:blocks.video.settings.poster.info"
+    },
+    {
+      "type": "text",
+      "id": "description",
+      "label": "t:blocks.video.settings.description.label",
+      "info": "t:blocks.video.settings.description.info"
+    },
+    {
+      "type": "checkbox",
+      "id": "autoplay",
+      "label": "t:blocks.video.settings.autoplay.label",
+      "info": "t:blocks.video.settings.autoplay.info",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "loop",
+      "label": "t:blocks.video.settings.loop.label",
+      "default": false
+    },
+    {
+      "type": "select",
+      "id": "ratio",
+      "label": "t:blocks.video.settings.ratio.label",
+      "options": [
+        {
+          "value": "natural",
+          "label": "t:shared.ratio.options.natural"
+        },
+        {
+          "value": "wide",
+          "label": "t:sections.multicolumn.settings.image_ratio.options.wide"
+        },
+        {
+          "value": "square",
+          "label": "t:shared.ratio.options.square"
+        },
+        {
+          "value": "portrait",
+          "label": "t:shared.ratio.options.portrait"
+        },
+        {
+          "value": "vertical",
+          "label": "t:blocks.video.settings.ratio.options.vertical"
+        }
+      ],
+      "default": "wide"
+    },
+    {
+      "type": "select",
+      "id": "width",
+      "label": "t:blocks.video.settings.width.label",
+      "options": [
+        {
+          "value": "full",
+          "label": "t:blocks.video.settings.width.options.full"
+        },
+        {
+          "value": "medium",
+          "label": "t:blocks.video.settings.width.options.medium"
+        },
+        {
+          "value": "narrow",
+          "label": "t:blocks.video.settings.width.options.narrow"
+        }
+      ],
+      "default": "full"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:blocks.video.name"
+    }
+  ]
+}
+{% endschema %}

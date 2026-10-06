@@ -1,0 +1,126 @@
+{% doc %}
+  @description Row of links to related collections ("All headphones 15 / Wireless 15 / Gaming 3") with optional product counts. Items come from a picked collection list, or from a menu: the theme finds the current collection in the menu (up to three levels) and lists its sub-collections (or its siblings, led by an "All …" link to the parent). The current collection is marked aria-current. Scrolls sideways on small screens.
+  Use when: collection page header or toolbar (main-collection → Subcollections).
+
+  @param {object} current - The collection being viewed
+  @param {string} [source] - 'list' (default) or 'menu'
+  @param {object} [list] - Collections to show when source is 'list' (collection_list setting)
+  @param {object} [menu] - Menu to search when source is 'menu' (link_list setting)
+  @param {string} [style] - 'tabs' (default, large text with superscript counts), 'pills' or 'images' (pills with a thumbnail)
+  @param {boolean} [show_count] - Show each collection's product count, default true
+  @param {string} [class] - Extra classes for the nav element
+
+  @example
+  {% render 'subcollection-nav', current: collection, source: 'list', list: section.settings.subcollections, style: 'tabs', show_count: true %}
+{% enddoc %}
+{%- liquid
+  assign nav_source = source | default: 'list'
+  assign nav_style = style | default: 'tabs'
+  assign counts = true
+  if show_count == false
+    assign counts = false
+  endif
+
+  assign handles = ''
+  assign all_handle = ''
+
+  if nav_source == 'menu'
+    assign found = false
+    for l1 in menu.links
+      if l1.type == 'collection_link' and l1.object.id == current.id and l1.links.size > 0
+        assign parent_link = l1
+        assign found = true
+      endif
+      for l2 in l1.links
+        if l2.type == 'collection_link' and l2.object.id == current.id
+          if l2.links.size > 0
+            assign parent_link = l2
+          else
+            assign parent_link = l1
+          endif
+          assign found = true
+        endif
+        for l3 in l2.links
+          if l3.type == 'collection_link' and l3.object.id == current.id
+            assign parent_link = l2
+            assign found = true
+          endif
+        endfor
+      endfor
+    endfor
+
+    if found
+      if parent_link.type == 'collection_link'
+        assign all_handle = parent_link.object.handle
+        assign handles = all_handle | append: ','
+      endif
+      for child in parent_link.links
+        if child.type == 'collection_link'
+          assign handles = handles | append: child.object.handle | append: ','
+        endif
+      endfor
+    endif
+  else
+    for item in list
+      assign handles = handles | append: item.handle | append: ','
+    endfor
+  endif
+
+  assign handle_list = handles | split: ','
+
+  case nav_style
+    when 'pills'
+      assign list_class = 'gap-2'
+      assign link_class = 'flex min-h-10 items-center gap-1.5 whitespace-nowrap rounded-full border border-border px-4 type-sm no-underline hover:border-fg aria-[current=page]:border-primary aria-[current=page]:bg-primary aria-[current=page]:text-on-primary'
+    when 'images'
+      assign list_class = 'gap-2'
+      assign link_class = 'flex min-h-12 items-center gap-2.5 whitespace-nowrap rounded-full border border-border py-1 ps-1 pe-4 type-sm no-underline hover:border-fg aria-[current=page]:border-fg aria-[current=page]:font-semibold'
+    else
+      assign list_class = 'gap-x-3 gap-y-1 md:gap-x-4'
+      assign link_class = 'flex items-start whitespace-nowrap type-h5 no-underline text-fg/40 transition-colors hover:text-fg aria-[current=page]:text-fg aria-[current=page]:underline aria-[current=page]:decoration-2 aria-[current=page]:underline-offset-8 lg:type-h4'
+  endcase
+-%}
+{%- if handle_list.size > 1 -%}
+  <nav class="subcollection-nav min-w-0 {{ class }}" aria-label="{{ 'collections.subcollections.label' | t }}">
+    <ul class="flex flex-nowrap items-center overflow-x-auto py-1 [scrollbar-width:none] md:flex-wrap {{ list_class }}" role="list">
+      {%- for handle in handle_list -%}
+        {%- assign item = collections[handle] -%}
+        {%- if item == blank -%}
+          {%- continue -%}
+        {%- endif -%}
+        {%- liquid
+          assign label = item.title
+          if handle == all_handle
+            assign label = 'collections.subcollections.all' | t: title: item.title
+          endif
+          assign thumb = item.image | default: item.featured_image
+        -%}
+        <li class="flex shrink-0 items-center {% if nav_style == 'tabs' %}gap-3 md:gap-4{% endif %}">
+          {%- if nav_style == 'tabs' and forloop.first == false -%}
+            <span class="type-h5 text-fg/25 lg:type-h4" aria-hidden="true">/</span>
+          {%- endif -%}
+          <a
+            href="{{ item.url }}"
+            class="{{ link_class }}"
+            {% if item.id == current.id %}
+              aria-current="page"
+            {% endif %}
+          >
+            {%- if nav_style == 'images' -%}
+              <span class="block size-10 shrink-0 overflow-hidden rounded-full bg-placeholder">
+                {%- if thumb != blank -%}
+                  {{ thumb | image_url: width: 120 | image_tag: width: 40, height: 40, loading: 'lazy', alt: '', class: 'size-full object-cover' }}
+                {%- endif -%}
+              </span>
+            {%- endif -%}
+            <span>{{ label | escape }}</span>
+            {%- if counts -%}
+              <sup class="subcollection-nav__count font-normal leading-none {% if nav_style == 'tabs' %}ms-0.5 mt-1 text-[0.45em]{% else %}text-xs opacity-70{% endif %}" aria-hidden="true">{{ item.products_count }}</sup>
+              <span class="sr-only">({{ 'collections.product_count' | t: count: item.products_count }})</span>
+            {%- endif -%}
+          </a>
+        </li>
+      {%- endfor -%}
+    </ul>
+  </nav>
+{%- endif -%}

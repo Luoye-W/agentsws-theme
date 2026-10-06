@@ -1,0 +1,16 @@
+{% doc %}
+  @description Play and pause icons for a toggle button: shows "play" by default and "pause" when the button (or an ancestor) has the data-playing attribute. Decorative (aria-hidden) — the button needs its own aria-label.
+  Use when: play/pause buttons of videos, slideshows and other moving content.
+
+  @param {string} [class] - Size classes for the icons, default "size-5"
+
+  @example
+  <button type="button" aria-label="Pause slideshow" data-playing>{% render 'play-pause-icon', class: 'size-4' %}</button>
+{% enddoc %}
+{%- assign icon_class = class | default: 'size-5' -%}
+<svg class="{{ icon_class }} shrink-0 in-data-playing:hidden" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
+  <path d="M8 5.5v13a.8.8 0 0 0 1.2.7l10.3-6.5a.8.8 0 0 0 0-1.4L9.2 4.8A.8.8 0 0 0 8 5.5z"/>
+</svg>
+<svg class="{{ icon_class }} hidden shrink-0 in-data-playing:block" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
+  <rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>
+</svg>

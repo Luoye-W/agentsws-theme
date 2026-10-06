@@ -1,0 +1,52 @@
+{% doc %}
+  @description Outputs a Tailwind class string for a flex layout from editor settings. Used by the container section and the group block so both behave identically. Always maps settings to complete class names (never builds class names by string concatenation, which Tailwind cannot detect).
+
+  @param {string} direction - 'row' or 'column'
+  @param {string} align - 'start', 'center', 'end' or 'stretch'
+  @param {string} justify - 'start', 'center', 'end' or 'between'
+  @param {boolean} [wrap] - Allow items to wrap onto new lines (row only)
+  @param {boolean} [stack_on_mobile] - Switch a row to a column below 750px
+
+  @example
+  <div class="{% render 'flex-layout-classes', direction: 'row', align: 'center', justify: 'between', wrap: true, stack_on_mobile: true %}"></div>
+{% enddoc %}
+{%- liquid
+  assign classes = 'flex'
+
+  if direction == 'row'
+    if stack_on_mobile
+      assign classes = classes | append: ' flex-col md:flex-row'
+    else
+      assign classes = classes | append: ' flex-row'
+    endif
+    if wrap
+      assign classes = classes | append: ' flex-wrap'
+    endif
+  else
+    assign classes = classes | append: ' flex-col'
+  endif
+
+  case align
+    when 'start'
+      assign classes = classes | append: ' items-start'
+    when 'center'
+      assign classes = classes | append: ' items-center'
+    when 'end'
+      assign classes = classes | append: ' items-end'
+    else
+      assign classes = classes | append: ' items-stretch'
+  endcase
+
+  case justify
+    when 'center'
+      assign classes = classes | append: ' justify-center'
+    when 'end'
+      assign classes = classes | append: ' justify-end'
+    when 'between'
+      assign classes = classes | append: ' justify-between'
+    else
+      assign classes = classes | append: ' justify-start'
+  endcase
+
+  echo classes
+-%}

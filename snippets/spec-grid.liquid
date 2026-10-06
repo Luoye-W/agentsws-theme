@@ -1,0 +1,63 @@
+{% doc %}
+  @description Specification lines as a definition grid (1 or 2 columns). Each line "Label: value" starts an item; lines starting with "-", "–" or "•" add another value under the item above (shown as written); a line without a colon starts an item with only a label. Blank lines are ignored. Outputs nothing when there are no lines.
+  Use when: tech specs groups, product details accordions — anywhere specs are written as plain text (block setting or multi-line / list metafield).
+
+  @param {object} lines - Lines of text (split a multi-line string with newline_to_br | split: '<br />', or pass a list metafield's value)
+  @param {string} [columns] - '1' or '2' (default) columns from 750px
+
+  @example
+  {% render 'spec-grid', lines: spec_lines, columns: '2' %}
+{% enddoc %}
+{%- liquid
+  if columns == '1'
+    assign grid_class = 'grid grid-cols-1 gap-x-10 gap-y-6'
+  else
+    assign grid_class = 'grid grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-2'
+  endif
+  comment
+    Pass 1 groups the lines into items: "§label¦value¦value…". Pass 2 renders each item.
+  endcomment
+  assign items_str = ''
+  for line in lines
+    assign text = line | strip | remove: '§' | remove: '¦'
+    if text == blank
+      continue
+    endif
+    assign first_char = text | slice: 0
+    if first_char == '-' or first_char == '–' or first_char == '•'
+      if items_str == blank
+        assign items_str = '§'
+      endif
+      assign items_str = items_str | append: '¦' | append: text
+    elsif text contains ':'
+      assign label = text | split: ':' | first
+      assign value = text | remove_first: label | remove_first: ':' | strip
+      assign items_str = items_str | append: '§' | append: label
+      if value != blank
+        assign items_str = items_str | append: '¦' | append: value
+      endif
+    else
+      assign items_str = items_str | append: '§' | append: text
+    endif
+  endfor
+  assign items = items_str | split: '§'
+-%}
+{%- if items_str != blank -%}
+  <dl class="{{ grid_class }} type-sm">
+    {%- for item in items -%}
+      {%- if item == blank -%}{%- continue -%}{%- endif -%}
+      {%- assign parts = item | split: '¦' -%}
+      <div class="flex flex-col gap-1">
+        {%- assign label = parts.first | strip -%}
+        {%- if label != blank -%}
+          <dt class="font-semibold">{{ label | escape }}</dt>
+        {%- endif -%}
+        {%- for value in parts offset: 1 -%}
+          {%- if value != blank -%}
+            <dd class="text-muted">{{ value | strip | escape }}</dd>
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+    {%- endfor -%}
+  </dl>
+{%- endif -%}

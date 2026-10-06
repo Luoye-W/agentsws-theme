@@ -1,0 +1,40 @@
+{
+  "name": "agentsws-theme",
+  "version": "0.8.0",
+  "private": true,
+  "description": "An open-source Shopify theme built with Tailwind CSS v4 and theme blocks, designed for AI agents to customize safely.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "agentsws": {
+    "repoRole": "upstream",
+    "edition": "oss"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@shopify/cli": "^4.8.0",
+    "@shopify/theme-check-node": "^3.29.0",
+    "@tailwindcss/cli": "^4.3.3",
+    "concurrently": "^9.2.4",
+    "playwright": "^1.63.0",
+    "tailwindcss": "^4.3.3"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n css,shopify \"npm:watch:css\" \"shopify theme dev\"",
+    "watch:css": "tailwindcss -i src/tailwind.css -o assets/app.css --watch",
+    "build": "npm run build:vocab && npm run build:css && npm run build:catalog",
+    "build:css": "tailwindcss -i src/tailwind.css -o assets/app.css",
+    "build:vocab": "node scripts/build-vocab.mjs",
+    "build:catalog": "node scripts/build-catalog.mjs",
+    "new": "node scripts/new.mjs",
+    "lint": "node scripts/lint.mjs",
+    "check": "shopify theme check --fail-level error",
+    "verify": "node scripts/verify.mjs",
+    "verify:preview": "node scripts/verify.mjs --preview",
+    "core:manifest": "node scripts/core-manifest.mjs",
+    "settings": "node scripts/settings.mjs",
+    "demo": "node scripts/demo.mjs"
+  }
+}

@@ -1,0 +1,66 @@
+{% doc %}
+  @description Free-shipping progress: "Spend X more for free shipping" (or "You've got free shipping") with a progress bar, measured against the cart total after discounts. Thresholds come from Theme settings → Cart → Free shipping thresholds, one per currency ("USD:50, EUR:45"); a plain number applies to the store's default currency. Outputs nothing when the setting is blank, the cart is empty, or no threshold matches the shopper's currency. It only displays progress — the free shipping rate itself must exist in Settings → Shipping.
+  Use when: cart drawer and cart page, above the line items.
+
+  @example
+  {% render 'cart-free-shipping' %}
+{% enddoc %}
+{%- liquid
+  assign raw = settings.cart_free_shipping_thresholds | strip
+  assign threshold_text = ''
+  assign plain_text = ''
+  if raw != blank and cart.item_count > 0
+    assign currency = cart.currency.iso_code | upcase
+    assign entries = raw | split: ','
+    for entry in entries
+      assign parts = entry | split: ':'
+      if parts.size == 2
+        assign code = parts[0] | strip | upcase
+        if code == currency
+          assign threshold_text = parts[1] | strip
+        endif
+      elsif parts.size == 1
+        assign plain_text = parts[0] | strip
+      endif
+    endfor
+    if threshold_text == blank and plain_text != blank and currency == shop.currency
+      assign threshold_text = plain_text
+    endif
+  endif
+
+  assign threshold = 0
+  if threshold_text != blank
+    assign threshold = threshold_text | remove: ' ' | times: 100 | round
+  endif
+-%}
+{%- if threshold > 0 -%}
+  {%- liquid
+    assign total = cart.total_price
+    assign remaining = threshold | minus: total
+    assign percent = total | times: 100 | divided_by: threshold
+    if percent > 100
+      assign percent = 100
+    endif
+    assign remaining_money = remaining | money
+    assign amount_html = '<strong>' | append: remaining_money | append: '</strong>'
+  -%}
+  <div class="flex flex-col gap-2">
+    <p class="type-sm">
+      {%- if remaining > 0 -%}
+        {{ 'general.cart.free_shipping_remaining_html' | t: amount: amount_html }}
+      {%- else -%}
+        {{ 'general.cart.free_shipping_reached' | t }}
+      {%- endif -%}
+    </p>
+    <div
+      class="h-1.5 overflow-hidden rounded-full bg-fg/10"
+      role="progressbar"
+      aria-label="{{ 'general.cart.free_shipping_label' | t }}"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow="{{ percent }}"
+    >
+      <div class="h-full w-(--progress) rounded-full bg-primary transition-[width] duration-500" style="--progress: {{ percent }}%;"></div>
+    </div>
+  </div>
+{%- endif -%}

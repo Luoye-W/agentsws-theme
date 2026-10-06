@@ -1,0 +1,197 @@
+{% doc %}
+  @description Option selectors for a product with variants (e.g. Color, Size). Colour options (swatches set in admin, or option names listed in Theme settings → Color swatches) show colour chips, others show buttons or a dropdown. Optionally chosen options (e.g. Color) show each value as a small picture of its variant's image instead. Chips and pictures show the value's name in a tooltip on hover / keyboard focus (optionally with an enlarged picture), a ring when selected, and a strike-through with a faded red ring when sold out. Unavailable combinations are struck through but still selectable so shoppers see them as sold out. Hidden for single-variant products.
+  Use when: product info column. Needs a section that switches variants (main product).
+
+  @example
+  {% content_for 'block', type: 'product-variant-picker', id: 'picker' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  assign product = closest.product
+  assign image_option_names = s.image_swatch_options | downcase | split: ','
+-%}
+<div class="flex flex-col gap-5" data-swap="picker-{{ block.id }}" {{ block.shopify_attributes }}>
+  {%- unless product.has_only_default_variant -%}
+    {%- for option in product.options_with_values -%}
+      {%- capture swatch_mode -%}{%- if s.swatches -%}{% render 'swatch-option', option: option %}{%- endif -%}{%- endcapture -%}
+      {%- liquid
+        assign use_swatch = false
+        if swatch_mode contains 'swatch'
+          assign use_swatch = true
+        endif
+        assign input_name = block.id | append: '-' | append: option.position
+
+        comment
+          Variant image swatches: options named in image_swatch_options (or the first option when that is empty).
+        endcomment
+        assign use_images = false
+        if s.image_swatches
+          assign option_key = option.name | downcase | strip
+          if s.image_swatch_options == blank
+            if option.position == 1
+              assign use_images = true
+            endif
+          else
+            for name in image_option_names
+              assign name_key = name | strip
+              if name_key == option_key
+                assign use_images = true
+              endif
+            endfor
+          endif
+        endif
+        comment
+          Values without a variant image fall back to a colour chip (colour options) or a text button.
+        endcomment
+        assign option_field = 'option' | append: option.position
+      -%}
+      {%- if s.style == 'dropdown' and use_swatch == false and use_images == false -%}
+        <div class="flex flex-col gap-2">
+          <label for="{{ input_name }}" class="type-sm font-semibold">{{ option.name | escape }}</label>
+          <div class="relative">
+            <select id="{{ input_name }}" data-option class="h-12 w-full appearance-none rounded-input border border-border bg-bg ps-4 pe-10">
+              {%- for value in option.values -%}
+                <option value="{{ value | escape }}" data-option-value-id="{{ value.id }}" {% if value.selected %}selected{% endif %}>
+                  {{- value | escape -}}
+                  {%- unless value.available %} — {{ 'products.product.unavailable' | t }}{% endunless -%}
+                </option>
+              {%- endfor -%}
+            </select>
+            {%- render 'icon', name: 'chevron-down', class: 'pointer-events-none absolute top-1/2 end-3 size-5 -translate-y-1/2' -%}
+          </div>
+        </div>
+      {%- else -%}
+        <fieldset class="flex flex-col gap-3" data-option>
+          <legend class="mb-3 type-sm">
+            <span class="font-semibold">{{ option.name | escape }}:</span>
+            <span class="text-muted">{{ option.selected_value | escape }}</span>
+          </legend>
+          <div class="flex flex-wrap gap-2">
+            {%- for value in option.values -%}
+              <label class="group/swatch relative cursor-pointer">
+                <input
+                  type="radio"
+                  class="peer sr-only"
+                  name="{{ input_name }}"
+                  value="{{ value | escape }}"
+                  data-option-value-id="{{ value.id }}"
+                  {% if value.selected %}
+                    checked
+                  {% endif %}
+                >
+                {%- liquid
+                  assign value_image = nil
+                  if use_images
+                    assign value_image = value.variant.featured_image
+                    if value_image == nil
+                      for candidate in product.variants
+                        if candidate[option_field] == value.name and candidate.featured_image
+                          assign value_image = candidate.featured_image
+                          break
+                        endif
+                      endfor
+                    endif
+                  endif
+                -%}
+                {%- if value_image or use_swatch -%}
+                  {%- liquid
+                    assign preview_image = value_image | default: value.swatch.image
+                    assign preview_url = ''
+                    if value.available
+                      assign ring_class = 'ring-transparent group-hover/swatch:ring-border'
+                      assign dim_class = ''
+                    else
+                      assign ring_class = 'ring-error/40'
+                      assign dim_class = 'opacity-60'
+                    endif
+                  -%}
+                  <span class="flex rounded-swatch p-0.5 ring-1 {{ ring_class }} transition peer-checked:ring-2 peer-checked:ring-fg peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 motion-reduce:transition-none">
+                    {%- if value_image -%}
+                      <span class="flex size-14 overflow-hidden rounded-swatch bg-fg/5 {{ dim_class }}">
+                        {{ value_image | image_url: width: 112 | image_tag: widths: '56, 112', sizes: '56px', loading: 'lazy', class: 'size-full object-contain', alt: '' }}
+                      </span>
+                    {%- else -%}
+                      {%- assign chip_class = 'size-8 ' | append: dim_class | strip -%}
+                      {%- capture chip_html -%}{% render 'swatch', value: value, class: chip_class %}{%- endcapture -%}
+                      {{ chip_html }}
+                      {%- liquid
+                        comment
+                          Picture swatches from Theme settings → Color names (file or link): reuse the chip's picture for the preview.
+                        endcomment
+                        if preview_image == nil and chip_html contains "url('"
+                          assign preview_url = chip_html | split: "url('" | last | split: "')" | first
+                        endif
+                      -%}
+                    {%- endif -%}
+                  </span>
+                  <span class="sr-only">{{ value | escape }}{% unless value.available %} — {{ 'products.product.unavailable' | t }}{% endunless %}</span>
+                  {%- unless value.available -%}
+                    <span class="pointer-events-none absolute inset-0 m-auto h-px {% if value_image %}w-16{% else %}w-10{% endif %} -rotate-45 bg-fg" aria-hidden="true"></span>
+                  {%- endunless -%}
+                  <span
+                    class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden w-max -translate-x-1/2 flex-col items-center gap-1 rounded-btn bg-fg px-2 py-1 type-xs whitespace-nowrap text-bg shadow-sm group-hover/swatch:flex peer-focus-visible:flex"
+                    aria-hidden="true"
+                  >
+                    {%- if settings.swatch_image_preview and preview_image -%}
+                      {{ preview_image | image_url: width: 192 | image_tag: widths: '96, 192', sizes: '96px', loading: 'lazy', class: 'size-24 max-w-none shrink-0 rounded-media bg-bg object-contain', alt: '' }}
+                    {%- elsif settings.swatch_image_preview and preview_url != blank -%}
+                      <img src="{{ preview_url }}" class="size-24 max-w-none shrink-0 rounded-media bg-bg object-cover" alt="" loading="lazy" width="96" height="96">
+                    {%- endif -%}
+                    {{- value | escape -}}
+                  </span>
+                {%- else -%}
+                  <span class="flex h-11 min-w-11 items-center justify-center rounded-btn border border-border px-4 type-sm peer-checked:border-fg peer-checked:bg-fg peer-checked:text-bg peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 {% unless value.available %}text-muted line-through{% endunless %}">
+                    {{- value | escape -}}
+                    {%- unless value.available %}<span class="sr-only"> — {{ 'products.product.unavailable' | t }}</span>{% endunless -%}
+                  </span>
+                {%- endif -%}
+              </label>
+            {%- endfor -%}
+          </div>
+        </fieldset>
+      {%- endif -%}
+    {%- endfor -%}
+  {%- endunless -%}
+</div>
+
+{% schema %}
+{
+  "name": "t:blocks.product_variant_picker.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "select",
+      "id": "style",
+      "label": "t:blocks.product_variant_picker.settings.style.label",
+      "options": [
+        { "value": "buttons", "label": "t:blocks.product_variant_picker.settings.style.options.buttons" },
+        { "value": "dropdown", "label": "t:blocks.product_variant_picker.settings.style.options.dropdown" }
+      ],
+      "default": "buttons"
+    },
+    {
+      "type": "checkbox",
+      "id": "swatches",
+      "label": "t:blocks.product_variant_picker.settings.swatches.label",
+      "info": "t:blocks.product_variant_picker.settings.swatches.info_names",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "image_swatches",
+      "label": "t:blocks.product_variant_picker.settings.image_swatches.label",
+      "info": "t:blocks.product_variant_picker.settings.image_swatches.info_fallback",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "image_swatch_options",
+      "label": "t:blocks.product_variant_picker.settings.image_swatch_options.label",
+      "info": "t:blocks.product_variant_picker.settings.image_swatch_options.info",
+      "default": "Color, Colour",
+      "visible_if": "{{ block.settings.image_swatches }}"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.product_variant_picker.name" }]
+}
+{% endschema %}

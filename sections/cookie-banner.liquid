@@ -1,0 +1,205 @@
+{% comment %}
+  @description Cookie consent banner connected to Shopify's Customer Privacy API: appears only to visitors who must be asked (e.g. in the EU) and have not answered yet, with Accept, Decline and an optional "Preferences" panel (analytics, marketing, personalisation) plus a privacy policy link. It is a small card, not a modal: the page stays scrollable and usable (including touch scrolling). Test mode shows it on every load and in the editor.
+  Use when: the "Overlays" section group only, when you want a themed banner instead of Shopify's own (turn Shopify's banner off in Settings → Customer privacy).
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign heading_id = 'CookieBannerHeading-' | append: section.id
+  assign text_id = 'CookieBannerText-' | append: section.id
+  assign privacy_url = s.privacy_url
+  if privacy_url == blank
+    assign privacy_url = shop.privacy_policy.url
+  endif
+
+  case s.position
+    when 'bottom_end'
+      assign position_class = 'md:start-auto md:end-6 md:bottom-6 md:max-w-md'
+    when 'bottom_full'
+      assign position_class = 'md:inset-x-0 md:bottom-0'
+    else
+      assign position_class = 'md:start-6 md:end-auto md:bottom-6 md:max-w-md'
+  endcase
+-%}
+<aw-cookie-banner
+  class="fixed inset-x-0 bottom-0 z-50 block {{ position_class }}"
+  data-section-id="{{ section.id }}"
+  data-delay="{{ s.delay }}"
+  {% if s.test_mode %}
+    data-test-mode
+  {% endif %}
+  hidden
+>
+  <div
+    class="flex flex-col gap-4 rounded-t-card border border-border p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-lg surface-{{ s.color_scheme }} md:rounded-card md:p-6 {% if s.position == 'bottom_full' %}md:rounded-b-none{% endif %} opacity-0 translate-y-4 transition-[opacity,translate] duration-300 ease-out data-[shown]:opacity-100 data-[shown]:translate-y-0"
+    role="dialog"
+    aria-modal="false"
+    aria-labelledby="{{ heading_id }}"
+    aria-describedby="{{ text_id }}"
+    tabindex="-1"
+    data-ref="panel"
+  >
+    <div class="flex items-start justify-between gap-3">
+      <h2 id="{{ heading_id }}" class="type-h6">{{ s.heading | escape }}</h2>
+    </div>
+    <div id="{{ text_id }}" class="rte type-sm text-muted">
+      {{ s.text }}
+      {%- if privacy_url != blank -%}
+        <p><a href="{{ privacy_url }}">{{ s.privacy_label | default: shop.privacy_policy.title | escape }}</a></p>
+      {%- endif -%}
+    </div>
+
+    {%- if s.show_preferences -%}
+      <div class="flex flex-col gap-3 border-t border-border pt-4" id="CookiePreferences-{{ section.id }}" data-ref="preferences" hidden>
+        <label class="flex items-start gap-3 type-sm">
+          <input type="checkbox" class="mt-0.5 size-5 shrink-0 accent-primary" checked disabled>
+          <span><strong>{{ 'popups.cookies.necessary' | t }}</strong><br><span class="text-muted">{{ 'popups.cookies.necessary_help' | t }}</span></span>
+        </label>
+        <label class="flex items-start gap-3 type-sm">
+          <input type="checkbox" class="mt-0.5 size-5 shrink-0 accent-primary" data-consent="analytics">
+          <span><strong>{{ 'popups.cookies.analytics' | t }}</strong><br><span class="text-muted">{{ 'popups.cookies.analytics_help' | t }}</span></span>
+        </label>
+        <label class="flex items-start gap-3 type-sm">
+          <input type="checkbox" class="mt-0.5 size-5 shrink-0 accent-primary" data-consent="marketing">
+          <span><strong>{{ 'popups.cookies.marketing' | t }}</strong><br><span class="text-muted">{{ 'popups.cookies.marketing_help' | t }}</span></span>
+        </label>
+        <label class="flex items-start gap-3 type-sm">
+          <input type="checkbox" class="mt-0.5 size-5 shrink-0 accent-primary" data-consent="preferences">
+          <span><strong>{{ 'popups.cookies.preferences' | t }}</strong><br><span class="text-muted">{{ 'popups.cookies.preferences_help' | t }}</span></span>
+        </label>
+        <button type="button" class="btn btn-secondary" data-action="save">{{ 'popups.cookies.save' | t }}</button>
+      </div>
+    {%- endif -%}
+
+    <div class="flex flex-wrap gap-2">
+      <button type="button" class="btn btn-primary flex-1" data-action="accept">{{ s.accept_label | escape }}</button>
+      <button type="button" class="btn btn-secondary flex-1" data-action="decline">{{ s.decline_label | escape }}</button>
+      {%- if s.show_preferences -%}
+        <button
+          type="button"
+          class="btn btn-link basis-full"
+          data-action="toggle-preferences"
+          aria-expanded="false"
+          aria-controls="CookiePreferences-{{ section.id }}"
+        >
+          {{- 'popups.cookies.manage' | t -}}
+        </button>
+      {%- endif -%}
+    </div>
+  </div>
+</aw-cookie-banner>
+<script src="{{ 'c-cookie-banner.js' | asset_url }}" type="module"></script>
+
+{% schema %}
+{
+  "name": "t:sections.cookie_banner.name",
+  "class": "section-cookie-banner",
+  "enabled_on": {
+    "groups": ["custom.overlay"]
+  },
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:sections.cookie_banner.settings.info"
+    },
+    {
+      "type": "checkbox",
+      "id": "test_mode",
+      "label": "t:sections.newsletter_popup.settings.test_mode.label",
+      "info": "t:sections.cookie_banner.settings.test_mode.info",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "delay",
+      "label": "t:sections.newsletter_popup.settings.delay.label",
+      "min": 0,
+      "max": 30,
+      "step": 1,
+      "unit": "s",
+      "default": 1
+    },
+    {
+      "type": "header",
+      "content": "t:sections.newsletter_popup.settings.content_header"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "t:sections.featured_collection.settings.heading.label",
+      "default": "We use cookies"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:sections.featured_collection.settings.text.label",
+      "default": "<p>We use cookies to run the store, understand how it is used and show relevant content. Choose which cookies you allow.</p>"
+    },
+    {
+      "type": "url",
+      "id": "privacy_url",
+      "label": "t:sections.cookie_banner.settings.privacy_url.label",
+      "info": "t:sections.cookie_banner.settings.privacy_url.info"
+    },
+    {
+      "type": "text",
+      "id": "privacy_label",
+      "label": "t:sections.cookie_banner.settings.privacy_label.label",
+      "default": "Privacy policy"
+    },
+    {
+      "type": "text",
+      "id": "accept_label",
+      "label": "t:sections.cookie_banner.settings.accept_label.label",
+      "default": "Accept all"
+    },
+    {
+      "type": "text",
+      "id": "decline_label",
+      "label": "t:sections.cookie_banner.settings.decline_label.label",
+      "default": "Decline"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_preferences",
+      "label": "t:sections.cookie_banner.settings.show_preferences.label",
+      "info": "t:sections.cookie_banner.settings.show_preferences.info",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "select",
+      "id": "position",
+      "label": "t:sections.newsletter_popup.settings.position.label",
+      "options": [
+        {
+          "value": "bottom_start",
+          "label": "t:sections.newsletter_popup.settings.position.options.bottom_start"
+        },
+        {
+          "value": "bottom_end",
+          "label": "t:sections.newsletter_popup.settings.position.options.bottom_end"
+        },
+        {
+          "value": "bottom_full",
+          "label": "t:sections.cookie_banner.settings.position.options.bottom_full"
+        }
+      ],
+      "default": "bottom_start"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.cookie_banner.name"
+    }
+  ]
+}
+{% endschema %}

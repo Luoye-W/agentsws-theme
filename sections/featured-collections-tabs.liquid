@@ -1,0 +1,324 @@
+{% comment %}
+  @description Up to five collections behind a row of tabs ("New in / Best sellers / Sale"), each showing a product grid or a scrolling row with previous/next buttons and a "View all" link. Accessible tabs: arrow keys, Home / End, only the selected tab in the Tab order. Only the first tab's products are in the initial page; the others load in one request when the visitor first points at, focuses or selects the tabs.
+  Use when: the home page or landing pages need several product sets in the space of one ("Shop by line", "Pro / Lite"). For one collection use "featured-collection".
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign heading_id = 'TabsHeading-' | append: section.id
+
+  comment
+    Section Rendering API responses have no section.index: render every panel then, and in the editor.
+  endcomment
+  assign render_all = false
+  if section.index == nil or request.design_mode
+    assign render_all = true
+  endif
+
+  case s.columns_desktop
+    when 2
+      assign desktop_cols = 'md:grid-cols-2'
+    when 3
+      assign desktop_cols = 'md:grid-cols-3'
+    when 5
+      assign desktop_cols = 'md:grid-cols-3 lg:grid-cols-5'
+    else
+      assign desktop_cols = 'md:grid-cols-3 lg:grid-cols-4'
+  endcase
+
+  if s.layout == 'slider'
+    assign list_class = 'flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] -mx-(--s-gutter) px-(--s-gutter) scroll-px-(--s-gutter) md:mx-0 md:px-0 md:scroll-px-0'
+    assign item_class = 'w-[72%] shrink-0 snap-start md:w-[calc((100%-var(--s-grid-gap)*(min(var(--per-view),3)-1))/min(var(--per-view),3))] lg:w-[calc((100%-var(--s-grid-gap)*(var(--per-view)-1))/var(--per-view))]'
+  elsif s.mobile_layout == 'slider'
+    assign list_class = 'flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] -mx-(--s-gutter) px-(--s-gutter) scroll-px-(--s-gutter) md:mx-0 md:grid md:overflow-visible md:px-0 ' | append: desktop_cols
+    assign item_class = 'w-[72%] shrink-0 snap-start md:w-auto'
+  else
+    assign list_class = 'grid grid-cols-2 ' | append: desktop_cols
+    assign item_class = ''
+  endif
+-%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1)); --per-view: {{ s.columns_desktop }};"
+>
+  <aw-tabs class="page-width flex flex-col gap-6 md:gap-8" data-section-id="{{ section.id }}">
+    {%- render 'section-heading',
+      eyebrow: s.eyebrow,
+      heading: s.heading,
+      text: s.description,
+      alignment: s.heading_alignment,
+      heading_id: heading_id
+    -%}
+    <div
+      class="-mx-(--s-gutter) flex gap-2 overflow-x-auto px-(--s-gutter) py-1 [scrollbar-width:none] {% if s.heading_alignment == 'center' %}md:justify-center{% endif %}"
+      role="tablist"
+      {% if s.heading != blank %}
+        aria-labelledby="{{ heading_id }}"
+      {% else %}
+        aria-label="{{ 'sections.featured_collections_tabs.tablist_label' | t }}"
+      {% endif %}
+    >
+      {%- for block in section.blocks -%}
+        {%- liquid
+          assign tab_id = 'Tab-' | append: section.id | append: '-' | append: block.id
+          assign panel_id = 'TabPanel-' | append: section.id | append: '-' | append: block.id
+          assign tab_label = block.settings.label | strip | escape
+          if tab_label == blank
+            assign tab_label = block.settings.collection.title | escape
+          endif
+          if tab_label == blank
+            assign tab_label = 'sections.featured_collections_tabs.tab_fallback' | t: number: forloop.index
+          endif
+        -%}
+        <button
+          type="button"
+          role="tab"
+          id="{{ tab_id }}"
+          aria-controls="{{ panel_id }}"
+          aria-selected="{{ forloop.first }}"
+          tabindex="{% if forloop.first %}0{% else %}-1{% endif %}"
+          class="shrink-0 cursor-pointer rounded-full border border-border px-5 py-2 type-sm font-semibold whitespace-nowrap transition hover:border-fg aria-selected:border-fg aria-selected:bg-fg aria-selected:text-bg"
+          data-ref="tab"
+          {{ block.shopify_attributes }}
+        >
+          {{- tab_label -}}
+        </button>
+      {%- endfor -%}
+    </div>
+
+    {%- for tab in section.blocks -%}
+      {%- liquid
+        assign tab_id = 'Tab-' | append: section.id | append: '-' | append: tab.id
+        assign panel_id = 'TabPanel-' | append: section.id | append: '-' | append: tab.id
+        assign tab_collection = tab.settings.collection
+      -%}
+      <div role="tabpanel" id="{{ panel_id }}" aria-labelledby="{{ tab_id }}" {% unless forloop.first %}hidden{% endunless %}>
+        {%- if forloop.first or render_all -%}
+          <div class="flex flex-col gap-6" data-swap="panel-{{ tab.id }}">
+            <aw-slider class="flex flex-col gap-4">
+              <ul class="{{ list_class }} grid-gap" role="list" data-ref="track">
+                {%- if tab_collection != blank and tab_collection.products_count > 0 -%}
+                  {%- for product in tab_collection.products limit: s.products_to_show -%}
+                    <li class="{{ item_class }}">
+                      {%- render 'product-card', product: product, sizes: '(min-width: 990px) 25vw, (min-width: 750px) 33vw, 72vw', show_highlights: s.card_show_highlights, rating_chip: s.card_rating_chip -%}
+                    </li>
+                  {%- endfor -%}
+                {%- else -%}
+                  {%- for i in (1..4) -%}
+                    <li class="{{ item_class }} flex flex-col gap-3">
+                      <div class="aspect-square overflow-hidden rounded-card bg-fg/5">{{ 'product-1' | placeholder_svg_tag: 'size-full' }}</div>
+                      <p class="type-body font-medium">{{ 'sections.featured_collection.placeholder_title' | t }}</p>
+                    </li>
+                  {%- endfor -%}
+                {%- endif -%}
+              </ul>
+              {%- if s.layout == 'slider' or s.mobile_layout == 'slider' -%}
+                {%- render 'slider-buttons', class: 'justify-end' -%}
+              {%- endif -%}
+            </aw-slider>
+            {%- if s.show_view_all and tab_collection != blank -%}
+              <a href="{{ tab_collection.url }}" class="btn btn-secondary self-center">
+                {{- 'sections.featured_collection.view_all' | t -}}
+                <span class="sr-only">: {{ tab_collection.title | escape }}</span>
+              </a>
+            {%- endif -%}
+          </div>
+        {%- else -%}
+          <div class="flex min-h-40 items-center justify-center" data-swap="panel-{{ tab.id }}" data-pending>
+            <p class="type-sm text-muted" role="status">{{ 'sections.featured_collections_tabs.loading' | t }}</p>
+          </div>
+        {%- endif -%}
+      </div>
+    {%- endfor -%}
+  </aw-tabs>
+</div>
+<script src="{{ 'c-tabs.js' | asset_url }}" type="module"></script>
+{%- if s.layout == 'slider' or s.mobile_layout == 'slider' -%}
+  <script src="{{ 'c-slider.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.featured_collections_tabs.name",
+  "tag": "section",
+  "class": "section-featured-collections-tabs",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "blocks": [
+    {
+      "type": "tab",
+      "name": "t:blocks.collection_tab.name",
+      "settings": [
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "t:sections.featured_collection.settings.collection.label"
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "t:blocks.collection_tab.settings.label.label",
+          "info": "t:blocks.collection_tab.settings.label.info"
+        }
+      ]
+    }
+  ],
+  "max_blocks": 5,
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:shared.section_heading.header"
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:shared.section_heading.eyebrow"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:shared.section_heading.heading",
+      "default": "Shop the collections"
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "t:shared.section_heading.description"
+    },
+    {
+      "type": "select",
+      "id": "heading_alignment",
+      "label": "t:shared.section_heading.alignment",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        }
+      ],
+      "default": "start"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.featured_collections_tabs.settings.products_header"
+    },
+    {
+      "type": "range",
+      "id": "products_to_show",
+      "label": "t:sections.featured_collection.settings.products_to_show.label",
+      "min": 2,
+      "max": 12,
+      "step": 1,
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "label": "t:shared.columns_desktop",
+      "min": 2,
+      "max": 5,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "t:sections.collection_list.settings.layout.label",
+      "options": [
+        {
+          "value": "grid",
+          "label": "t:sections.testimonials.settings.layout.options.grid"
+        },
+        {
+          "value": "slider",
+          "label": "t:sections.testimonials.settings.layout.options.slider"
+        }
+      ],
+      "default": "grid"
+    },
+    {
+      "type": "select",
+      "id": "mobile_layout",
+      "label": "t:sections.featured_collection.settings.mobile_layout.label",
+      "visible_if": "{{ section.settings.layout == 'grid' }}",
+      "options": [
+        {
+          "value": "slider",
+          "label": "t:sections.featured_collection.settings.mobile_layout.options.slider"
+        },
+        {
+          "value": "grid",
+          "label": "t:sections.featured_collection.settings.mobile_layout.options.grid"
+        }
+      ],
+      "default": "slider"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_view_all",
+      "label": "t:sections.featured_collection.settings.show_view_all.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "card_show_highlights",
+      "label": "t:shared.card_show_highlights.label",
+      "info": "t:shared.card_show_highlights.info",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "card_rating_chip",
+      "label": "t:shared.card_rating_chip.label",
+      "info": "t:shared.card_rating_chip.info",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.featured_collections_tabs.name",
+      "blocks": [
+        {
+          "type": "tab"
+        },
+        {
+          "type": "tab"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,27 @@
+{% doc %}
+  @description Merchant-entered Liquid/HTML code snippet. Classes used here only work if they are in CLASS_VOCAB.md, because this content is never scanned by the CSS build.
+  Use when: a one-off embed (third-party widget code, simple HTML). Prefer a real custom block for anything reused or styled.
+
+  @example
+  {% content_for 'block', type: 'liquid', id: 'embed' %}
+{% enddoc %}
+{{ block.settings.custom_liquid }}
+
+{% schema %}
+{
+  "name": "t:blocks.liquid.name",
+  "settings": [
+    {
+      "type": "liquid",
+      "id": "custom_liquid",
+      "label": "t:blocks.liquid.settings.custom_liquid.label",
+      "info": "t:blocks.liquid.settings.custom_liquid.info"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:blocks.liquid.name"
+    }
+  ]
+}
+{% endschema %}

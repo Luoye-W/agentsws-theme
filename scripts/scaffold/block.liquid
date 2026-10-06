@@ -1,0 +1,46 @@
+{% doc %}
+  @description __DESCRIPTION__
+  Use when: __USE_WHEN__
+
+  @example
+  {% content_for 'block', type: '__NAME__', id: '__NAME__' %}
+{% enddoc %}
+{%- comment -%}
+  Scaffolded by `npm run new`. Edit freely: this is a custom- file, upgrades never overwrite it.
+  - Map settings to COMPLETE class names ({% case %}) or CSS variables. Never "gap-{{ x }}".
+  - Keep {{ block.shopify_attributes }} on the root element (the schema uses "tag": null).
+  - Every setting label is a t: key: add it to locales/en.default.schema.json AND locales/zh-CN.schema.json.
+{%- endcomment -%}
+<div class="__NAME__ flex flex-col gap-2" {{ block.shopify_attributes }}>
+  {%- if block.settings.heading != blank -%}
+    <p class="type-h5">{{ block.settings.heading }}</p>
+  {%- endif -%}
+  {%- if block.settings.text != blank -%}
+    <div class="rte type-sm text-muted">{{ block.settings.text }}</div>
+  {%- endif -%}
+</div>
+
+{% schema %}
+{
+  "name": "t:blocks.__KEY__.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "t:blocks.__KEY__.settings.heading.label",
+      "default": "__TITLE__"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:blocks.__KEY__.settings.text.label"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:blocks.__KEY__.name"
+    }
+  ]
+}
+{% endschema %}

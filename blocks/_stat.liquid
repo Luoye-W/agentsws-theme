@@ -1,0 +1,75 @@
+{% doc %}
+  @description One figure in a Stats section: the number exactly as it should read ("150K+", "$2.5M", "4.8/5", "98%"), a label and an optional note. When the section animates, the digits count up once on first view (assets/c-counter.js); screen readers always get the final text. Blocks with an empty number are skipped.
+  Use when: only inside the "stats" section, and only for figures you can verify.
+
+  @example
+  {% content_for 'block', type: '_stat', id: 'stat-1' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  assign number = s.number | strip | escape
+
+  case section.settings.number_size
+    when 'medium'
+      assign number_class = 'type-h3'
+    when 'display'
+      assign number_class = 'type-display'
+    else
+      assign number_class = 'type-h1'
+  endcase
+-%}
+{%- if number == blank -%}
+  <div hidden {{ block.shopify_attributes }}></div>
+{%- else -%}
+  <div
+    class="flex flex-col-reverse justify-end gap-2 in-data-[align=center]:items-center in-data-[align=center]:text-center in-data-[card=bordered]:rounded-card in-data-[card=bordered]:border in-data-[card=bordered]:border-border in-data-[card=bordered]:p-6 in-data-[card=filled]:rounded-card in-data-[card=filled]:bg-fg/5 in-data-[card=filled]:p-6"
+    {{ block.shopify_attributes }}
+  >
+    <dt class="flex flex-col gap-1">
+      {%- if s.label != blank -%}<span class="type-body font-semibold">{{ s.label | escape }}</span>{%- endif -%}
+      {%- if s.note != blank -%}<span class="type-sm text-muted">{{ s.note | escape }}</span>{%- endif -%}
+    </dt>
+    <dd class="{{ number_class }} whitespace-nowrap tabular-nums">
+      {%- if section.settings.animate -%}
+        <aw-counter data-duration="{{ section.settings.duration }}">
+          <span data-ref="display" aria-hidden="true">{{ number }}</span>
+          <span class="sr-only">{{ number }}</span>
+        </aw-counter>
+      {%- else -%}
+        {{ number }}
+      {%- endif -%}
+    </dd>
+  </div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:blocks.stat.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "number",
+      "label": "t:blocks.stat.settings.number.label",
+      "info": "t:blocks.stat.settings.number.info",
+      "default": "100+"
+    },
+    {
+      "type": "text",
+      "id": "label",
+      "label": "t:blocks.stat.settings.label.label",
+      "default": "Describe what this number counts"
+    },
+    {
+      "type": "text",
+      "id": "note",
+      "label": "t:blocks.stat.settings.note.label"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:blocks.stat.name"
+    }
+  ]
+}
+{% endschema %}

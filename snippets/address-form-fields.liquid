@@ -1,0 +1,56 @@
+{% doc %}
+  @description Fields of a customer address form: name, company, phone, address lines, city, country / region and province (the province list follows the chosen country through <aw-account-addresses>), postal code and "Set as default". Values and errors come from the surrounding customer_address form.
+  Use when: inside {% form 'customer_address' %} on the addresses page.
+
+  @param {object} form - The customer_address form object
+  @param {string} prefix - Unique id prefix for this form's fields, e.g. "AddressNew" or "AddressEdit-123"
+  @param {boolean} [is_default] - Tick "Set as default address" (the address being edited is the default)
+
+  @example
+  {% render 'address-form-fields', form: form, prefix: 'AddressNew' %}
+{% enddoc %}
+{%- liquid
+  assign first_name_label = 'customer.fields.first_name' | t
+  assign last_name_label = 'customer.fields.last_name' | t
+  assign company_label = 'customer.fields.company' | t
+  assign phone_label = 'customer.fields.phone' | t
+  assign address1_label = 'customer.fields.address1' | t
+  assign address2_label = 'customer.fields.address2' | t
+  assign city_label = 'customer.fields.city' | t
+  assign zip_label = 'customer.fields.zip' | t
+  assign first_name_id = prefix | append: '-first-name'
+  assign last_name_id = prefix | append: '-last-name'
+  assign company_id = prefix | append: '-company'
+  assign phone_id = prefix | append: '-phone'
+  assign address1_id = prefix | append: '-address1'
+  assign address2_id = prefix | append: '-address2'
+  assign city_id = prefix | append: '-city'
+  assign zip_id = prefix | append: '-zip'
+  assign country_id = prefix | append: '-country'
+  assign province_id = prefix | append: '-province'
+  assign default_id = prefix | append: '-default'
+-%}
+<div class="grid gap-4 md:grid-cols-2">
+  {% render 'account-field', name: 'address[first_name]', id: first_name_id, label: first_name_label, value: form.first_name, autocomplete: 'given-name' %}
+  {% render 'account-field', name: 'address[last_name]', id: last_name_id, label: last_name_label, value: form.last_name, autocomplete: 'family-name' %}
+  {% render 'account-field', name: 'address[company]', id: company_id, label: company_label, value: form.company, autocomplete: 'organization' %}
+  {% render 'account-field', type: 'tel', name: 'address[phone]', id: phone_id, label: phone_label, value: form.phone, autocomplete: 'tel' %}
+  {% render 'account-field', name: 'address[address1]', id: address1_id, label: address1_label, value: form.address1, autocomplete: 'address-line1' %}
+  {% render 'account-field', name: 'address[address2]', id: address2_id, label: address2_label, value: form.address2, autocomplete: 'address-line2' %}
+  {% render 'account-field', name: 'address[city]', id: city_id, label: city_label, value: form.city, autocomplete: 'address-level2' %}
+  <div class="flex flex-col gap-1.5">
+    <label for="{{ country_id }}" class="type-sm font-medium">{{ 'customer.fields.country' | t }}</label>
+    <select id="{{ country_id }}" name="address[country]" class="field" autocomplete="country" data-country-select data-default="{{ form.country | escape }}" data-province-target="{{ province_id }}">
+      {{ all_country_option_tags }}
+    </select>
+  </div>
+  <div class="flex flex-col gap-1.5" data-province-wrapper="{{ province_id }}">
+    <label for="{{ province_id }}" class="type-sm font-medium">{{ 'customer.fields.province' | t }}</label>
+    <select id="{{ province_id }}" name="address[province]" class="field" autocomplete="address-level1" data-default="{{ form.province | escape }}"></select>
+  </div>
+  {% render 'account-field', name: 'address[zip]', id: zip_id, label: zip_label, value: form.zip, autocomplete: 'postal-code', autocapitalize: 'characters' %}
+  <label class="flex items-center gap-3 type-sm md:col-span-2" for="{{ default_id }}">
+    <input type="checkbox" id="{{ default_id }}" name="address[default]" value="1" class="size-5 shrink-0 accent-primary" {% if is_default %}checked{% endif %}>
+    {{ 'customer.addresses.set_default' | t }}
+  </label>
+</div>

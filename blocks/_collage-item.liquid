@@ -1,0 +1,251 @@
+{% doc %}
+  @description One tile of a Collage section: an image, a video, a product (image, title, price) or a collection (image, title). Spans 1–12 of the 12 desktop columns and 1–4 rows; full or half width on mobile. Image, product and collection tiles are fully clickable and named after their title (or the link label). The text over the tile can add a subtitle line under the title and an arrow at the end.
+  Use when: only inside the "collage" section.
+
+  @example
+  {% content_for 'block', type: '_collage-item', id: 'tile-1' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  assign kind = s.media_type
+  assign image = s.image
+  assign link = s.link
+  assign title = s.heading | escape
+  assign product = blank
+  assign collection = blank
+
+  case kind
+    when 'product'
+      assign product = s.product
+      if product != blank
+        assign image = s.image | default: product.featured_image
+        assign link = product.url
+        if title == blank
+          assign title = product.title | escape
+        endif
+      endif
+    when 'collection'
+      assign collection = s.collection
+      if collection != blank
+        assign image = s.image | default: collection.featured_image
+        assign link = s.link | default: collection.url
+        if title == blank
+          assign title = collection.title | escape
+        endif
+      endif
+  endcase
+
+  assign link_name = s.link_label | escape
+  if link_name == blank
+    assign link_name = title | strip_html
+  endif
+  if link_name == blank
+    assign link_name = image.alt | escape
+  endif
+
+  if s.mobile_width == 'half'
+    assign mobile_span = 1
+  else
+    assign mobile_span = 2
+  endif
+
+  assign image_alt = ''
+  if title == blank
+    assign image_alt = image.alt | escape
+  endif
+
+  assign stretch_link = true
+  if kind == 'video'
+    assign stretch_link = false
+  endif
+
+  assign placeholder = 'lifestyle-1'
+  if kind == 'product'
+    assign placeholder = 'product-1'
+  elsif kind == 'collection'
+    assign placeholder = 'collection-1'
+  endif
+-%}
+<div
+  class="group relative isolate flex flex-col justify-end overflow-hidden rounded-media bg-placeholder col-span-(--collage-span-mobile) row-span-(--collage-rows) md:col-span-(--collage-span)"
+  style="--collage-span: {{ s.column_span }}; --collage-span-mobile: {{ mobile_span }}; --collage-rows: {{ s.row_span }};"
+  {{ block.shopify_attributes }}
+>
+  {%- if kind == 'video' -%}
+    {%- render 'video-player', video: s.video, cover: s.image, autoplay: s.video_autoplay, loop: true, description: s.heading, sizes: '(min-width: 750px) 50vw, 100vw', class: 'absolute inset-0 -z-10 size-full' -%}
+  {%- elsif image != blank -%}
+    {{
+      image
+      | image_url: width: 1800
+      | image_tag:
+        widths: '400, 600, 800, 1000, 1400, 1800',
+        sizes: '(min-width: 990px) 60vw, (min-width: 750px) 70vw, 100vw',
+        loading: 'lazy',
+        alt: image_alt,
+        class: 'absolute inset-0 -z-10 size-full object-cover transition duration-500 group-hover:scale-[1.03]'
+    }}
+  {%- else -%}
+    {{ placeholder | placeholder_svg_tag: 'absolute inset-0 -z-10 size-full object-cover' }}
+  {%- endif -%}
+
+  {%- if title != blank or s.text != blank or s.subtitle != blank or product != blank or link != blank -%}
+    {%- if title != blank or s.text != blank or s.subtitle != blank or product != blank -%}
+      <div class="pointer-events-none absolute inset-x-0 bottom-0 -z-[5] h-2/3 bg-linear-to-t from-[rgb(0_0_0/var(--collage-overlay))] to-transparent" aria-hidden="true"></div>
+    {%- endif -%}
+    <div class="surface-{{ section.settings.text_color_scheme }} pointer-events-none flex items-end justify-between gap-3 bg-transparent p-4 md:p-6">
+      <div class="flex min-w-0 flex-col gap-1">
+        {%- if s.text != blank -%}
+          <p class="type-eyebrow opacity-80">{{ s.text | escape }}</p>
+        {%- endif -%}
+        {%- if link != blank -%}
+          <h3 class="type-h4">
+            <a
+              href="{{ link }}"
+              class="pointer-events-auto no-underline focus-visible:outline-none {% if stretch_link %}after:absolute after:inset-0 after:z-[1] after:rounded-media after:focus-visible:outline-2 after:focus-visible:-outline-offset-4{% else %}underline-offset-4 hover:underline{% endif %}"
+              {% if s.link_label != blank or title == blank %}
+                aria-label="{{ link_name | default: link }}"
+              {% endif %}
+            >
+              {{- title -}}
+            </a>
+          </h3>
+        {%- elsif title != blank -%}
+          <h3 class="type-h4">{{ title }}</h3>
+        {%- endif -%}
+        {%- if s.subtitle != blank -%}
+          <p class="type-sm opacity-90">{{ s.subtitle | escape }}</p>
+        {%- endif -%}
+        {%- if product != blank -%}
+          <div class="type-sm">{% render 'price', product: product, size: 'sm' %}</div>
+        {%- endif -%}
+      </div>
+      {%- if s.show_arrow and link != blank and kind != 'video' -%}
+        {%- render 'icon', name: 'arrow-right', class: 'mb-1 size-5 shrink-0 transition group-hover:translate-x-1 motion-reduce:transition-none rtl:rotate-180' -%}
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+</div>
+
+{% schema %}
+{
+  "name": "t:blocks.collage_item.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "select",
+      "id": "media_type",
+      "label": "t:blocks.collage_item.settings.media_type.label",
+      "options": [
+        { "value": "image", "label": "t:blocks.collage_item.settings.media_type.options.image" },
+        { "value": "video", "label": "t:blocks.collage_item.settings.media_type.options.video" },
+        { "value": "product", "label": "t:blocks.collage_item.settings.media_type.options.product" },
+        { "value": "collection", "label": "t:blocks.collage_item.settings.media_type.options.collection" }
+      ],
+      "default": "image"
+    },
+    {
+      "type": "product",
+      "id": "product",
+      "label": "t:blocks.collage_item.settings.product.label"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "t:sections.featured_collection.settings.collection.label"
+    },
+    {
+      "type": "video",
+      "id": "video",
+      "label": "t:blocks.collage_item.settings.video.label",
+      "visible_if": "{{ block.settings.media_type == 'video' }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "video_autoplay",
+      "label": "t:blocks.collage_item.settings.video_autoplay.label",
+      "info": "t:blocks.collage_item.settings.video_autoplay.info",
+      "default": false,
+      "visible_if": "{{ block.settings.media_type == 'video' }}"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:sections.hero.settings.image.label",
+      "info": "t:blocks.collage_item.settings.image.info"
+    },
+    {
+      "type": "text",
+      "id": "text",
+      "label": "t:sections.featured_collection.settings.eyebrow.label"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "t:blocks.collage_item.settings.heading.label",
+      "info": "t:blocks.collage_item.settings.heading.info"
+    },
+    {
+      "type": "text",
+      "id": "subtitle",
+      "label": "t:blocks.collage_item.settings.subtitle.label",
+      "info": "t:blocks.collage_item.settings.subtitle.info"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_arrow",
+      "label": "t:blocks.collage_item.settings.show_arrow.label",
+      "default": false
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "t:blocks.button.settings.link.label",
+      "visible_if": "{{ block.settings.media_type != 'product' }}"
+    },
+    {
+      "type": "text",
+      "id": "link_label",
+      "label": "t:blocks.collage_item.settings.link_label.label",
+      "info": "t:blocks.collage_item.settings.link_label.info"
+    },
+    {
+      "type": "header",
+      "content": "t:blocks.collage_item.settings.size_header"
+    },
+    {
+      "type": "range",
+      "id": "column_span",
+      "label": "t:blocks.collage_item.settings.column_span.label",
+      "info": "t:blocks.collage_item.settings.column_span.info",
+      "min": 1,
+      "max": 12,
+      "step": 1,
+      "default": 6
+    },
+    {
+      "type": "range",
+      "id": "row_span",
+      "label": "t:blocks.collage_item.settings.row_span.label",
+      "min": 1,
+      "max": 4,
+      "step": 1,
+      "default": 2
+    },
+    {
+      "type": "select",
+      "id": "mobile_width",
+      "label": "t:blocks.collage_item.settings.mobile_width.label",
+      "options": [
+        { "value": "full", "label": "t:blocks.collage_item.settings.mobile_width.options.full" },
+        { "value": "half", "label": "t:blocks.collage_item.settings.mobile_width.options.half" }
+      ],
+      "default": "full"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:blocks.collage_item.name"
+    }
+  ]
+}
+{% endschema %}

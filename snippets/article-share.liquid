@@ -1,0 +1,60 @@
+{% doc %}
+  @description Simple row of share links (Facebook, X, Pinterest, WhatsApp, email) for one page. Which networks appear follows Theme settings → Social media → Sharing. Links open in a new tab and say so to screen readers. Outputs nothing when every network is switched off.
+  Use when: fallback share row on the article page when no Share block is placed there.
+
+  @param {string} url - Absolute URL to share
+  @param {string} title - Title to share
+  @param {object} [image] - Image for Pinterest
+  @param {string} [style] - "pills" (default, network names in outlined pills) or "icons" (round icon buttons after a "Share:" label)
+  @param {string} [trailing] - Rendered HTML shown at the other end of the row (e.g. a comment count link); the row is output even when no network is on
+
+  @example
+  {% render 'article-share', url: share_url, title: article.title, image: article.image %}
+{% enddoc %}
+{%- liquid
+  assign encoded_url = url | url_encode
+  assign encoded_title = title | url_encode
+  assign link_class = 'inline-flex min-h-10 items-center rounded-full border border-border px-4 type-sm no-underline hover:border-fg'
+  assign as_icons = false
+  if style == 'icons'
+    assign as_icons = true
+    assign link_class = 'flex size-10 items-center justify-center rounded-full hover:bg-fg/5'
+  endif
+  assign new_window = 'general.accessibility.new_window' | t
+-%}
+{%- capture share_items -%}
+  {%- if settings.share_facebook -%}
+    <li><a href="https://www.facebook.com/sharer/sharer.php?u={{ encoded_url }}" target="_blank" rel="noopener" class="{{ link_class }}">{%- if as_icons -%}<svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 3.5h-2.2A3.8 3.8 0 0 0 9 7.3v13.2M6.5 11H14"/></svg><span class="sr-only">Facebook {{ new_window }}</span>{%- else -%}Facebook<span class="sr-only"> {{ new_window }}</span>{%- endif -%}</a></li>
+  {%- endif -%}
+  {%- if settings.share_x -%}
+    <li><a href="https://x.com/intent/post?url={{ encoded_url }}&text={{ encoded_title }}" target="_blank" rel="noopener" class="{{ link_class }}">{%- if as_icons -%}<svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 4h4.3l11.7 16h-4.3z"/><path d="M19.5 4l-6.4 7M4.5 20l6.4-7"/></svg><span class="sr-only">X {{ new_window }}</span>{%- else -%}X<span class="sr-only"> {{ new_window }}</span>{%- endif -%}</a></li>
+  {%- endif -%}
+  {%- if settings.share_pinterest -%}
+    {%- liquid
+      assign pin_media = ''
+      if image
+        assign pin_media = image | image_url: width: 1200 | prepend: 'https:' | url_encode
+      endif
+    -%}
+    <li><a href="https://pinterest.com/pin/create/button/?url={{ encoded_url }}&description={{ encoded_title }}{% if pin_media != blank %}&media={{ pin_media }}{% endif %}" target="_blank" rel="noopener" class="{{ link_class }}">{%- if as_icons -%}<svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M11.2 11l-2 9"/><path d="M9.6 14.2c-1.4-3.6.8-6.7 3.5-6.7 2.4 0 3.9 1.8 3.4 4.3-.4 2.2-1.9 3.6-3.9 3.2"/></svg><span class="sr-only">Pinterest {{ new_window }}</span>{%- else -%}Pinterest<span class="sr-only"> {{ new_window }}</span>{%- endif -%}</a></li>
+  {%- endif -%}
+  {%- if settings.share_whatsapp -%}
+    <li><a href="https://wa.me/?text={{ encoded_title }}%20{{ encoded_url }}" target="_blank" rel="noopener" class="{{ link_class }}">{%- if as_icons -%}<svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 20l1.2-3.9A8.5 8.5 0 1 1 8.1 19z"/><path d="M9 8.5c0 3.4 3 6.4 6.5 6.5l1-1.6-2-1-1 .9c-1.2-.5-2.4-1.7-2.9-2.9l.9-1-1-2z"/></svg><span class="sr-only">WhatsApp {{ new_window }}</span>{%- else -%}WhatsApp<span class="sr-only"> {{ new_window }}</span>{%- endif -%}</a></li>
+  {%- endif -%}
+  {%- if settings.share_email -%}
+    <li><a href="mailto:?subject={{ encoded_title }}&body={{ encoded_url }}" class="{{ link_class }}">{%- if as_icons -%}{%- render 'icon', name: 'mail', class: 'size-5' -%}<span class="sr-only">{{ 'general.share.email' | t }}</span>{%- else -%}{{ 'general.share.email' | t }}{%- endif -%}</a></li>
+  {%- endif -%}
+{%- endcapture -%}
+{%- if share_items != blank or trailing != blank -%}
+  <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+    {%- if share_items != blank -%}
+      <div class="flex flex-wrap items-center {% if as_icons %}gap-1{% else %}gap-3{% endif %}">
+        <p class="type-sm {% if as_icons %}me-2{% else %}font-semibold{% endif %}">{{ 'general.share.label' | t }}</p>
+        <ul class="flex flex-wrap {% if as_icons %}items-center{% else %}gap-2{% endif %}" role="list">{{ share_items }}</ul>
+      </div>
+    {%- endif -%}
+    {%- if trailing != blank -%}
+      <div class="ms-auto">{{ trailing }}</div>
+    {%- endif -%}
+  </div>
+{%- endif -%}

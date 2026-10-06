@@ -1,0 +1,20 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-article",
+      "settings": {}
+    },
+    "related": {
+      "type": "blog-posts",
+      "settings": {
+        "heading": "More from the blog",
+        "blog": "",
+        "post_count": 3,
+        "exclude_current": true,
+        "related_first": true,
+        "show_view_all": true
+      }
+    }
+  },
+  "order": ["main", "related"]
+}

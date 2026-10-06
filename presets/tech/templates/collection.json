@@ -1,0 +1,181 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-collection",
+      "settings": {
+        "header_style": "banner",
+        "header_image": "shopify://shop_images/78832378-e5d6-4a87-94b9-21ea47157ece.png",
+        "show_breadcrumb": true,
+        "show_description": false,
+        "heading_size": "display",
+        "header_alignment": "start",
+        "banner_height": "large",
+        "banner_content_position": "bottom",
+        "banner_full_width": true,
+        "transparent_header": true,
+        "overlay_opacity": 35,
+        "header_color_scheme": "scheme-3",
+        "subcollection_source": "list",
+        "subcollections": [
+          "demo-tech-all",
+          "reference-monitor-series",
+          "analog-vinyl-foundations",
+          "ergonomic-surface-essentials",
+          "seamless-power-hubs"
+        ],
+        "subcollection_style": "tabs",
+        "subcollection_placement": "toolbar",
+        "subcollection_show_count": true,
+        "products_per_page": 16,
+        "columns_desktop": 4,
+        "columns_mobile": "2",
+        "pagination": "numbers",
+        "card_quick_add": true,
+        "card_show_highlights": true,
+        "enable_filters": true,
+        "filter_layout": "drawer",
+        "enable_sorting": true,
+        "padding_top": 40,
+        "padding_bottom": 96
+      },
+      "blocks": {
+        "promo": {
+          "type": "promo",
+          "settings": {
+            "position": 7,
+            "column_span": "1",
+            "row_span": "1",
+            "image": "shopify://shop_images/36d36cf1-604f-4dd8-a87d-08d4cc371098.png",
+            "overlay_opacity": 45,
+            "heading": "Desk accessories",
+            "text": "<p>Keep your listening setup tidy for years.</p>",
+            "button_label": "View accessories",
+            "link": "shopify://collections/ergonomic-surface-essentials",
+            "content_position": "middle",
+            "content_alignment": "center",
+            "color_scheme": "scheme-3"
+          }
+        }
+      },
+      "block_order": [
+        "promo"
+      ]
+    },
+    "story": {
+      "type": "hero",
+      "settings": {
+        "image": "shopify://shop_images/c55ba300-0e09-4129-8ee7-ceb34f774469.png",
+        "height": "small",
+        "position": "middle_left",
+        "mobile_position": "bottom",
+        "content_align": "start",
+        "text_color_scheme": "scheme-3",
+        "overlay_opacity": 60
+      },
+      "blocks": {
+        "i": {
+          "type": "icon",
+          "settings": {
+            "icon": "headphones"
+          }
+        },
+        "e": {
+          "type": "heading",
+          "settings": {
+            "text": "Studio",
+            "size": "eyebrow",
+            "tag": "p",
+            "alignment": "left"
+          }
+        },
+        "h": {
+          "type": "heading",
+          "settings": {
+            "text": "Dive into pure sound",
+            "size": "h1",
+            "tag": "h2",
+            "alignment": "left"
+          }
+        },
+        "t": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Demo copy \u2014 use this banner to tell the story of the collection: materials, sound, the way it fits a room.</p>",
+            "size": "body",
+            "muted": false,
+            "alignment": "left"
+          }
+        }
+      },
+      "block_order": [
+        "i",
+        "e",
+        "h",
+        "t"
+      ]
+    },
+    "services": {
+      "type": "multicolumn",
+      "settings": {
+        "heading": "",
+        "columns": 4,
+        "columns_mobile": "2",
+        "mobile_layout": "stack",
+        "card_style": "plain",
+        "icon_position": "start",
+        "icon_size": 28,
+        "padding_top": 32,
+        "padding_bottom": 32
+      },
+      "blocks": {
+        "c1": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "chat",
+            "heading": "Customer service",
+            "text": "<p>Real people answer within one business day.</p>"
+          }
+        },
+        "c2": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "truck",
+            "heading": "Shipping",
+            "text": "<p>Describe your delivery promise here.</p>"
+          }
+        },
+        "c3": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "gift",
+            "heading": "Refer a friend",
+            "text": "<p>Explain your referral offer here.</p>"
+          }
+        },
+        "c4": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "lock",
+            "heading": "Secure payment",
+            "text": "<p>Payments are processed by Shopify.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "c1",
+        "c2",
+        "c3",
+        "c4"
+      ]
+    }
+  },
+  "order": [
+    "main",
+    "story",
+    "services"
+  ]
+}

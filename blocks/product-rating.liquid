@@ -1,0 +1,48 @@
+{% doc %}
+  @description Star rating with score and review count from the standard Shopify review metafields (reviews.rating, reviews.rating_count) that review apps fill. Links to the reviews on the page (an element with the anchor id, "reviews" by default). Hidden when the product has no reviews — never shows invented ratings.
+  Use when: product info column, usually under the title. Needs a reviews app that writes the standard metafields.
+
+  @example
+  {% content_for 'block', type: 'product-rating', id: 'rating' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  assign product = closest.product
+  assign rating = product.metafields.reviews.rating.value
+  assign rating_count = product.metafields.reviews.rating_count.value | default: 0
+  assign anchor = s.anchor | remove: '#' | strip
+-%}
+{%- if rating and rating_count > 0 -%}
+  <div class="flex" {{ block.shopify_attributes }}>
+    {%- if anchor != blank -%}
+      <a href="#{{ anchor | escape }}" class="rounded-btn no-underline hover:underline">
+        {% render 'rating', rating: rating, count: rating_count %}
+      </a>
+    {%- else -%}
+      {% render 'rating', rating: rating, count: rating_count %}
+    {%- endif -%}
+  </div>
+{%- elsif request.design_mode -%}
+  <p class="type-xs text-muted" {{ block.shopify_attributes }}>{{ 'blocks.product_rating.empty' | t }}</p>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:blocks.product_rating.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:blocks.product_rating.settings.info"
+    },
+    {
+      "type": "text",
+      "id": "anchor",
+      "label": "t:blocks.product_rating.settings.anchor.label",
+      "info": "t:blocks.product_rating.settings.anchor.info",
+      "default": "reviews"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.product_rating.name" }]
+}
+{% endschema %}

@@ -1,0 +1,145 @@
+{
+  "sections": {
+    "contact": {
+      "type": "contact-form",
+      "settings": {
+        "heading": "Contact us",
+        "heading_size": "display",
+        "heading_tag": "h1",
+        "heading_alignment": "start",
+        "description": "<p>Demo copy \u2014 tell customers how quickly you reply and what to include in their message.</p>",
+        "field_labels": "inside",
+        "show_name": true,
+        "show_phone": true,
+        "show_message": true,
+        "message_required": true,
+        "submit_label": "Send message",
+        "width": "page",
+        "padding_top": 48,
+        "padding_bottom": 96,
+        "layout": "standard",
+        "details_position": "side",
+        "details_style": "plain"
+      },
+      "blocks": {
+        "subject": {
+          "type": "_form-field",
+          "settings": {
+            "type": "select",
+            "label": "Subject",
+            "field_name": "Subject",
+            "options": "Order, Product question, Returns, Other",
+            "placeholder": "Subject",
+            "required": false,
+            "full_width": false
+          }
+        },
+        "address": {
+          "type": "contact-detail",
+          "settings": {
+            "label": "Address",
+            "text": "<p>Street and number<br>Postcode, City, Country</p>",
+            "icon": "none",
+            "show_social": false
+          }
+        },
+        "email": {
+          "type": "contact-detail",
+          "settings": {
+            "label": "Email",
+            "text": "<p><a href=\"mailto:hello@example.com\">hello@example.com</a></p>",
+            "icon": "none",
+            "show_social": false
+          }
+        },
+        "phone": {
+          "type": "contact-detail",
+          "settings": {
+            "label": "Phone",
+            "text": "<p><a href=\"tel:+10000000000\">+1 000 000 0000</a><br>Mon \u2013 Fri: 09:00 \u2013 17:00</p>",
+            "icon": "none",
+            "show_social": false
+          }
+        },
+        "social": {
+          "type": "contact-detail",
+          "settings": {
+            "label": "Follow us",
+            "text": "",
+            "icon": "none",
+            "show_social": true
+          }
+        }
+      },
+      "block_order": [
+        "subject",
+        "address",
+        "email",
+        "phone",
+        "social"
+      ]
+    },
+    "services": {
+      "type": "multicolumn",
+      "settings": {
+        "heading": "",
+        "columns": 4,
+        "columns_mobile": "2",
+        "mobile_layout": "stack",
+        "card_style": "plain",
+        "icon_position": "start",
+        "icon_size": 28,
+        "padding_top": 32,
+        "padding_bottom": 32
+      },
+      "blocks": {
+        "c1": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "chat",
+            "heading": "Customer service",
+            "text": "<p>Real people answer within one business day.</p>"
+          }
+        },
+        "c2": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "truck",
+            "heading": "Shipping",
+            "text": "<p>Describe your delivery promise here.</p>"
+          }
+        },
+        "c3": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "gift",
+            "heading": "Refer a friend",
+            "text": "<p>Explain your referral offer here.</p>"
+          }
+        },
+        "c4": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "lock",
+            "heading": "Secure payment",
+            "text": "<p>Payments are processed by Shopify.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "c1",
+        "c2",
+        "c3",
+        "c4"
+      ]
+    }
+  },
+  "order": [
+    "contact",
+    "services"
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "type": "custom.overlay",
+  "name": "t:sections.groups.overlay",
+  "sections": {
+    "newsletter_popup": {
+      "type": "newsletter-popup",
+      "disabled": true,
+      "settings": {}
+    },
+    "floating_bar": {
+      "type": "floating-bar",
+      "disabled": false,
+      "settings": {
+        "show_on": "home",
+        "position": "start",
+        "show_social": true,
+        "tab_label": "Newsletter",
+        "hide_on_scroll": true,
+        "show_on_mobile": false
+      }
+    },
+    "age_verification": {
+      "type": "age-verification",
+      "disabled": true,
+      "settings": {}
+    },
+    "cookie_banner": {
+      "type": "cookie-banner",
+      "disabled": true,
+      "settings": {}
+    }
+  },
+  "order": [
+    "newsletter_popup",
+    "floating_bar",
+    "age_verification",
+    "cookie_banner"
+  ]
+}

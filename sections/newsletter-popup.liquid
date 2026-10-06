@@ -1,0 +1,299 @@
+{% comment %}
+  @description Email sign-up popup that opens after a delay: heading, text, optional image (desktop only), email form with consent line, success / error message. Remembers a close for N days and a sign-up for a year; can be limited to the home page and hidden from logged-in customers. Accessible dialog: focus stays inside, Escape and the always-visible close button close it, focus returns afterwards; bottom sheet on phones. Test mode shows it on every load and while the section is selected in the editor.
+  Use when: the "Overlays" section group only (rendered on every page by the layout).
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign render_popup = true
+  unless request.design_mode
+    if s.pages == 'home' and request.page_type != 'index'
+      assign render_popup = false
+    endif
+    if s.hide_for_customers and customer
+      assign render_popup = false
+    endif
+  endunless
+
+  case s.position
+    when 'bottom_start'
+      assign position_class = 'md:mt-auto md:mb-8 md:ms-8 md:me-auto'
+    when 'bottom_end'
+      assign position_class = 'md:mt-auto md:mb-8 md:ms-auto md:me-8'
+    else
+      assign position_class = 'md:m-auto'
+  endcase
+
+  if s.image != blank
+    assign width_class = 'md:max-w-3xl'
+  else
+    assign width_class = 'md:max-w-lg'
+  endif
+
+  assign form_id = 'NewsletterPopupForm-' | append: section.id
+  assign heading_id = 'NewsletterPopupHeading-' | append: section.id
+-%}
+{%- if render_popup -%}
+  <aw-popup
+    data-section-id="{{ section.id }}"
+    data-key="newsletter"
+    data-delay="{{ s.delay }}"
+    data-days="{{ s.frequency_days }}"
+    data-form-id="{{ form_id }}"
+    {% if s.test_mode %}
+      data-test-mode
+    {% endif %}
+  >
+    <aw-modal id="NewsletterPopup-{{ section.id }}">
+      <dialog
+        data-ref="dialog"
+        class="m-auto mb-0 max-h-[90dvh] w-full max-w-none overflow-y-auto rounded-t-card p-0 backdrop:bg-overlay surface-{{ s.color_scheme }} opacity-0 translate-y-6 transition-[opacity,translate,display,overlay] transition-discrete duration-300 ease-out open:opacity-100 open:translate-y-0 starting:open:opacity-0 starting:open:translate-y-6 md:w-[calc(100%-4rem)] md:rounded-card {{ width_class }} {{ position_class }}"
+        aria-labelledby="{{ heading_id }}"
+      >
+        <div class="relative flex">
+          {%- if s.image != blank -%}
+            <div class="hidden w-2/5 shrink-0 md:block">
+              {{
+                s.image
+                | image_url: width: 800
+                | image_tag: widths: '400, 600, 800', sizes: '320px', loading: 'lazy', alt: '', class: 'size-full object-cover'
+              }}
+            </div>
+          {%- endif -%}
+          <div class="flex min-w-0 flex-1 flex-col gap-4 p-6 pe-14 md:p-10 md:pe-14 {% if s.text_alignment == 'center' %}items-center text-center{% endif %}">
+            {%- if s.eyebrow != blank -%}<p class="type-eyebrow text-muted">{{ s.eyebrow | escape }}</p>{%- endif -%}
+            <h2 id="{{ heading_id }}" class="type-h3">{{ s.heading | default: shop.name | escape }}</h2>
+            {%- if s.text != blank -%}<div class="rte text-muted">{{ s.text }}</div>{%- endif -%}
+
+            {%- if s.show_form -%}
+              {%- form 'customer', id: form_id, class: 'flex w-full flex-col gap-3' -%}
+                <input type="hidden" name="contact[tags]" value="newsletter,popup">
+                {%- if form.posted_successfully? -%}
+                  <p class="flex items-center gap-2 font-semibold text-success" role="status" data-popup-success>
+                    {%- render 'icon', name: 'check', class: 'size-5' -%}
+                    {{- 'sections.newsletter.success' | t -}}
+                  </p>
+                {%- else -%}
+                  <div class="flex flex-col gap-2">
+                    <label for="{{ form_id }}-email" class="sr-only">{{ 'sections.newsletter.label' | t }}</label>
+                    <input
+                      type="email"
+                      id="{{ form_id }}-email"
+                      name="contact[email]"
+                      required
+                      autocomplete="email"
+                      placeholder="{{ 'sections.newsletter.label' | t }}"
+                      value="{{ form.email }}"
+                      class="field h-12 aria-invalid:border-error"
+                      {% if form.errors %}
+                        aria-invalid="true" aria-describedby="{{ form_id }}-error"
+                      {% endif %}
+                    >
+                    {%- assign submit_label = s.button_label -%}
+                    {%- if submit_label == blank -%}
+                      {%- assign submit_label = 'sections.newsletter.submit' | t -%}
+                    {%- endif -%}
+                    <button type="submit" class="btn btn-primary h-12">{{ submit_label | escape }}</button>
+                  </div>
+                  {%- if form.errors -%}
+                    <p id="{{ form_id }}-error" class="type-sm text-error" role="alert">
+                      {{- form.errors.translated_fields.email | capitalize }} {{ form.errors.messages.email -}}
+                    </p>
+                  {%- endif -%}
+                  {%- if s.consent_text != blank -%}
+                    <div class="rte type-xs text-muted">{{ s.consent_text }}</div>
+                  {%- endif -%}
+                {%- endif -%}
+              {%- endform -%}
+            {%- endif -%}
+
+            {%- if s.link_label != blank and s.link != blank -%}
+              <a href="{{ s.link }}" class="btn btn-secondary">{{ s.link_label | escape }}</a>
+            {%- endif -%}
+          </div>
+          <button
+            type="button"
+            class="absolute end-2 top-2 flex size-11 items-center justify-center rounded-full bg-bg/80"
+            data-modal-close
+            aria-label="{{ 'general.accessibility.close' | t }}"
+          >
+            {%- render 'icon', name: 'close', class: 'size-6' -%}
+          </button>
+        </div>
+      </dialog>
+    </aw-modal>
+  </aw-popup>
+  <script src="{{ 'c-modal.js' | asset_url }}" type="module"></script>
+  <script src="{{ 'c-popup.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.newsletter_popup.name",
+  "class": "section-newsletter-popup",
+  "enabled_on": {
+    "groups": ["custom.overlay"]
+  },
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "test_mode",
+      "label": "t:sections.newsletter_popup.settings.test_mode.label",
+      "info": "t:sections.newsletter_popup.settings.test_mode.info",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "delay",
+      "label": "t:sections.newsletter_popup.settings.delay.label",
+      "min": 0,
+      "max": 60,
+      "step": 1,
+      "unit": "s",
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "frequency_days",
+      "label": "t:sections.newsletter_popup.settings.frequency_days.label",
+      "info": "t:sections.newsletter_popup.settings.frequency_days.info",
+      "min": 1,
+      "max": 90,
+      "step": 1,
+      "unit": "d",
+      "default": 30
+    },
+    {
+      "type": "select",
+      "id": "pages",
+      "label": "t:sections.newsletter_popup.settings.pages.label",
+      "options": [
+        {
+          "value": "all",
+          "label": "t:sections.newsletter_popup.settings.pages.options.all"
+        },
+        {
+          "value": "home",
+          "label": "t:sections.newsletter_popup.settings.pages.options.home"
+        }
+      ],
+      "default": "home"
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_for_customers",
+      "label": "t:sections.newsletter_popup.settings.hide_for_customers.label",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "t:sections.newsletter_popup.settings.content_header"
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "t:sections.main_blog.settings.eyebrow.label"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "t:sections.featured_collection.settings.heading.label",
+      "default": "Join our newsletter"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:sections.featured_collection.settings.text.label",
+      "default": "<p>Tell visitors what they get for signing up, for example news about launches and restocks.</p>"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_form",
+      "label": "t:sections.newsletter_popup.settings.show_form.label",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "t:sections.newsletter_popup.settings.button_label.label",
+      "info": "t:sections.newsletter_popup.settings.button_label.info",
+      "visible_if": "{{ section.settings.show_form }}"
+    },
+    {
+      "type": "richtext",
+      "id": "consent_text",
+      "label": "t:sections.main_password.settings.consent_text.label",
+      "info": "t:sections.main_password.settings.consent_text.info",
+      "default": "<p>By signing up you agree to receive emails from us. You can unsubscribe at any time.</p>",
+      "visible_if": "{{ section.settings.show_form }}"
+    },
+    {
+      "type": "text",
+      "id": "link_label",
+      "label": "t:sections.newsletter_popup.settings.link_label.label"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "t:blocks.button.settings.link.label"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:sections.newsletter_popup.settings.image.label",
+      "info": "t:sections.newsletter_popup.settings.image.info"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "select",
+      "id": "position",
+      "label": "t:sections.newsletter_popup.settings.position.label",
+      "info": "t:sections.newsletter_popup.settings.position.info",
+      "options": [
+        {
+          "value": "center",
+          "label": "t:sections.newsletter_popup.settings.position.options.center"
+        },
+        {
+          "value": "bottom_start",
+          "label": "t:sections.newsletter_popup.settings.position.options.bottom_start"
+        },
+        {
+          "value": "bottom_end",
+          "label": "t:sections.newsletter_popup.settings.position.options.bottom_end"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "select",
+      "id": "text_alignment",
+      "label": "t:shared.text_alignment",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        }
+      ],
+      "default": "start"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.newsletter_popup.name"
+    }
+  ]
+}
+{% endschema %}

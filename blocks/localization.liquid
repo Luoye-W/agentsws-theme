@@ -1,0 +1,38 @@
+{% doc %}
+  @description Country / currency and language selectors for Shopify Markets (renders the localization-form snippet). Each selector only appears when the store offers more than one option. Changes apply immediately.
+  Use when: footer or header, once the store sells in several countries or languages (Settings → Markets, Languages).
+
+  @example
+  {% content_for 'block', type: 'localization', id: 'localization' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  assign show_country = false
+  if s.show_country and localization.available_countries.size > 1
+    assign show_country = true
+  endif
+  assign show_language = false
+  if s.show_language and localization.available_languages.size > 1
+    assign show_language = true
+  endif
+  assign form_id = 'Localization-' | append: block.id
+-%}
+<div class="block" {{ block.shopify_attributes }}>
+  {%- if show_country or show_language -%}
+    {% render 'localization-form', form_id: form_id, show_country: show_country, show_language: show_language %}
+  {%- elsif request.design_mode -%}
+    <p class="type-xs text-muted">{{ 'sections.localization.editor_hint' | t }}</p>
+  {%- endif -%}
+</div>
+
+{% schema %}
+{
+  "name": "t:blocks.localization.name",
+  "tag": null,
+  "settings": [
+    { "type": "checkbox", "id": "show_country", "label": "t:blocks.localization.settings.show_country.label", "default": true },
+    { "type": "checkbox", "id": "show_language", "label": "t:blocks.localization.settings.show_language.label", "default": true }
+  ],
+  "presets": [{ "name": "t:blocks.localization.name" }]
+}
+{% endschema %}

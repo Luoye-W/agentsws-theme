@@ -1,0 +1,59 @@
+{% doc %}
+  @description One selling point in a Features section: icon (from the theme's icon set or an uploaded image), short title and one line of text.
+  Use when: only inside the "features" section.
+
+  @example
+  {% content_for 'block', type: '_feature', id: 'feature-1' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  assign icon_alt = s.custom_icon.alt | escape
+-%}
+<li class="flex flex-col gap-3 in-data-[align=center]:items-center" {{ block.shopify_attributes }}>
+  <span class="flex size-12 items-center justify-center rounded-card bg-primary text-on-primary" aria-hidden="true">
+    {%- if s.custom_icon -%}
+      {{ s.custom_icon | image_url: width: 96 | image_tag: class: 'size-7 object-contain', alt: icon_alt, loading: 'lazy' }}
+    {%- else -%}
+      {%- render 'icon', name: s.icon, class: 'size-6' -%}
+    {%- endif -%}
+  </span>
+  <h3 class="type-h6">{{ s.title | escape }}</h3>
+  {%- if s.text != blank -%}
+    <p class="type-sm text-muted">{{ s.text | escape }}</p>
+  {%- endif -%}
+</li>
+
+{% schema %}
+{
+  "name": "t:blocks.feature.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "select",
+      "id": "icon",
+      "label": "t:blocks.feature.settings.icon.label",
+      "options": [
+        { "value": "bluetooth", "label": "t:blocks.feature.settings.icon.options.bluetooth" },
+        { "value": "battery", "label": "t:blocks.feature.settings.icon.options.battery" },
+        { "value": "bolt", "label": "t:blocks.feature.settings.icon.options.bolt" },
+        { "value": "water", "label": "t:blocks.feature.settings.icon.options.water" },
+        { "value": "headphones", "label": "t:blocks.feature.settings.icon.options.headphones" },
+        { "value": "speaker", "label": "t:blocks.feature.settings.icon.options.speaker" },
+        { "value": "shield", "label": "t:blocks.feature.settings.icon.options.shield" },
+        { "value": "truck", "label": "t:blocks.feature.settings.icon.options.truck" },
+        { "value": "return", "label": "t:blocks.feature.settings.icon.options.return" },
+        { "value": "lock", "label": "t:blocks.feature.settings.icon.options.lock" },
+        { "value": "chat", "label": "t:blocks.feature.settings.icon.options.chat" },
+        { "value": "star", "label": "t:blocks.feature.settings.icon.options.star" },
+        { "value": "check", "label": "t:blocks.feature.settings.icon.options.check" },
+        { "value": "globe", "label": "t:blocks.feature.settings.icon.options.globe" }
+      ],
+      "default": "check"
+    },
+    { "type": "image_picker", "id": "custom_icon", "label": "t:blocks.feature.settings.custom_icon.label", "info": "t:blocks.feature.settings.custom_icon.info" },
+    { "type": "text", "id": "title", "label": "t:blocks.image_card.settings.title.label", "default": "Selling point" },
+    { "type": "text", "id": "text", "label": "t:sections.featured_collection.settings.text.label" }
+  ],
+  "presets": [{ "name": "t:blocks.feature.name" }]
+}
+{% endschema %}

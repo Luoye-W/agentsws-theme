@@ -1,0 +1,479 @@
+{% comment %}
+  @description Search page: "Search" / "Search results" heading (size and alignment adjustable) with a search box and "Clear" link; results can include products only, or products with blog posts and pages (post cards with image, tags and date), with optional tabs to narrow to one type; product filters (sidebar, drawer or a row of dropdowns) and sorting, an optional desktop column switch, page numbers / "Load more" / infinite scroll (same grid as collections). When nothing matches: a clear message, optional "popular searches" links from a menu and products from a chosen collection. The same links show before anything is searched.
+  Use when: search template only (templates/search.json).
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+  assign show_filters = false
+  if s.enable_filters and search.filters.size > 0
+    assign show_filters = true
+  endif
+  assign filter_layout = s.filter_layout | default: 'sidebar'
+  assign desktop_cols = 4
+  assign density_options = '3,4,5'
+  if show_filters and filter_layout == 'sidebar'
+    assign desktop_cols = 3
+    assign density_options = '2,3,4'
+  endif
+  assign columns_class = 'grid-cols-2 md:grid-cols-3 lg:grid-cols-(--grid-cols)'
+  assign sort_by = search.sort_by | default: search.default_sort_by
+  assign desktop_form_id = 'Facets-desktop-' | append: section.id
+  assign mobile_form_id = 'Facets-mobile-' | append: section.id
+  assign clear_url = routes.search_url | append: '?q=' | append: search.terms | append: '&type=product&options%5Bprefix%5D=last&sort_by=' | append: sort_by
+
+  assign result_types = s.result_types | default: 'product'
+  assign encoded_terms = search.terms | url_encode
+  assign type_base_url = routes.search_url | append: '?q=' | append: encoded_terms | append: '&options%5Bprefix%5D=last&type='
+  assign active_type = 'all'
+  if search.types.size == 1
+    assign active_type = search.types | first
+  endif
+  assign count_text = 'templates.search.results_count' | t: count: search.results_count
+  if result_types == 'product'
+    assign count_text = ''
+  endif
+
+  case s.heading_size
+    when 'display'
+      assign heading_class = 'type-display'
+    when 'h2'
+      assign heading_class = 'type-h2'
+    else
+      assign heading_class = 'type-h1'
+  endcase
+  if s.heading_alignment == 'center'
+    assign header_class = 'items-center text-center'
+    assign form_class = 'mx-auto w-full max-w-2xl'
+    assign row_class = 'justify-center'
+  else
+    assign header_class = 'items-start text-start'
+    assign form_class = 'w-full max-w-2xl'
+    assign row_class = ''
+  endif
+
+  assign has_suggestions = false
+  if s.suggestions_menu != blank and s.suggestions_menu.links.size > 0
+    assign has_suggestions = true
+  endif
+-%}
+<aw-facets
+  class="block surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--grid-cols: repeat({{ desktop_cols }}, minmax(0, 1fr)); --section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+  data-section="{{ section.id }}"
+  data-grid-root
+>
+  <div class="page-width flex flex-col gap-8">
+    <header class="flex flex-col gap-5 {{ header_class }}">
+      <h1 class="{{ heading_class }}">
+        {%- if search.performed -%}{{ 'templates.search.results_title' | t }}{%- else -%}{{ 'templates.search.title' | t }}{%- endif -%}
+      </h1>
+      <form action="{{ routes.search_url }}" method="get" role="search" class="flex gap-2 {{ form_class }}">
+        <input type="hidden" name="type" value="{{ result_types }}">
+        <input type="hidden" name="options[prefix]" value="last">
+        <label for="SearchInput-{{ section.id }}" class="sr-only">{{ 'templates.search.label' | t }}</label>
+        <div class="relative min-w-0 flex-1">
+          <input
+            type="search"
+            id="SearchInput-{{ section.id }}"
+            name="q"
+            value="{{ search.terms | escape }}"
+            placeholder="{{ 'templates.search.placeholder' | t }}"
+            class="field h-12 w-full {% if search.terms != blank %}pe-20{% endif %} [&::-webkit-search-cancel-button]:appearance-none"
+            autocomplete="off"
+          >
+          {%- if search.terms != blank -%}
+            <a href="{{ routes.search_url }}" class="absolute top-1/2 end-4 -translate-y-1/2 type-sm underline-offset-4 hover:underline">
+              {{- 'templates.search.clear' | t -}}
+            </a>
+          {%- endif -%}
+        </div>
+        <button type="submit" class="btn btn-primary h-12">
+          {%- render 'icon', name: 'search', class: 'size-5' -%}
+          <span class="sr-only md:not-sr-only">{{ 'templates.search.submit' | t }}</span>
+        </button>
+      </form>
+
+      {%- liquid
+        assign show_tabs = false
+        if s.show_type_tabs and search.performed and result_types != 'product'
+          if search.results_count > 0 or active_type != 'all'
+            assign show_tabs = true
+          endif
+        endif
+      -%}
+      {%- if show_tabs -%}
+        {%- assign type_list = 'all,' | append: result_types | split: ',' -%}
+        <nav aria-label="{{ 'templates.search.types_label' | t }}" class="w-full">
+          <ul class="flex gap-2 overflow-x-auto [scrollbar-width:none] {{ row_class }}" role="list">
+            {%- for type in type_list -%}
+              {%- liquid
+                if type == 'all'
+                  assign type_url = type_base_url | append: result_types
+                else
+                  assign type_url = type_base_url | append: type
+                endif
+                assign type_key = 'templates.search.types.' | append: type
+              -%}
+              <li class="shrink-0">
+                <a
+                  href="{{ type_url }}"
+                  class="inline-flex min-h-10 items-center rounded-full border px-4 type-sm no-underline {% if type == active_type %}border-fg bg-fg text-bg{% else %}border-border hover:border-fg{% endif %}"
+                  {% if type == active_type %}
+                    aria-current="page"
+                  {% endif %}
+                >
+                  {{- type_key | t -}}
+                </a>
+              </li>
+            {%- endfor -%}
+          </ul>
+        </nav>
+      {%- endif -%}
+    </header>
+
+    {%- capture suggestions -%}
+      {%- if has_suggestions -%}
+        <nav class="flex flex-col gap-3 {{ header_class }}" aria-labelledby="SearchSuggestions-{{ section.id }}">
+          <h2 id="SearchSuggestions-{{ section.id }}" class="type-h6">{{ 'templates.search.popular' | t }}</h2>
+          <ul class="flex flex-wrap gap-2 {{ row_class }}" role="list">
+            {%- for link in s.suggestions_menu.links -%}
+              <li>
+                <a href="{{ link.url }}" class="inline-flex min-h-10 items-center gap-2 rounded-full border border-border px-4 type-sm no-underline hover:border-fg">
+                  {%- render 'icon', name: 'search', class: 'size-4 text-muted' -%}
+                  {{- link.title | escape -}}
+                </a>
+              </li>
+            {%- endfor -%}
+          </ul>
+        </nav>
+      {%- endif -%}
+    {%- endcapture -%}
+
+    {%- if search.performed and search.results_count == 0 -%}
+      <div class="flex flex-col items-center gap-3 py-8 text-center md:py-12">
+        {%- render 'icon', name: 'search', class: 'size-10 text-muted' -%}
+        <p class="type-h3" role="status">{{ 'templates.search.no_results' | t: terms: search.terms }}</p>
+        <p class="text-muted">{{ 'templates.search.no_results_hint' | t }}</p>
+      </div>
+      {{ suggestions }}
+      {%- if s.empty_collection != blank and s.empty_collection.products_count > 0 -%}
+        <section class="flex flex-col gap-6" aria-labelledby="SearchFallback-{{ section.id }}">
+          {%- if s.empty_heading != blank -%}
+            <h2 id="SearchFallback-{{ section.id }}" class="type-h2">{{ s.empty_heading | escape }}</h2>
+          {%- endif -%}
+          <ul class="grid grid-cols-2 lg:grid-cols-4 grid-gap" role="list">
+            {%- for product in s.empty_collection.products limit: s.empty_products_count -%}
+              <li>
+                {% render 'product-card', product: product, quick_add: s.card_quick_add, show_highlights: s.card_show_highlights, rating_chip: s.card_rating_chip %}
+              </li>
+            {%- endfor -%}
+          </ul>
+        </section>
+      {%- endif -%}
+    {%- elsif search.performed -%}
+      {%- paginate search.results by s.products_per_page -%}
+        {%- if show_filters and filter_layout == 'horizontal' -%}
+          <div class="hidden lg:block" data-swap="facets-desktop-{{ section.id }}">
+            {% render 'facets', results: search, form_id: desktop_form_id, sort_by: sort_by, terms: search.terms, layout: 'horizontal' %}
+          </div>
+        {%- endif -%}
+        <div class="flex gap-10">
+          {%- if show_filters and filter_layout == 'sidebar' -%}
+            <aside class="hidden w-64 shrink-0 lg:block" aria-label="{{ 'collections.filters.title' | t }}">
+              <div class="lg:sticky lg:top-[calc(var(--header-h,0px)+1.5rem)] lg:max-h-[calc(100vh-var(--header-h,0px)-3rem)] lg:overflow-y-auto lg:pe-2" data-swap="facets-desktop-{{ section.id }}">
+                {% render 'facets', results: search, form_id: desktop_form_id, sort_by: sort_by, terms: search.terms, collapsed: s.collapse_filters %}
+              </div>
+            </aside>
+          {%- endif -%}
+          <div class="min-w-0 flex-1">
+            {% render 'results-grid',
+              results: search,
+              products: search.results,
+              paginate: paginate,
+              section_id: section.id,
+              count: search.results_count,
+              count_text: count_text,
+              columns_class: columns_class,
+              show_filters: show_filters,
+              filter_layout: filter_layout,
+              clear_url: clear_url,
+              sort_by: sort_by,
+              show_sort: true,
+              quick_add: s.card_quick_add,
+              show_highlights: s.card_show_highlights,
+              rating_chip: s.card_rating_chip,
+              pagination_style: s.pagination,
+              density_toggle: s.enable_density_toggle,
+              density_options: density_options,
+              density_default: desktop_cols,
+              density_key: 'search'
+            %}
+          </div>
+        </div>
+      {%- endpaginate -%}
+    {%- else -%}
+      {{ suggestions }}
+    {%- endif -%}
+  </div>
+
+  {%- if show_filters -%}
+    <aw-drawer id="FacetsDrawer-{{ section.id }}">
+      <dialog data-ref="dialog" class="m-0 me-auto h-dvh max-h-dvh w-full max-w-sm surface-{{ settings.drawer_color_scheme }} p-0 backdrop:bg-[rgb(0_0_0/0.5)]" aria-labelledby="FacetsDrawerHeading-{{ section.id }}">
+        <div class="flex h-full flex-col">
+          <div class="flex items-center justify-between border-b border-border px-5 py-3">
+            <h2 id="FacetsDrawerHeading-{{ section.id }}" class="type-h5">{{ 'collections.filters.title' | t }}</h2>
+            <button type="button" class="-me-2 flex size-11 items-center justify-center" data-drawer-close aria-label="{{ 'general.accessibility.close' | t }}">
+              {%- render 'icon', name: 'close', class: 'size-6' -%}
+            </button>
+          </div>
+          <div class="flex-1 overflow-y-auto px-5" data-swap="facets-mobile-{{ section.id }}">
+            {% render 'facets', results: search, form_id: mobile_form_id, sort_by: sort_by, terms: search.terms, collapsed: s.collapse_filters %}
+          </div>
+          <div class="border-t border-border px-5 py-4">
+            <button type="button" class="btn btn-primary w-full" data-drawer-close>{{ 'collections.filters.show_results' | t }}</button>
+          </div>
+        </div>
+      </dialog>
+    </aw-drawer>
+  {%- endif -%}
+  <p class="sr-only" aria-live="polite" data-ref="live"></p>
+</aw-facets>
+<script src="{{ 'c-facets.js' | asset_url }}" type="module"></script>
+<script src="{{ 'c-drawer.js' | asset_url }}" type="module"></script>
+{%- if section.settings.card_quick_add -%}
+  <script src="{{ 'c-quick-add.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+{%- if s.pagination == 'load_more' or s.pagination == 'infinite' -%}
+  <script src="{{ 'c-load-more.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+{%- if s.enable_density_toggle -%}
+  <script src="{{ 'c-grid-density.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.main_search.name",
+  "class": "section-main-search",
+  "settings": [
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "t:sections.main_blog.settings.heading_size.label",
+      "options": [
+        {
+          "value": "display",
+          "label": "t:sections.main_blog.settings.heading_size.options.display"
+        },
+        {
+          "value": "h1",
+          "label": "t:sections.main_blog.settings.heading_size.options.h1"
+        },
+        {
+          "value": "h2",
+          "label": "t:sections.main_blog.settings.heading_size.options.h2"
+        }
+      ],
+      "default": "h1"
+    },
+    {
+      "type": "select",
+      "id": "heading_alignment",
+      "label": "t:shared.text_alignment",
+      "options": [
+        {
+          "value": "start",
+          "label": "t:shared.align.options.start"
+        },
+        {
+          "value": "center",
+          "label": "t:shared.align.options.center"
+        }
+      ],
+      "default": "start"
+    },
+    {
+      "type": "select",
+      "id": "result_types",
+      "label": "t:sections.main_search.settings.result_types.label",
+      "info": "t:sections.main_search.settings.result_types.info",
+      "options": [
+        {
+          "value": "product",
+          "label": "t:sections.main_search.settings.result_types.options.product"
+        },
+        {
+          "value": "product,article",
+          "label": "t:sections.main_search.settings.result_types.options.product_article"
+        },
+        {
+          "value": "product,article,page",
+          "label": "t:sections.main_search.settings.result_types.options.all"
+        }
+      ],
+      "default": "product"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_type_tabs",
+      "label": "t:sections.main_search.settings.show_type_tabs.label",
+      "info": "t:sections.main_search.settings.show_type_tabs.info",
+      "default": true,
+      "visible_if": "{{ section.settings.result_types != 'product' }}"
+    },
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "label": "t:sections.main_collection.settings.products_per_page.label",
+      "min": 8,
+      "max": 48,
+      "step": 4,
+      "default": 24
+    },
+    {
+      "type": "select",
+      "id": "pagination",
+      "label": "t:sections.main_collection.settings.pagination.label",
+      "info": "t:sections.main_collection.settings.pagination.info",
+      "options": [
+        {
+          "value": "numbers",
+          "label": "t:sections.main_collection.settings.pagination.options.numbers"
+        },
+        {
+          "value": "load_more",
+          "label": "t:sections.main_collection.settings.pagination.options.load_more"
+        },
+        {
+          "value": "infinite",
+          "label": "t:sections.main_collection.settings.pagination.options.infinite"
+        }
+      ],
+      "default": "numbers"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_density_toggle",
+      "label": "t:sections.main_collection.settings.enable_density_toggle.label",
+      "info": "t:sections.main_collection.settings.enable_density_toggle.info",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_filters",
+      "label": "t:sections.main_collection.settings.enable_filters.label",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "filter_layout",
+      "label": "t:sections.main_collection.settings.filter_layout.label",
+      "info": "t:sections.main_collection.settings.filter_layout.info",
+      "options": [
+        {
+          "value": "sidebar",
+          "label": "t:sections.main_collection.settings.filter_layout.options.sidebar"
+        },
+        {
+          "value": "drawer",
+          "label": "t:sections.main_collection.settings.filter_layout.options.drawer"
+        },
+        {
+          "value": "horizontal",
+          "label": "t:sections.main_collection.settings.filter_layout.options.horizontal"
+        }
+      ],
+      "default": "sidebar",
+      "visible_if": "{{ section.settings.enable_filters }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "collapse_filters",
+      "label": "t:sections.main_collection.settings.collapse_filters.label",
+      "default": false,
+      "visible_if": "{{ section.settings.enable_filters }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "card_quick_add",
+      "label": "t:shared.card_quick_add.label",
+      "info": "t:shared.card_quick_add.info",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "card_show_highlights",
+      "label": "t:shared.card_show_highlights.label",
+      "info": "t:shared.card_show_highlights.info",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "card_rating_chip",
+      "label": "t:shared.card_rating_chip.label",
+      "info": "t:shared.card_rating_chip.info",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:sections.main_search.settings.empty_header"
+    },
+    {
+      "type": "link_list",
+      "id": "suggestions_menu",
+      "label": "t:sections.main_search.settings.suggestions_menu.label",
+      "info": "t:sections.main_search.settings.suggestions_menu.info"
+    },
+    {
+      "type": "collection",
+      "id": "empty_collection",
+      "label": "t:sections.main_search.settings.empty_collection.label",
+      "info": "t:sections.main_search.settings.empty_collection.info"
+    },
+    {
+      "type": "text",
+      "id": "empty_heading",
+      "label": "t:sections.main_search.settings.empty_heading.label",
+      "default": "You might like"
+    },
+    {
+      "type": "range",
+      "id": "empty_products_count",
+      "label": "t:sections.main_search.settings.empty_products_count.label",
+      "min": 2,
+      "max": 12,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,95 @@
+{% comment %}
+  @description Store footer. Holds any theme blocks (logo, menu columns that fold into accordions on phones, text, email sign-up, social links, country/language selectors, app blocks) above a copyright line with optional policy links, payment icons and an optional legal / licensing notice.
+  Use when: footer group only.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+-%}
+<footer class="surface-{{ s.color_scheme }} border-t border-border pt-12 pb-8">
+  <div class="page-width flex flex-col gap-10">
+    <div class="{% render 'flex-layout-classes', direction: 'row', align: 'start', justify: 'between', wrap: true, stack_on_mobile: true %} gap-10">
+      {% content_for 'blocks' %}
+    </div>
+    <div class="flex flex-col gap-4 border-t border-border pt-6 md:flex-row md:items-center md:justify-between">
+      <div class="flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:gap-x-6">
+        <p class="type-xs text-muted">
+          &copy; {{ 'now' | date: '%Y' }}
+          {{ shop.name | link_to: routes.root_url }}
+        </p>
+        {%- if s.show_policy_links and shop.policies.size > 0 -%}
+          <ul class="flex flex-wrap gap-x-4 gap-y-1" role="list">
+            {%- for policy in shop.policies -%}
+              {%- if policy != blank -%}
+                <li><a href="{{ policy.url }}" class="inline-flex min-h-6 items-center type-xs text-muted no-underline hover:text-fg hover:underline">{{ policy.title | escape }}</a></li>
+              {%- endif -%}
+            {%- endfor -%}
+          </ul>
+        {%- endif -%}
+      </div>
+      {%- if s.show_payment_icons and shop.enabled_payment_types.size > 0 -%}
+        <ul class="flex flex-wrap items-center gap-2" role="list">
+          <li class="sr-only">{{ 'sections.footer.payment_methods' | t }}</li>
+          {%- for type in shop.enabled_payment_types -%}
+            <li>{{ type | payment_type_svg_tag: class: 'h-6 w-auto' }}</li>
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+    </div>
+    {%- if s.legal_text != blank -%}
+      <div class="rte max-w-4xl type-xs text-muted">{{ s.legal_text }}</div>
+    {%- endif -%}
+  </div>
+</footer>
+
+{% schema %}
+{
+  "name": "t:sections.footer.name",
+  "tag": "div",
+  "class": "section-footer",
+  "enabled_on": {
+    "groups": [
+      "footer"
+    ]
+  },
+  "blocks": [
+    {
+      "type": "@theme"
+    },
+    {
+      "type": "@app"
+    }
+  ],
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-2"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_policy_links",
+      "label": "t:sections.footer.settings.show_policy_links.label",
+      "info": "t:sections.footer.settings.show_policy_links.info",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_payment_icons",
+      "label": "t:sections.footer.settings.show_payment_icons.label",
+      "default": true
+    },
+    {
+      "type": "richtext",
+      "id": "legal_text",
+      "label": "t:sections.footer.settings.legal_text.label",
+      "info": "t:sections.footer.settings.legal_text.info"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.footer.name"
+    }
+  ]
+}
+{% endschema %}

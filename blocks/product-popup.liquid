@@ -1,0 +1,99 @@
+{% doc %}
+  @description A link or button ("Size guide", "Shipping information", "Need help?") that opens a side panel with the content of a store page. The panel traps focus, closes with Esc, the close button or a click outside, and returns focus to the link. Hidden until a page is chosen.
+  Use when: size charts, delivery / returns details, care instructions or help text that should not crowd the product page. Edit the text in Online Store → Pages.
+
+  @example
+  {% content_for 'block', type: 'product-popup', id: 'size-guide' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  assign popup_page = s.page
+  assign drawer_id = 'Popup-' | append: section.id | append: '-' | append: block.id
+  assign label = s.label | default: popup_page.title
+  if s.style == 'button'
+    assign trigger_class = 'btn btn-secondary w-full'
+  else
+    assign trigger_class = 'inline-flex items-center gap-2 self-start type-sm underline underline-offset-4'
+  endif
+-%}
+{%- if popup_page != blank -%}
+  <div class="flex" {{ block.shopify_attributes }}>
+    <button type="button" class="{{ trigger_class }}" data-drawer-open="{{ drawer_id }}" aria-controls="{{ drawer_id }}" aria-expanded="false" aria-haspopup="dialog">
+      {%- if s.icon != 'none' -%}
+        {%- render 'icon', name: s.icon, class: 'size-5' -%}
+      {%- endif -%}
+      {{- label | escape -}}
+    </button>
+    <aw-drawer id="{{ drawer_id }}">
+      <dialog
+        data-ref="dialog"
+        class="m-0 ms-auto h-dvh max-h-dvh w-full max-w-lg surface-{{ settings.drawer_color_scheme }} p-0 backdrop:bg-overlay"
+        aria-labelledby="{{ drawer_id }}-title"
+      >
+        <div class="flex h-full flex-col">
+          <div class="flex items-center justify-between gap-4 border-b border-border px-5 py-3">
+            <h2 id="{{ drawer_id }}-title" class="type-h5">{{ popup_page.title | escape }}</h2>
+            <button type="button" class="-me-2 flex size-11 items-center justify-center" data-drawer-close aria-label="{{ 'general.accessibility.close' | t }}">
+              {%- render 'icon', name: 'close', class: 'size-6' -%}
+            </button>
+          </div>
+          <div class="rte flex-1 overflow-y-auto px-5 py-6 [&_table]:w-full [&_td]:border [&_td]:border-border [&_td]:p-2 [&_th]:border [&_th]:border-border [&_th]:p-2">
+            {{ popup_page.content }}
+          </div>
+        </div>
+      </dialog>
+    </aw-drawer>
+  </div>
+  <script src="{{ 'c-drawer.js' | asset_url }}" type="module"></script>
+{%- elsif request.design_mode -%}
+  <p class="type-xs text-muted" {{ block.shopify_attributes }}>{{ 'blocks.product_popup.empty' | t }}</p>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:blocks.product_popup.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "page",
+      "id": "page",
+      "label": "t:blocks.product_popup.settings.page.label",
+      "info": "t:blocks.product_popup.settings.page.info"
+    },
+    {
+      "type": "text",
+      "id": "label",
+      "label": "t:blocks.product_popup.settings.label.label",
+      "info": "t:blocks.product_popup.settings.label.info",
+      "default": "Size guide"
+    },
+    {
+      "type": "select",
+      "id": "icon",
+      "label": "t:blocks.feature.settings.icon.label",
+      "options": [
+        { "value": "none", "label": "t:blocks.product_icon_item.settings.icon.options.none" },
+        { "value": "ruler", "label": "t:blocks.product_icon_item.settings.icon.options.ruler" },
+        { "value": "info", "label": "t:blocks.product_icon_item.settings.icon.options.info" },
+        { "value": "help", "label": "t:blocks.product_popup.settings.icon.options.help" },
+        { "value": "truck", "label": "t:blocks.feature.settings.icon.options.truck" },
+        { "value": "return", "label": "t:blocks.feature.settings.icon.options.return" },
+        { "value": "chat", "label": "t:blocks.feature.settings.icon.options.chat" },
+        { "value": "water", "label": "t:blocks.feature.settings.icon.options.water" }
+      ],
+      "default": "ruler"
+    },
+    {
+      "type": "select",
+      "id": "style",
+      "label": "t:blocks.product_popup.settings.style.label",
+      "options": [
+        { "value": "link", "label": "t:blocks.product_popup.settings.style.options.link" },
+        { "value": "button", "label": "t:blocks.product_popup.settings.style.options.button" }
+      ],
+      "default": "link"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.product_popup.name" }]
+}
+{% endschema %}

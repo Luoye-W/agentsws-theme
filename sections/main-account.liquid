@@ -1,0 +1,139 @@
+{% comment %}
+  @description "My account" dashboard (classic accounts): greeting with name and email, log-out button, order history table (order, date, payment, fulfillment, total; cards on phones; paginated) with a "Start shopping" prompt when there are no orders, and a side panel with the default address and a link to manage addresses.
+  Use when: templates/customers/account.json only.
+{% endcomment %}
+{%- assign s = section.settings -%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1));"
+>
+  <div class="page-width flex flex-col gap-10">
+    <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <div class="flex flex-col gap-2">
+        <h1 class="type-h1">{{ 'customer.account.title' | t }}</h1>
+        {%- if customer.first_name != blank -%}
+          <p class="type-lg">{{ 'customer.account.greeting' | t: name: customer.first_name }}</p>
+        {%- endif -%}
+        <p class="text-muted">{{ customer.email }}</p>
+      </div>
+      <a href="{{ routes.account_logout_url }}" class="btn btn-secondary self-start md:self-auto" data-no-prefetch>{{ 'customer.account.log_out' | t }}</a>
+    </div>
+
+    <div class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+      <section class="flex min-w-0 flex-col gap-6" aria-labelledby="OrderHistory-{{ section.id }}">
+        <h2 id="OrderHistory-{{ section.id }}" class="type-h4">{{ 'customer.orders.title' | t }}</h2>
+        {%- paginate customer.orders by s.orders_per_page -%}
+          {%- if customer.orders.size > 0 -%}
+            <table class="w-full border-collapse text-start type-sm">
+              <caption class="sr-only">{{ 'customer.orders.title' | t }}</caption>
+              <thead class="max-md:sr-only">
+                <tr class="border-b border-border text-muted">
+                  <th scope="col" class="py-3 pe-4 text-start font-medium">{{ 'customer.orders.order_number' | t }}</th>
+                  <th scope="col" class="py-3 pe-4 text-start font-medium">{{ 'customer.orders.date' | t }}</th>
+                  <th scope="col" class="py-3 pe-4 text-start font-medium">{{ 'customer.orders.payment_status' | t }}</th>
+                  <th scope="col" class="py-3 pe-4 text-start font-medium">{{ 'customer.orders.fulfillment_status' | t }}</th>
+                  <th scope="col" class="py-3 text-end font-medium">{{ 'customer.orders.total' | t }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {%- for order in customer.orders -%}
+                  <tr class="border-b border-border max-md:grid max-md:grid-cols-2 max-md:gap-3 max-md:py-4">
+                    <th scope="row" class="py-3 pe-4 text-start font-semibold max-md:col-span-2 max-md:py-0">
+                      <a href="{{ order.customer_url }}" class="underline" aria-label="{{ 'customer.orders.order_link' | t: name: order.name }}">{{ order.name }}</a>
+                    </th>
+                    <td class="py-3 pe-4 max-md:py-0">
+                      <span class="block type-xs text-muted md:hidden" aria-hidden="true">{{ 'customer.orders.date' | t }}</span>
+                      {{ order.created_at | time_tag: format: 'date' }}
+                    </td>
+                    <td class="py-3 pe-4 max-md:py-0">
+                      <span class="block type-xs text-muted md:hidden" aria-hidden="true">{{ 'customer.orders.payment_status' | t }}</span>
+                      {{ order.financial_status_label }}
+                    </td>
+                    <td class="py-3 pe-4 max-md:py-0">
+                      <span class="block type-xs text-muted md:hidden" aria-hidden="true">{{ 'customer.orders.fulfillment_status' | t }}</span>
+                      {{ order.fulfillment_status_label }}
+                    </td>
+                    <td class="py-3 text-end max-md:py-0 max-md:text-start">
+                      <span class="block type-xs text-muted md:hidden" aria-hidden="true">{{ 'customer.orders.total' | t }}</span>
+                      {{ order.total_net_amount | money_with_currency }}
+                    </td>
+                  </tr>
+                {%- endfor -%}
+              </tbody>
+            </table>
+            {% render 'pagination', paginate: paginate %}
+          {%- else -%}
+            <div class="flex flex-col items-start gap-4 rounded-card border border-dashed border-border p-6">
+              <p>{{ 'customer.orders.none' | t }}</p>
+              <a href="{{ routes.all_products_collection_url }}" class="btn btn-primary">{{ 'customer.orders.start_shopping' | t }}</a>
+            </div>
+          {%- endif -%}
+        {%- endpaginate -%}
+      </section>
+
+      <aside class="flex flex-col gap-4 rounded-card bg-fg/[0.04] p-6 lg:sticky lg:top-[calc(var(--header-h,0px)+1.5rem)]" aria-labelledby="AccountDetails-{{ section.id }}">
+        <h2 id="AccountDetails-{{ section.id }}" class="type-h5">{{ 'customer.account.details' | t }}</h2>
+        {%- if customer.default_address -%}
+          <div class="type-sm">{{ customer.default_address | format_address }}</div>
+        {%- else -%}
+          <p class="type-sm text-muted">{{ 'customer.addresses.none' | t }}</p>
+        {%- endif -%}
+        <a href="{{ routes.account_addresses_url }}" class="btn btn-primary">
+          {{- 'customer.account.view_addresses' | t: count: customer.addresses_count -}}
+        </a>
+      </aside>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "t:sections.main_account.name",
+  "tag": "section",
+  "class": "section-main-account",
+  "enabled_on": {
+    "templates": ["customers/account"]
+  },
+  "settings": [
+    {
+      "type": "range",
+      "id": "orders_per_page",
+      "label": "t:sections.main_account.settings.orders_per_page.label",
+      "min": 5,
+      "max": 50,
+      "step": 5,
+      "default": 20
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 80
+    }
+  ]
+}
+{% endschema %}

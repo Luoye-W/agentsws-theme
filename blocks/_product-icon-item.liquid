@@ -1,0 +1,72 @@
+{% doc %}
+  @description One row of an icon list: a built-in icon (or an uploaded one) followed by a short text that may contain bold, italic and links. Icon size comes from the parent block (--icon-size).
+  Use when: inside product-icon-list (highlights) or product-trust (shipping / returns / warranty rows). Not placed on its own.
+
+  @example
+  {% content_for 'block', type: '_product-icon-item', id: 'item-1' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+-%}
+{%- if s.text != blank -%}
+  <li class="flex items-start gap-3" {{ block.shopify_attributes }}>
+    {%- if s.custom_icon -%}
+      {%- assign icon_alt = '' -%}
+      <span class="mt-0.5 flex size-[var(--icon-size,1.25rem)] shrink-0 items-center justify-center">
+        {{ s.custom_icon | image_url: width: 96 | image_tag: widths: '48, 96', sizes: '48px', class: 'size-full object-contain', loading: 'lazy', alt: icon_alt }}
+      </span>
+    {%- elsif s.icon != 'none' -%}
+      {%- render 'icon', name: s.icon, class: 'mt-0.5 size-[var(--icon-size,1.25rem)]' -%}
+    {%- endif -%}
+    <span class="min-w-0 [&_a]:underline">{{ s.text }}</span>
+  </li>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:blocks.product_icon_item.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "select",
+      "id": "icon",
+      "label": "t:blocks.feature.settings.icon.label",
+      "options": [
+        { "value": "none", "label": "t:blocks.product_icon_item.settings.icon.options.none" },
+        { "value": "check", "label": "t:blocks.feature.settings.icon.options.check" },
+        { "value": "truck", "label": "t:blocks.feature.settings.icon.options.truck" },
+        { "value": "return", "label": "t:blocks.feature.settings.icon.options.return" },
+        { "value": "shield", "label": "t:blocks.feature.settings.icon.options.shield" },
+        { "value": "lock", "label": "t:blocks.feature.settings.icon.options.lock" },
+        { "value": "chat", "label": "t:blocks.feature.settings.icon.options.chat" },
+        { "value": "star", "label": "t:blocks.feature.settings.icon.options.star" },
+        { "value": "globe", "label": "t:blocks.feature.settings.icon.options.globe" },
+        { "value": "gift", "label": "t:blocks.product_icon_item.settings.icon.options.gift" },
+        { "value": "leaf", "label": "t:blocks.product_icon_item.settings.icon.options.leaf" },
+        { "value": "clock", "label": "t:blocks.product_icon_item.settings.icon.options.clock" },
+        { "value": "pin", "label": "t:blocks.product_icon_item.settings.icon.options.pin" },
+        { "value": "ruler", "label": "t:blocks.product_icon_item.settings.icon.options.ruler" },
+        { "value": "info", "label": "t:blocks.product_icon_item.settings.icon.options.info" },
+        { "value": "bolt", "label": "t:blocks.feature.settings.icon.options.bolt" },
+        { "value": "battery", "label": "t:blocks.feature.settings.icon.options.battery" },
+        { "value": "water", "label": "t:blocks.feature.settings.icon.options.water" },
+        { "value": "headphones", "label": "t:blocks.feature.settings.icon.options.headphones" }
+      ],
+      "default": "check"
+    },
+    {
+      "type": "image_picker",
+      "id": "custom_icon",
+      "label": "t:blocks.feature.settings.custom_icon.label",
+      "info": "t:blocks.feature.settings.custom_icon.info"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "text",
+      "label": "t:blocks.product_icon_item.settings.text.label",
+      "default": "Add a short benefit or promise"
+    }
+  ],
+  "presets": [{ "name": "t:blocks.product_icon_item.name" }]
+}
+{% endschema %}

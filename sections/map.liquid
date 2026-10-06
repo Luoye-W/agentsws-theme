@@ -1,0 +1,242 @@
+{% comment %}
+  @description Store map: a Google Maps view of one address (no API key; standard, grey, muted or dark tint) at a set height, with an optional info card built from any blocks (heading, text, contact details, opening hours, a "Get directions" button). On desktop the card floats over the map in one of six positions; on phones it sits below the map or stays over it. Optional "load on click" shows a fallback image first so nothing is loaded from Google until the visitor asks.
+  Use when: store locations, showroom or pickup point pages, "Visit us" on the contact or about page, event venues.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+
+  case s.card_position
+    when 'top_start'
+      assign card_position_class = 'md:top-8 md:bottom-auto md:start-8 md:end-auto'
+    when 'top_end'
+      assign card_position_class = 'md:top-8 md:bottom-auto md:end-8 md:start-auto'
+    when 'middle_start'
+      assign card_position_class = 'md:top-1/2 md:bottom-auto md:start-8 md:end-auto md:-translate-y-1/2'
+    when 'middle_end'
+      assign card_position_class = 'md:top-1/2 md:bottom-auto md:end-8 md:start-auto md:-translate-y-1/2'
+    when 'bottom_end'
+      assign card_position_class = 'md:bottom-8 md:top-auto md:end-8 md:start-auto'
+    else
+      assign card_position_class = 'md:bottom-8 md:top-auto md:start-8 md:end-auto'
+  endcase
+
+  if s.mobile_layout == 'overlay'
+    assign card_mobile_class = 'absolute inset-x-4 bottom-4 max-h-[calc(100%-2rem)] overflow-y-auto shadow-lg'
+  else
+    assign card_mobile_class = 'relative'
+  endif
+-%}
+{%- capture card_blocks -%}{% content_for 'blocks' %}{%- endcapture -%}
+<div
+  class="surface-{{ s.color_scheme }} pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1)); --map-h: {{ s.height }}px; --map-h-mobile: {{ s.height_mobile }}px;"
+>
+  <div class="{% if s.full_width %}w-full{% else %}page-width{% endif %}">
+    <div class="relative{% if s.full_width == false %} overflow-hidden rounded-media{% endif %}">
+      <div class="relative h-(--map-h-mobile) w-full overflow-hidden md:h-(--map-h)">
+        {%- render 'map-embed',
+          address: s.address,
+          zoom: s.zoom,
+          style: s.map_style,
+          image: s.image,
+          load_on_click: s.load_on_click,
+          show_link: s.show_link
+        -%}
+      </div>
+      {%- if card_blocks != blank -%}
+        <div class="surface-{{ s.card_color_scheme }} {{ card_mobile_class }} flex flex-col items-start gap-4 bg-bg p-6 md:absolute md:max-h-[calc(100%-4rem)] md:w-full md:max-w-sm md:overflow-y-auto md:rounded-card md:p-8 md:shadow-lg {{ card_position_class }}{% if s.mobile_layout == 'overlay' %} rounded-card{% endif %}">
+          {{ card_blocks }}
+        </div>
+      {%- endif -%}
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "t:sections.map.name",
+  "tag": "section",
+  "class": "section-map",
+  "disabled_on": {
+    "groups": ["header", "footer", "custom.overlay"]
+  },
+  "blocks": [
+    {
+      "type": "@theme"
+    },
+    {
+      "type": "@app"
+    }
+  ],
+  "settings": [
+    {
+      "type": "text",
+      "id": "address",
+      "label": "t:blocks.map.settings.address.label",
+      "info": "t:blocks.map.settings.address.info",
+      "default": "151 O'Connor St, Ottawa, ON, Canada"
+    },
+    {
+      "type": "range",
+      "id": "zoom",
+      "label": "t:blocks.map.settings.zoom.label",
+      "min": 3,
+      "max": 20,
+      "step": 1,
+      "default": 15
+    },
+    {
+      "type": "select",
+      "id": "map_style",
+      "label": "t:blocks.map.settings.map_style.label",
+      "options": [
+        { "value": "standard", "label": "t:blocks.map.settings.map_style.options.standard" },
+        { "value": "grey", "label": "t:blocks.map.settings.map_style.options.grey" },
+        { "value": "muted", "label": "t:blocks.map.settings.map_style.options.muted" },
+        { "value": "dark", "label": "t:blocks.map.settings.map_style.options.dark" }
+      ],
+      "default": "grey"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:blocks.map.settings.image.label",
+      "info": "t:blocks.map.settings.image.info"
+    },
+    {
+      "type": "checkbox",
+      "id": "load_on_click",
+      "label": "t:blocks.map.settings.load_on_click.label",
+      "info": "t:blocks.map.settings.load_on_click.info",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_link",
+      "label": "t:blocks.map.settings.show_link.label",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:shared.layout"
+    },
+    {
+      "type": "range",
+      "id": "height",
+      "label": "t:blocks.map.settings.height.label",
+      "min": 300,
+      "max": 900,
+      "step": 10,
+      "unit": "px",
+      "default": 600
+    },
+    {
+      "type": "range",
+      "id": "height_mobile",
+      "label": "t:blocks.map.settings.height_mobile.label",
+      "min": 200,
+      "max": 700,
+      "step": 10,
+      "unit": "px",
+      "default": 360
+    },
+    {
+      "type": "checkbox",
+      "id": "full_width",
+      "label": "t:sections.map.settings.full_width.label",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "card_position",
+      "label": "t:sections.map.settings.card_position.label",
+      "info": "t:sections.map.settings.card_position.info",
+      "options": [
+        { "value": "top_start", "label": "t:sections.map.settings.card_position.options.top_start" },
+        { "value": "top_end", "label": "t:sections.map.settings.card_position.options.top_end" },
+        { "value": "middle_start", "label": "t:sections.map.settings.card_position.options.middle_start" },
+        { "value": "middle_end", "label": "t:sections.map.settings.card_position.options.middle_end" },
+        { "value": "bottom_start", "label": "t:sections.map.settings.card_position.options.bottom_start" },
+        { "value": "bottom_end", "label": "t:sections.map.settings.card_position.options.bottom_end" }
+      ],
+      "default": "bottom_start"
+    },
+    {
+      "type": "select",
+      "id": "mobile_layout",
+      "label": "t:sections.map.settings.mobile_layout.label",
+      "options": [
+        { "value": "stack", "label": "t:sections.map.settings.mobile_layout.options.stack" },
+        { "value": "overlay", "label": "t:sections.map.settings.mobile_layout.options.overlay" }
+      ],
+      "default": "stack"
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "card_color_scheme",
+      "label": "t:sections.map.settings.card_color_scheme.label",
+      "default": "scheme-1"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.map.name",
+      "blocks": [
+        {
+          "type": "heading",
+          "settings": {
+            "text": "Visit our store",
+            "size": "h3",
+            "tag": "h2"
+          }
+        },
+        {
+          "type": "contact-detail",
+          "settings": {
+            "label": "Address",
+            "icon": "map-pin"
+          }
+        },
+        {
+          "type": "contact-detail",
+          "settings": {
+            "label": "Opening hours",
+            "icon": "clock",
+            "text": "<p>Mon – Fri: 10:00 – 18:00<br>Sat: 10:00 – 16:00</p>"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

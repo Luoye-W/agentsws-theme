@@ -1,0 +1,74 @@
+{% doc %}
+  @description Reassurance rows — icon + one line of text each (delivery promise, returns, warranty, secure checkout), grouped into one panel: a soft card with divider lines, or plain rows. Each row is a child block; text can include bold and links (e.g. to the returns policy).
+  Use when: under the buy buttons, to answer "when will it arrive / can I return it" before the shopper asks. Keep promises true to the store's policies.
+
+  @example
+  {% content_for 'block', type: 'product-trust', id: 'trust' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  if s.style == 'plain'
+    assign list_class = 'flex flex-col gap-3'
+  else
+    assign list_class = 'flex flex-col divide-y divide-border rounded-card bg-fg/5 px-4 [&>li]:py-3'
+  endif
+  if s.text_size == 'body'
+    assign size_class = 'type-body'
+  else
+    assign size_class = 'type-sm'
+  endif
+-%}
+<ul class="{{ list_class }} {{ size_class }}" style="--icon-size: {{ s.icon_size }}px;" role="list" {{ block.shopify_attributes }}>
+  {% content_for 'blocks' %}
+</ul>
+
+{% schema %}
+{
+  "name": "t:blocks.product_trust.name",
+  "tag": null,
+  "blocks": [{ "type": "_product-icon-item" }],
+  "settings": [
+    {
+      "type": "select",
+      "id": "style",
+      "label": "t:blocks.product_trust.settings.style.label",
+      "options": [
+        { "value": "card", "label": "t:blocks.product_trust.settings.style.options.card" },
+        { "value": "plain", "label": "t:blocks.product_trust.settings.style.options.plain" }
+      ],
+      "default": "card"
+    },
+    {
+      "type": "range",
+      "id": "icon_size",
+      "label": "t:blocks.product_icon_list.settings.icon_size.label",
+      "min": 16,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "default": 20
+    },
+    {
+      "type": "select",
+      "id": "text_size",
+      "label": "t:blocks.product_icon_list.settings.text_size.label",
+      "options": [
+        { "value": "sm", "label": "t:blocks.product_icon_list.settings.text_size.options.sm" },
+        { "value": "body", "label": "t:blocks.product_icon_list.settings.text_size.options.body" }
+      ],
+      "default": "sm"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:blocks.product_trust.name",
+      "blocks": {
+        "shipping": { "type": "_product-icon-item", "settings": { "icon": "truck", "text": "Add your delivery promise" } },
+        "returns": { "type": "_product-icon-item", "settings": { "icon": "return", "text": "Add your returns policy" } },
+        "checkout": { "type": "_product-icon-item", "settings": { "icon": "lock", "text": "Secure checkout" } }
+      },
+      "block_order": ["shipping", "returns", "checkout"]
+    }
+  ]
+}
+{% endschema %}

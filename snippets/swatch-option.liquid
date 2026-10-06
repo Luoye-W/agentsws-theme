@@ -1,0 +1,29 @@
+{% doc %}
+  @description Prints "swatch" when a product option (or a filter) should be shown as colour chips: its values have swatches set in Shopify admin, or its name is one of Theme settings → Color swatches → "Colour option names" (default "Color, Colour, Finish, 颜色", compared without case). Prints nothing otherwise, so other options stay text buttons. How each chip gets its colour is decided by the swatch snippet.
+  Use when: deciding between swatches and buttons (variant picker, product card, filters). Capture the output.
+
+  @param {object} [option] - A product_option (from product.options_with_values)
+  @param {string} [name] - An option or filter name to check instead (e.g. filter.label)
+
+  @example
+  {% capture swatch_mode %}{% render 'swatch-option', option: option %}{% endcapture %}
+{% enddoc %}
+{%- liquid
+  assign is_swatch = false
+  if option.values.first.swatch
+    assign is_swatch = true
+  else
+    assign option_name = option.name | default: name | downcase | strip
+    assign color_names = settings.swatch_option_names | downcase | split: ','
+    for color_name in color_names
+      assign color_key = color_name | strip
+      if color_key != blank and color_key == option_name
+        assign is_swatch = true
+        break
+      endif
+    endfor
+  endif
+  if is_swatch
+    echo 'swatch'
+  endif
+-%}

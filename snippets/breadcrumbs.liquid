@@ -1,0 +1,84 @@
+{% doc %}
+  @description Breadcrumb trail (Home › optional parent › current page) as a navigation landmark, with matching BreadcrumbList structured data for search engines. The current page is plain text marked aria-current.
+  Use when: page headers that show where the shopper is (collection header, later product or blog pages). Pass store URLs from routes.* or the object's .url.
+
+  @param {string} current_title - Name of the current page
+  @param {string} current_url - Relative URL of the current page (e.g. collection.url)
+  @param {string} [parent_title] - Name of a middle level (e.g. "Collections")
+  @param {string} [parent_url] - Relative URL of the middle level (e.g. routes.collections_url)
+  @param {boolean} [structured_data] - Output BreadcrumbList JSON-LD, default true
+  @param {string} [class] - Extra classes for the nav element
+
+  @example
+  {% render 'breadcrumbs', current_title: collection.title, current_url: collection.url, parent_title: collections_label, parent_url: routes.collections_url %}
+{% enddoc %}
+{%- liquid
+  assign home_label = 'general.breadcrumbs.home' | t
+  assign has_parent = false
+  if parent_title != blank and parent_url != blank
+    assign has_parent = true
+  endif
+  assign emit_schema = true
+  if structured_data == false
+    assign emit_schema = false
+  endif
+-%}
+<nav class="{{ class }}" aria-label="{{ 'general.breadcrumbs.label' | t }}">
+  <ol class="flex flex-wrap items-center gap-x-2 gap-y-1 type-sm" role="list">
+    <li class="flex items-center">
+      <a href="{{ routes.root_url }}" class="flex items-center no-underline opacity-80 hover:opacity-100" title="{{ home_label | escape }}">
+        {%- render 'icon', name: 'home', class: 'size-4' -%}
+        <span class="sr-only">{{ home_label }}</span>
+      </a>
+    </li>
+    {%- if has_parent -%}
+      <li class="flex items-center gap-2">
+        <span class="opacity-50" aria-hidden="true">/</span>
+        <a href="{{ parent_url }}" class="no-underline opacity-80 hover:opacity-100">{{ parent_title | escape }}</a>
+      </li>
+    {%- endif -%}
+    <li class="flex items-center gap-2">
+      <span class="opacity-50" aria-hidden="true">/</span>
+      <span aria-current="page">{{ current_title | escape }}</span>
+    </li>
+  </ol>
+</nav>
+{%- if emit_schema -%}
+  {%- liquid
+    assign home_item = request.origin | append: routes.root_url
+    assign current_item = request.origin | append: current_url
+    assign current_position = 2
+    if has_parent
+      assign parent_item = request.origin | append: parent_url
+      assign current_position = 3
+    endif
+  -%}
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": {{ home_label | json }},
+          "item": {{ home_item | json }}
+        },
+        {%- if has_parent -%}
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": {{ parent_title | json }},
+            "item": {{ parent_item | json }}
+          },
+        {%- endif -%}
+        {
+          "@type": "ListItem",
+          "position": {{ current_position }},
+          "name": {{ current_title | json }},
+          "item": {{ current_item | json }}
+        }
+      ]
+    }
+  </script>
+{%- endif -%}

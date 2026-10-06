@@ -1,0 +1,116 @@
+{% doc %}
+  @description Thin line that separates content. Horizontal, or vertical for use between items in a horizontal group (on mobile, where rows usually stack, a vertical divider turns horizontal). Thickness, length, solid / dashed / dotted style and space around it are settings; the color follows the color scheme's border color. Hidden from screen readers (decorative).
+  Use when: separating groups of blocks, between a heading and a list, or as a vertical rule between items in a row.
+
+  @example
+  {% content_for 'block', type: 'divider', id: 'divider' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+
+  case s.style
+    when 'dashed'
+      assign style_class = 'border-dashed'
+    when 'dotted'
+      assign style_class = 'border-dotted'
+    else
+      assign style_class = 'border-solid'
+  endcase
+
+  if s.orientation == 'vertical'
+    assign wrapper_class = 'w-full py-(--divider-space) md:w-auto md:self-stretch md:px-(--divider-space) md:py-0'
+    assign line_class = 'w-(--divider-length) border-t-(length:--divider-thickness) md:h-(--divider-length) md:w-0 md:border-t-0 md:border-s-(length:--divider-thickness)'
+  else
+    assign wrapper_class = 'w-full py-(--divider-space)'
+    assign line_class = 'w-(--divider-length) border-t-(length:--divider-thickness)'
+  endif
+-%}
+<div
+  class="flex shrink-0 items-center justify-center {{ wrapper_class }}"
+  style="--divider-thickness: {{ s.thickness }}px; --divider-length: {{ s.length }}%; --divider-space: {{ s.spacing }}px;"
+  aria-hidden="true"
+  {{ block.shopify_attributes }}
+>
+  <span class="block border-border {{ style_class }} {{ line_class }}"></span>
+</div>
+
+{% schema %}
+{
+  "name": "t:blocks.divider.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "select",
+      "id": "orientation",
+      "label": "t:blocks.divider.settings.orientation.label",
+      "info": "t:blocks.divider.settings.orientation.info",
+      "options": [
+        {
+          "value": "horizontal",
+          "label": "t:blocks.divider.settings.orientation.options.horizontal"
+        },
+        {
+          "value": "vertical",
+          "label": "t:blocks.divider.settings.orientation.options.vertical"
+        }
+      ],
+      "default": "horizontal"
+    },
+    {
+      "type": "range",
+      "id": "thickness",
+      "label": "t:blocks.divider.settings.thickness.label",
+      "min": 1,
+      "max": 8,
+      "step": 1,
+      "unit": "px",
+      "default": 1
+    },
+    {
+      "type": "range",
+      "id": "length",
+      "label": "t:blocks.divider.settings.length.label",
+      "min": 10,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 100
+    },
+    {
+      "type": "select",
+      "id": "style",
+      "label": "t:blocks.divider.settings.style.label",
+      "options": [
+        {
+          "value": "solid",
+          "label": "t:blocks.divider.settings.style.options.solid"
+        },
+        {
+          "value": "dashed",
+          "label": "t:blocks.divider.settings.style.options.dashed"
+        },
+        {
+          "value": "dotted",
+          "label": "t:blocks.divider.settings.style.options.dotted"
+        }
+      ],
+      "default": "solid"
+    },
+    {
+      "type": "range",
+      "id": "spacing",
+      "label": "t:blocks.divider.settings.spacing.label",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 8
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:blocks.divider.name"
+    }
+  ]
+}
+{% endschema %}

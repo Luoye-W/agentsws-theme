@@ -1,0 +1,243 @@
+{
+  "sections": {
+    "profile": {
+      "type": "image-with-text",
+      "settings": {
+        "image": "shopify://shop_images/2b29ca26-96c3-4683-b7c0-abd1d544bdc0.png",
+        "image_style": "single",
+        "image_position": "end",
+        "image_width": "half",
+        "image_ratio": "portrait",
+        "align": "end",
+        "padding_top": 48,
+        "padding_bottom": 48
+      },
+      "blocks": {
+        "e": {
+          "type": "heading",
+          "settings": {
+            "text": "Our designers",
+            "size": "eyebrow",
+            "tag": "p",
+            "alignment": "left"
+          }
+        },
+        "h": {
+          "type": "heading",
+          "settings": {
+            "text": "Designer name",
+            "size": "display",
+            "tag": "h1",
+            "alignment": "left"
+          }
+        }
+      },
+      "block_order": [
+        "e",
+        "h"
+      ]
+    },
+    "bio": {
+      "type": "container",
+      "settings": {
+        "direction": "row",
+        "align": "start",
+        "justify": "between",
+        "gap": 40,
+        "width": "page",
+        "padding_top": 16,
+        "padding_bottom": 72
+      },
+      "blocks": {
+        "left": {
+          "type": "group",
+          "settings": {
+            "width": "half",
+            "gap": 16
+          },
+          "blocks": {
+            "t": {
+              "type": "text",
+              "settings": {
+                "text": "<p>Demo biography \u2014 where the designer trained, the studios they worked with and how they came to design for the brand.</p><p>Add a second paragraph about their approach to materials and form.</p>",
+                "size": "sm",
+                "muted": true,
+                "alignment": "left"
+              }
+            }
+          },
+          "block_order": [
+            "t"
+          ]
+        },
+        "right": {
+          "type": "group",
+          "settings": {
+            "width": "half",
+            "gap": 16
+          },
+          "blocks": {
+            "t": {
+              "type": "text",
+              "settings": {
+                "text": "<p>Demo copy \u2014 describe the pieces they are best known for and what makes them recognisable.</p><p>Close with what they are working on now.</p>",
+                "size": "sm",
+                "muted": true,
+                "alignment": "left"
+              }
+            }
+          },
+          "block_order": [
+            "t"
+          ]
+        }
+      },
+      "block_order": [
+        "left",
+        "right"
+      ]
+    },
+    "quote": {
+      "type": "image-with-text",
+      "settings": {
+        "image": "shopify://shop_images/65e5906f-483f-4621-9c17-d599148e57c0.png",
+        "image_style": "overlap",
+        "second_image": "shopify://shop_images/4bf3aed8-d59c-46db-bb85-efb8d8c65015.png",
+        "image_rotation": 4,
+        "image_position": "start",
+        "image_width": "half",
+        "image_ratio": "portrait",
+        "align": "center",
+        "color_scheme": "scheme-2",
+        "padding_top": 72,
+        "padding_bottom": 72
+      },
+      "blocks": {
+        "q": {
+          "type": "group",
+          "settings": {
+            "direction": "column",
+            "align": "center",
+            "gap": 20,
+            "width": "full"
+          },
+          "blocks": {
+            "i": {
+              "type": "icon",
+              "settings": {
+                "icon": "quote",
+                "size": 36,
+                "alignment": "center"
+              }
+            },
+            "h": {
+              "type": "heading",
+              "settings": {
+                "text": "Demo quote \u2014 what makes this designer's work stand out, in one or two sentences.",
+                "size": "h3",
+                "tag": "p",
+                "alignment": "center"
+              }
+            },
+            "t": {
+              "type": "text",
+              "settings": {
+                "text": "<p><em>\u2014 Source of the quote</em></p>",
+                "size": "sm",
+                "muted": true,
+                "alignment": "center"
+              }
+            }
+          },
+          "block_order": [
+            "i",
+            "h",
+            "t"
+          ]
+        }
+      },
+      "block_order": [
+        "q"
+      ]
+    },
+    "products": {
+      "type": "featured-collection",
+      "settings": {
+        "heading": "Products by this designer",
+        "collection": "luminous-intervals",
+        "products_to_show": 4,
+        "columns_desktop": 4,
+        "layout": "grid",
+        "mobile_layout": "slider",
+        "show_view_all": false,
+        "padding_top": 72,
+        "padding_bottom": 72
+      }
+    },
+    "services": {
+      "type": "multicolumn",
+      "settings": {
+        "heading": "",
+        "columns": 4,
+        "columns_mobile": "2",
+        "mobile_layout": "stack",
+        "card_style": "filled",
+        "icon_position": "start",
+        "icon_size": 28,
+        "padding_top": 56,
+        "padding_bottom": 56
+      },
+      "blocks": {
+        "c1": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "chat",
+            "heading": "Customer service",
+            "text": "<p>Real people answer within one business day.</p>"
+          }
+        },
+        "c2": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "truck",
+            "heading": "Delivery",
+            "text": "<p>Describe your delivery promise here.</p>"
+          }
+        },
+        "c3": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "gift",
+            "heading": "Refer a friend",
+            "text": "<p>Explain your referral offer here.</p>"
+          }
+        },
+        "c4": {
+          "type": "_column",
+          "settings": {
+            "media": "icon",
+            "icon": "lock",
+            "heading": "Secure payment",
+            "text": "<p>Payments are processed by Shopify.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "c1",
+        "c2",
+        "c3",
+        "c4"
+      ]
+    }
+  },
+  "order": [
+    "profile",
+    "bio",
+    "quote",
+    "products",
+    "services"
+  ]
+}

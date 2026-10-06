@@ -1,0 +1,127 @@
+{% doc %}
+  @description One customer quote in a Testimonials section: the quote, optional star rating (accessible text, no star characters read aloud), author name, role or city, avatar and a link to the product it is about. Blocks with an empty quote, or the untouched placeholder quote, are skipped on the storefront; a real quote carries data-testimonial, which the section uses to stay hidden until one exists. Rating defaults to none — only add one the customer actually gave.
+  Use when: only inside the "testimonials" section, and only with genuine quotes you have permission to publish.
+
+  @example
+  {% content_for 'block', type: '_testimonial', id: 'quote-1' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+  assign quote_text = s.quote | strip_html | strip
+  comment
+    The untouched placeholder quote never reaches the storefront.
+  endcomment
+  if quote_text == 'Add a customer quote'
+    assign quote_text = ''
+  endif
+  assign author = s.author | escape
+  assign avatar_alt = s.avatar.alt | default: s.author | escape
+  assign rating_value = 0
+  if s.rating != 'none'
+    assign rating_value = s.rating | plus: 0
+  endif
+-%}
+{%- if quote_text == blank and request.design_mode == false -%}
+  <li hidden {{ block.shopify_attributes }}></li>
+{%- else -%}
+  <li
+    {% if quote_text != blank %}
+      data-testimonial
+    {% endif %}
+    class="flex shrink-0 snap-start in-data-[layout=slider]:w-[85%] md:in-data-[layout=slider]:w-[calc((100%-1.5rem*(var(--per-view)-1))/var(--per-view))] in-data-[layout=banner]:w-full in-data-[layout=banner]:snap-center md:in-data-[layout=scattered]:w-[min(30rem,60%)] md:in-data-[layout=scattered]:self-center md:in-data-[layout=scattered]:even:self-start md:in-data-[layout=scattered]:nth-[4n+3]:self-end in-data-[card=bordered]:rounded-card in-data-[card=bordered]:border in-data-[card=bordered]:border-border in-data-[card=bordered]:p-6 in-data-[card=filled]:rounded-card in-data-[card=filled]:bg-fg/5 in-data-[card=filled]:p-6 md:in-data-[card=bordered]:p-8 md:in-data-[card=filled]:p-8"
+    {{ block.shopify_attributes }}
+  >
+    <figure class="flex w-full flex-col gap-5 in-data-[align=center]:items-center in-data-[align=center]:text-center">
+      {%- if rating_value > 0 -%}
+        {%- render 'rating', rating: rating_value -%}
+      {%- endif -%}
+      {%- if section.settings.show_quote_icon -%}
+        {%- render 'icon', name: 'quote', class: 'size-8 text-muted' -%}
+      {%- endif -%}
+      <blockquote class="rte type-lg md:in-data-[layout=banner]:type-h4">
+        {%- if quote_text != blank -%}
+          {{ s.quote }}
+        {%- else -%}
+          <p class="text-muted">{{ 'sections.testimonials.empty_quote' | t }}</p>
+        {%- endif -%}
+      </blockquote>
+      {%- if s.author != blank or s.role != blank -%}
+        <figcaption class="mt-auto flex items-center gap-3 in-data-[align=center]:flex-col">
+          {%- if s.avatar != blank -%}
+            {{ s.avatar | image_url: width: 160 | image_tag: widths: '80, 160', sizes: '48px', loading: 'lazy', class: 'size-12 shrink-0 rounded-full object-cover', alt: avatar_alt }}
+          {%- endif -%}
+          <span class="flex flex-col">
+            {%- if s.author != blank -%}<span class="font-semibold">{{ author }}</span>{%- endif -%}
+            {%- if s.role != blank -%}<span class="type-sm text-muted">{{ s.role | escape }}</span>{%- endif -%}
+          </span>
+        </figcaption>
+      {%- endif -%}
+      {%- if s.product != blank -%}
+        <a href="{{ s.product.url }}" class="type-sm inline-flex items-center gap-2 underline underline-offset-4">
+          {{- 'sections.testimonials.product_link' | t: title: s.product.title -}}
+          {%- render 'icon', name: 'arrow-right', class: 'size-4 rtl:rotate-180' -%}
+        </a>
+      {%- endif -%}
+    </figure>
+  </li>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:blocks.testimonial.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "richtext",
+      "id": "quote",
+      "label": "t:blocks.testimonial.settings.quote.label",
+      "info": "t:blocks.testimonial.settings.quote.info",
+      "default": "<p>Add a customer quote</p>"
+    },
+    {
+      "type": "text",
+      "id": "author",
+      "label": "t:blocks.testimonial.settings.author.label",
+      "default": "Customer name"
+    },
+    {
+      "type": "text",
+      "id": "role",
+      "label": "t:blocks.testimonial.settings.role.label",
+      "info": "t:blocks.testimonial.settings.role.info"
+    },
+    {
+      "type": "image_picker",
+      "id": "avatar",
+      "label": "t:blocks.testimonial.settings.avatar.label"
+    },
+    {
+      "type": "select",
+      "id": "rating",
+      "label": "t:blocks.testimonial.settings.rating.label",
+      "info": "t:blocks.testimonial.settings.rating.info",
+      "options": [
+        { "value": "none", "label": "t:blocks.testimonial.settings.rating.options.none" },
+        { "value": "5", "label": "5" },
+        { "value": "4.5", "label": "4.5" },
+        { "value": "4", "label": "4" },
+        { "value": "3.5", "label": "3.5" },
+        { "value": "3", "label": "3" },
+        { "value": "2", "label": "2" },
+        { "value": "1", "label": "1" }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "product",
+      "id": "product",
+      "label": "t:blocks.testimonial.settings.product.label"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:blocks.testimonial.name"
+    }
+  ]
+}
+{% endschema %}

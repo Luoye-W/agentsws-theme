@@ -1,0 +1,276 @@
+{% comment %}
+  @description Scrolling strip of short phrases (brand values, product keywords, promo lines), optionally linked. One separator style for the whole strip (dot, slash, star or none); a phrase that already ends with its own separator gets no second one. Size, font, outline text, speed (pixels per second, never frantic), direction and an optional second row running the other way. Pause button, pauses on hover and focus, and stays still for reduced motion.
+  Use when: a moving divider between sections, a keyword band under the header or above the footer, a campaign slogan strip. Put it in the header or footer group to show the same strip on every page instead of repeating it in templates.
+{% endcomment %}
+{%- liquid
+  assign s = section.settings
+
+  case s.speed
+    when 'slow'
+      assign speed = 30
+    when 'fast'
+      assign speed = 90
+    else
+      assign speed = 55
+  endcase
+
+  if s.font == 'body'
+    case s.text_size
+      when 'small'
+        assign size_class = 'text-lg font-semibold'
+      when 'large'
+        assign size_class = 'text-4xl font-semibold md:text-5xl'
+      when 'xlarge'
+        assign size_class = 'text-5xl font-semibold md:text-7xl'
+      else
+        assign size_class = 'text-2xl font-semibold md:text-3xl'
+    endcase
+  else
+    case s.text_size
+      when 'small'
+        assign size_class = 'type-h6'
+      when 'large'
+        assign size_class = 'type-h1'
+      when 'xlarge'
+        assign size_class = 'type-display'
+      else
+        assign size_class = 'type-h3'
+    endcase
+  endif
+
+  if s.direction == 'right'
+    assign second_direction = 'left'
+  else
+    assign second_direction = 'right'
+  endif
+-%}
+{%- capture marquee_items -%}{% content_for 'blocks' %}{%- endcapture -%}
+<div
+  class="surface-{{ s.color_scheme }} overflow-hidden pt-[calc(var(--section-pt)*0.75)] pb-[calc(var(--section-pb)*0.75)] md:pt-(--section-pt) md:pb-(--section-pb)"
+  style="--section-pt: calc({{ s.padding_top }}px * var(--s-section-scale, 1)); --section-pb: calc({{ s.padding_bottom }}px * var(--s-section-scale, 1)); --marquee-gap: {{ s.gap }}px;"
+  data-separator="{{ s.separator }}"
+  data-outline="{{ s.outline }}"
+>
+  <aw-marquee class="flex flex-col gap-2" data-speed="{{ speed }}">
+    <div class="overflow-hidden" data-ref="row" data-direction="{{ s.direction }}">
+      <div class="flex flex-wrap justify-center in-data-[state=running]:w-max in-data-[state=running]:flex-nowrap" data-ref="track" dir="ltr">
+        <p class="{{ size_class }} flex shrink-0 flex-wrap items-center justify-center gap-x-(--marquee-gap) gap-y-2 px-(--s-gutter) in-data-[state=running]:flex-nowrap in-data-[state=running]:whitespace-nowrap in-data-[state=running]:ps-0 in-data-[state=running]:pe-(--marquee-gap)" data-ref="group">
+          {{ marquee_items }}
+        </p>
+      </div>
+    </div>
+    {%- if s.twin_rows -%}
+      <div class="hidden overflow-hidden opacity-60 in-data-[state=running]:block" data-ref="row" data-direction="{{ second_direction }}" aria-hidden="true" inert>
+        <div class="flex w-max flex-nowrap" data-ref="track" dir="ltr">
+          <p class="{{ size_class }} flex shrink-0 flex-nowrap items-center gap-x-(--marquee-gap) whitespace-nowrap pe-(--marquee-gap)" data-ref="group">
+            {{ marquee_items }}
+          </p>
+        </div>
+      </div>
+    {%- endif -%}
+    <div class="page-width flex justify-end">
+      {%- render 'marquee-toggle' -%}
+    </div>
+  </aw-marquee>
+</div>
+<script src="{{ 'c-marquee.js' | asset_url }}" type="module"></script>
+
+{% schema %}
+{
+  "name": "t:sections.marquee.name",
+  "tag": "section",
+  "class": "section-marquee",
+  "blocks": [
+    {
+      "type": "_marquee-item"
+    }
+  ],
+  "max_blocks": 12,
+  "settings": [
+    {
+      "type": "select",
+      "id": "separator",
+      "label": "t:sections.marquee.settings.separator.label",
+      "info": "t:sections.marquee.settings.separator.info",
+      "options": [
+        {
+          "value": "none",
+          "label": "t:sections.marquee.settings.separator.options.none"
+        },
+        {
+          "value": "dot",
+          "label": "t:sections.marquee.settings.separator.options.dot"
+        },
+        {
+          "value": "slash",
+          "label": "t:sections.marquee.settings.separator.options.slash"
+        },
+        {
+          "value": "star",
+          "label": "t:sections.marquee.settings.separator.options.star"
+        }
+      ],
+      "default": "dot"
+    },
+    {
+      "type": "select",
+      "id": "text_size",
+      "label": "t:sections.marquee.settings.text_size.label",
+      "options": [
+        {
+          "value": "small",
+          "label": "t:sections.marquee.settings.text_size.options.small"
+        },
+        {
+          "value": "medium",
+          "label": "t:sections.marquee.settings.text_size.options.medium"
+        },
+        {
+          "value": "large",
+          "label": "t:sections.marquee.settings.text_size.options.large"
+        },
+        {
+          "value": "xlarge",
+          "label": "t:sections.marquee.settings.text_size.options.xlarge"
+        }
+      ],
+      "default": "medium"
+    },
+    {
+      "type": "select",
+      "id": "font",
+      "label": "t:sections.marquee.settings.font.label",
+      "options": [
+        {
+          "value": "heading",
+          "label": "t:sections.marquee.settings.font.options.heading"
+        },
+        {
+          "value": "body",
+          "label": "t:sections.marquee.settings.font.options.body"
+        }
+      ],
+      "default": "heading"
+    },
+    {
+      "type": "checkbox",
+      "id": "outline",
+      "label": "t:sections.marquee.settings.outline.label",
+      "info": "t:sections.marquee.settings.outline.info",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "gap",
+      "label": "t:shared.gap",
+      "min": 16,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "header",
+      "content": "t:sections.marquee.settings.motion_header"
+    },
+    {
+      "type": "select",
+      "id": "speed",
+      "label": "t:shared.marquee.speed.label",
+      "options": [
+        {
+          "value": "slow",
+          "label": "t:shared.marquee.speed.options.slow"
+        },
+        {
+          "value": "medium",
+          "label": "t:shared.marquee.speed.options.medium"
+        },
+        {
+          "value": "fast",
+          "label": "t:shared.marquee.speed.options.fast"
+        }
+      ],
+      "default": "medium"
+    },
+    {
+      "type": "select",
+      "id": "direction",
+      "label": "t:shared.marquee.direction.label",
+      "options": [
+        {
+          "value": "left",
+          "label": "t:shared.marquee.direction.options.left"
+        },
+        {
+          "value": "right",
+          "label": "t:shared.marquee.direction.options.right"
+        }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "checkbox",
+      "id": "twin_rows",
+      "label": "t:sections.marquee.settings.twin_rows.label",
+      "info": "t:sections.marquee.settings.twin_rows.info",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:shared.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:shared.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:shared.padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:shared.padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 16
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.marquee.name",
+      "blocks": [
+        {
+          "type": "_marquee-item",
+          "settings": {
+            "text": "Add a short phrase"
+          }
+        },
+        {
+          "type": "_marquee-item",
+          "settings": {
+            "text": "Keep each one brief"
+          }
+        },
+        {
+          "type": "_marquee-item",
+          "settings": {
+            "text": "Link it if you like"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

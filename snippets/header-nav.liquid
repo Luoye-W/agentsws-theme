@@ -1,0 +1,143 @@
+{% doc %}
+  @description Desktop main menu for the header: top-level links, dropdowns for two-level items, and a full-width mega panel for three-level items or items matched by a "Mega menu" header block (link columns plus up to three promo cards). Built on details/summary so it works without JavaScript; c-header.js adds hover opening, outside click, Escape and arrow keys. Can render a slice of the menu (split layout).
+  Use when: only inside sections/header.liquid.
+
+  @param {object} menu - The link list
+  @param {string} color_scheme - Header color scheme id (dropdown panels use it)
+  @param {string} active_style - underline, dot or pill
+  @param {object} [mega_blocks] - section.blocks of the header ("mega_menu" section blocks, whose settings Liquid can read)
+  @param {number} [offset] - First top-level link to render (0-based), default 0
+  @param {number} [limit] - Number of top-level links to render, default all
+  @param {string} [label] - aria-label of the nav landmark
+  @param {string} [class] - Classes for the nav element
+
+  @example
+  {% render 'header-nav', menu: menu, color_scheme: s.color_scheme, active_style: s.active_style, mega_blocks: section.blocks %}
+{% enddoc %}
+{%- liquid
+  assign nav_offset = offset | default: 0
+  assign nav_limit = limit | default: menu.links.size
+  assign nav_label = label | default: 'Main'
+
+  case active_style
+    when 'dot'
+      assign item_class = 'relative after:absolute after:bottom-0.5 after:start-1/2 after:size-1.5 after:-translate-x-1/2 rtl:after:translate-x-1/2 after:scale-0 after:rounded-full after:bg-current after:transition-transform hover:after:scale-100'
+      assign item_active_class = 'after:scale-100'
+      assign item_open_class = 'group-open/menu:after:scale-100'
+    when 'pill'
+      assign item_class = 'rounded-full px-3 transition-colors hover:bg-fg hover:text-bg'
+      assign item_active_class = 'bg-fg text-bg'
+      assign item_open_class = 'group-open/menu:bg-fg group-open/menu:text-bg'
+    else
+      assign item_class = 'decoration-1 underline-offset-8 hover:underline'
+      assign item_active_class = 'underline'
+      assign item_open_class = 'group-open/menu:underline'
+  endcase
+-%}
+<nav class="{{ class }}" aria-label="{{ nav_label | escape }}">
+  <ul class="flex flex-wrap items-center gap-x-5 gap-y-1" role="list">
+    {%- for link in menu.links offset: nav_offset limit: nav_limit -%}
+      {%- liquid
+        assign link_index = forloop.index | plus: nav_offset
+        assign link_index_text = link_index | append: ''
+        assign link_handle = link.title | handleize
+
+        assign mega = false
+        for b in mega_blocks
+          if b.type != 'mega_menu'
+            continue
+          endif
+          assign key = b.settings.menu_item | strip
+          assign key_handle = key | handleize
+          if key == blank
+            continue
+          endif
+          if key == link_index_text
+            assign mega = b
+            break
+          endif
+          if key_handle == link_handle
+            assign mega = b
+            break
+          endif
+        endfor
+
+        assign is_mega = false
+        if mega
+          assign is_mega = true
+        endif
+        for child in link.links
+          if child.links.size > 0
+            assign is_mega = true
+            break
+          endif
+        endfor
+
+        assign active_class = ''
+        if link.active or link.child_active
+          assign active_class = item_active_class
+        endif
+      -%}
+      <li {% unless is_mega %}class="relative"{% endunless %}>
+        {%- if link.links.size > 0 or mega -%}
+          <details class="group/menu" data-ref="menu">
+            <summary
+              class="flex min-h-11 cursor-pointer list-none items-center gap-1 type-nav [&::-webkit-details-marker]:hidden {{ item_class }} {{ item_open_class }} {{ active_class }}"
+              data-url="{{ link.url }}"
+            >
+              {{- link.title | escape -}}
+              {%- render 'icon', name: 'chevron-down', class: 'size-4 transition group-open/menu:rotate-180' -%}
+            </summary>
+            {%- if is_mega -%}
+              <div class="absolute inset-x-0 top-full z-20 surface-{{ color_scheme }} border-y border-border shadow-lg" data-ref="panel">
+                <div class="page-width flex gap-10 py-8">
+                  {%- if link.links.size > 0 -%}
+                    <ul class="grid flex-1 grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] content-start gap-x-8 gap-y-6" role="list">
+                      {%- for child in link.links -%}
+                        <li class="flex flex-col gap-3">
+                          <a href="{{ child.url }}" class="type-eyebrow no-underline hover:underline" {% if child.current %}aria-current="page"{% endif %}>{{ child.title | escape }}</a>
+                          {%- if child.links.size > 0 -%}
+                            <ul class="flex flex-col gap-2" role="list">
+                              {%- for grandchild in child.links -%}
+                                <li><a href="{{ grandchild.url }}" class="type-sm text-muted no-underline hover:text-fg" {% if grandchild.current %}aria-current="page"{% endif %}>{{ grandchild.title | escape }}</a></li>
+                              {%- endfor -%}
+                            </ul>
+                          {%- endif -%}
+                        </li>
+                      {%- endfor -%}
+                    </ul>
+                  {%- else -%}
+                    <p class="flex-1">
+                      <a href="{{ link.url }}" class="type-h5 no-underline hover:underline">{{ 'sections.header.view_all' | t: title: link.title }}</a>
+                    </p>
+                  {%- endif -%}
+                  {%- if mega -%}
+                    {% render 'header-mega-promos', mega: mega, editor_attributes: true %}
+                  {%- endif -%}
+                </div>
+              </div>
+            {%- else -%}
+              <ul class="absolute start-0 top-full z-20 mt-2 flex min-w-56 flex-col gap-1 rounded-card border border-border surface-{{ color_scheme }} p-3 shadow-lg" role="list" data-ref="panel">
+                {%- for child in link.links -%}
+                  <li>
+                    <a href="{{ child.url }}" class="block rounded-btn px-3 py-2 no-underline hover:bg-fg/5" {% if child.current %}aria-current="page"{% endif %}>{{ child.title | escape }}</a>
+                  </li>
+                {%- endfor -%}
+              </ul>
+            {%- endif -%}
+          </details>
+        {%- else -%}
+          <a
+            href="{{ link.url }}"
+            class="flex min-h-11 items-center type-nav no-underline {{ item_class }} {{ active_class }}"
+            {% if link.current %}
+              aria-current="page"
+            {% endif %}
+          >
+            {{- link.title | escape -}}
+          </a>
+        {%- endif -%}
+      </li>
+    {%- endfor -%}
+  </ul>
+</nav>

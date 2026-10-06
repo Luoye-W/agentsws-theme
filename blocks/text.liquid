@@ -1,0 +1,79 @@
+{% doc %}
+  @description Rich text paragraph(s) with size and alignment.
+  Use when: body copy, descriptions, short notes. For titles use the "heading" block.
+
+  @example
+  {% content_for 'block', type: 'text', id: 'intro' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+
+  case s.size
+    when 'lg'
+      assign size_class = 'type-lg'
+    when 'sm'
+      assign size_class = 'type-sm'
+    else
+      assign size_class = 'type-body'
+  endcase
+
+  case s.alignment
+    when 'center'
+      assign align_class = 'text-center'
+    when 'right'
+      assign align_class = 'text-end'
+    else
+      assign align_class = 'text-start'
+  endcase
+
+  assign tone_class = ''
+  if s.muted
+    assign tone_class = 'text-muted'
+  endif
+-%}
+<div class="rte {{ size_class }} {{ align_class }} {{ tone_class }} max-w-prose" {{ block.shopify_attributes }}>
+  {{- s.text -}}
+</div>
+
+{% schema %}
+{
+  "name": "t:blocks.text.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:blocks.text.settings.text.label",
+      "default": "<p>Share details about your brand, a product, or a promotion.</p>"
+    },
+    {
+      "type": "select",
+      "id": "size",
+      "label": "t:blocks.text.settings.size.label",
+      "options": [
+        { "value": "sm", "label": "t:blocks.text.settings.size.options.sm" },
+        { "value": "body", "label": "t:blocks.text.settings.size.options.body" },
+        { "value": "lg", "label": "t:blocks.text.settings.size.options.lg" }
+      ],
+      "default": "body"
+    },
+    {
+      "type": "checkbox",
+      "id": "muted",
+      "label": "t:blocks.text.settings.muted.label",
+      "default": false
+    },
+    {
+      "type": "text_alignment",
+      "id": "alignment",
+      "label": "t:shared.text_alignment",
+      "default": "left"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:blocks.text.name"
+    }
+  ]
+}
+{% endschema %}

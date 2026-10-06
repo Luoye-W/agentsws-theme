@@ -1,0 +1,132 @@
+{% comment %}
+  @description Slide-in cart opened from the header cart icon, the mobile dock and after "Add to cart". Free-shipping progress bar, line items with quantity controls, product recommendations based on the first item (with quick add), order note (saved as you type), optional "agree to terms" checkbox that blocks checkout until ticked, subtotal and checkout. When empty: collection tiles and a continue-shopping link. All options live in Theme settings → Cart. Rendered once by the layout; re-rendered through the Section Rendering API after every cart change.
+  Use when: never add to templates — the layout renders it when Theme settings → Cart → Cart type is "Drawer".
+{% endcomment %}
+{%- liquid
+  assign recommendation_limit = settings.cart_recommendations_limit | plus: cart.items.size
+  if recommendation_limit > 10
+    assign recommendation_limit = 10
+  endif
+-%}
+<aw-drawer id="CartDrawer">
+  <dialog
+    data-ref="dialog"
+    class="m-0 ms-auto h-dvh max-h-dvh w-full max-w-md surface-{{ settings.drawer_color_scheme }} p-0 backdrop:bg-[rgb(0_0_0/0.5)]"
+    aria-labelledby="CartDrawerHeading"
+  >
+    <aw-cart-items
+      class="flex h-full flex-col"
+      data-section="{{ section.id }}"
+      data-change-url="{{ routes.cart_change_url }}"
+      data-update-url="{{ routes.cart_update_url }}"
+      data-item-count="{{ cart.item_count }}"
+      data-error-text="{{ 'general.cart.error' | t | escape }}"
+    >
+      <div class="flex items-center justify-between border-b border-border px-5 py-3">
+        <h2 id="CartDrawerHeading" class="type-h5" tabindex="-1" data-ref="heading">
+          {{- 'general.cart.title' | t -}}
+          {%- if cart.item_count > 0 %} <span class="text-muted">({{ cart.item_count }})</span>{% endif -%}
+        </h2>
+        <button type="button" class="-me-2 flex size-11 items-center justify-center" data-drawer-close aria-label="{{ 'general.accessibility.close' | t }}">
+          {%- render 'icon', name: 'close', class: 'size-6' -%}
+        </button>
+      </div>
+
+      {%- if cart.item_count > 0 -%}
+        <div class="flex-1 overflow-y-auto px-5">
+          {%- capture free_shipping -%}{% render 'cart-free-shipping' %}{%- endcapture -%}
+          {%- assign free_shipping = free_shipping | strip -%}
+          {%- if free_shipping != '' -%}
+            <div class="pt-4">{{ free_shipping }}</div>
+          {%- endif -%}
+          {% render 'cart-lines', section_id: section.id %}
+          {%- if settings.cart_show_recommendations -%}
+            <aw-recommendations
+              class="block min-h-px"
+              data-url="{{ routes.product_recommendations_url }}?section_id=cart-recommendations&product_id={{ cart.items.first.product_id }}&limit={{ recommendation_limit }}&intent={{ settings.cart_recommendations_intent }}"
+            ></aw-recommendations>
+          {%- endif -%}
+        </div>
+        <form action="{{ routes.cart_url }}" method="post" class="flex flex-col gap-3 border-t border-border px-5 py-4">
+          {%- if settings.cart_show_note -%}
+            <details class="group/note" {% if cart.note != blank %}open{% endif %}>
+              <summary class="flex min-h-9 cursor-pointer list-none items-center justify-between type-sm font-medium [&::-webkit-details-marker]:hidden">
+                {{- 'general.cart.note' | t -}}
+                {%- render 'icon', name: 'chevron-down', class: 'size-4 transition group-open/note:rotate-180' -%}
+              </summary>
+              <label for="CartDrawerNote" class="sr-only">{{ 'general.cart.note' | t }}</label>
+              <textarea id="CartDrawerNote" name="note" rows="2" class="field mt-2 py-2 type-sm" data-note>{{ cart.note }}</textarea>
+            </details>
+          {%- endif -%}
+          {%- for discount in cart.cart_level_discount_applications -%}
+            <p class="flex justify-between type-sm text-sale">
+              <span>{{ discount.title | escape }}</span><span>−{{ discount.total_allocated_amount | money }}</span>
+            </p>
+          {%- endfor -%}
+          <p class="flex items-baseline justify-between">
+            <span class="font-semibold">{{ 'general.cart.subtotal' | t }}</span>
+            <span class="type-h5">{{ cart.total_price | money_with_currency }}</span>
+          </p>
+          <p class="type-xs text-muted">
+            {%- if cart.taxes_included -%}{{ 'general.cart.taxes_included' | t }}{%- else -%}{{ 'general.cart.taxes_excluded' | t }}{%- endif -%}
+          </p>
+          {% render 'cart-terms', id_suffix: section.id %}
+          <p class="type-sm text-error" role="alert" data-ref="error" hidden></p>
+          <button type="submit" name="checkout" class="btn btn-primary w-full">
+            {%- render 'icon', name: 'lock', class: 'size-4' -%}
+            {{- 'general.cart.checkout' | t -}}
+          </button>
+          <a href="{{ routes.cart_url }}" class="btn btn-link self-center">{{ 'general.cart.view_cart' | t }}</a>
+        </form>
+      {%- else -%}
+        <div class="flex flex-1 flex-col items-center justify-center gap-6 overflow-y-auto px-5 py-8 text-center">
+          <p class="type-h5">{{ 'general.cart.empty' | t }}</p>
+          {%- for collection in settings.cart_empty_collections -%}
+            {%- if forloop.first -%}
+              <ul class="grid w-full grid-cols-2 gap-3 text-start" role="list">
+            {%- endif -%}
+                <li>
+                  <a href="{{ collection.url }}" class="group flex flex-col gap-2 no-underline">
+                    <span class="block aspect-square overflow-hidden rounded-media bg-placeholder">
+                      {%- if collection.featured_image -%}
+                        {{ collection.featured_image | image_url: width: 480 | image_tag: widths: '200, 320, 480', sizes: '(min-width: 450px) 200px, 45vw', class: 'size-full object-cover transition duration-500 group-hover:scale-[1.03]', alt: '', loading: 'lazy' }}
+                      {%- else -%}
+                        {{ 'collection-1' | placeholder_svg_tag: 'size-full' }}
+                      {%- endif -%}
+                    </span>
+                    <span class="flex items-center justify-between gap-2 type-sm font-medium">
+                      {{- collection.title | escape -}}
+                      {%- render 'icon', name: 'arrow-right', class: 'size-4 rtl:rotate-180' -%}
+                    </span>
+                  </a>
+                </li>
+            {%- if forloop.last -%}
+              </ul>
+            {%- endif -%}
+          {%- endfor -%}
+          <a href="{{ routes.all_products_collection_url }}" class="btn btn-primary">{{ 'general.continue_shopping' | t }}</a>
+        </div>
+      {%- endif -%}
+    </aw-cart-items>
+  </dialog>
+</aw-drawer>
+<script src="{{ 'c-drawer.js' | asset_url }}" type="module"></script>
+<script src="{{ 'c-cart-items.js' | asset_url }}" type="module"></script>
+<script src="{{ 'c-quantity.js' | asset_url }}" type="module"></script>
+{%- if settings.cart_show_recommendations -%}
+  <script src="{{ 'c-recommendations.js' | asset_url }}" type="module"></script>
+  <script src="{{ 'c-product-form.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.cart_drawer.name",
+  "class": "section-cart-drawer",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:sections.cart_drawer.settings.hint"
+    }
+  ]
+}
+{% endschema %}

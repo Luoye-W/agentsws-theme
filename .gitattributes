@@ -1,0 +1,4 @@
+# Build output — regenerate with `npm run build`, never edit by hand.
+assets/app.css linguist-generated=true -diff
+CATALOG.json linguist-generated=true
+CLASS_VOCAB.md linguist-generated=true

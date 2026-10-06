@@ -1,0 +1,112 @@
+{% doc %}
+  @description Map of one address from Google Maps (no API key needed), tinted standard, grey, muted or dark, at a set height (separate mobile height). Optional "load on click" shows a fallback image with a "Show map" button so nothing is loaded from Google before the visitor asks; optional "Open in Google Maps" link. Without an address it shows the fallback image.
+  Use when: a store location inside a Container, Group or Image with text — "Visit our showroom", contact pages, event venues. For a full-width map with an info card use the Map section.
+
+  @example
+  {% content_for 'block', type: 'map', id: 'map' %}
+{% enddoc %}
+{%- liquid
+  assign s = block.settings
+-%}
+<div
+  class="relative w-full overflow-hidden h-(--map-h-mobile) md:h-(--map-h){% if s.rounded %} rounded-media{% endif %}"
+  style="--map-h: {{ s.height }}px; --map-h-mobile: {{ s.height_mobile }}px;"
+  {{ block.shopify_attributes }}
+>
+  {%- render 'map-embed',
+    address: s.address,
+    zoom: s.zoom,
+    style: s.map_style,
+    image: s.image,
+    load_on_click: s.load_on_click,
+    show_link: s.show_link,
+    sizes: '(min-width: 990px) 50vw, 100vw'
+  -%}
+</div>
+
+{% schema %}
+{
+  "name": "t:blocks.map.name",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "address",
+      "label": "t:blocks.map.settings.address.label",
+      "info": "t:blocks.map.settings.address.info",
+      "default": "151 O'Connor St, Ottawa, ON, Canada"
+    },
+    {
+      "type": "range",
+      "id": "zoom",
+      "label": "t:blocks.map.settings.zoom.label",
+      "min": 3,
+      "max": 20,
+      "step": 1,
+      "default": 15
+    },
+    {
+      "type": "select",
+      "id": "map_style",
+      "label": "t:blocks.map.settings.map_style.label",
+      "options": [
+        { "value": "standard", "label": "t:blocks.map.settings.map_style.options.standard" },
+        { "value": "grey", "label": "t:blocks.map.settings.map_style.options.grey" },
+        { "value": "muted", "label": "t:blocks.map.settings.map_style.options.muted" },
+        { "value": "dark", "label": "t:blocks.map.settings.map_style.options.dark" }
+      ],
+      "default": "standard"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:blocks.map.settings.image.label",
+      "info": "t:blocks.map.settings.image.info"
+    },
+    {
+      "type": "checkbox",
+      "id": "load_on_click",
+      "label": "t:blocks.map.settings.load_on_click.label",
+      "info": "t:blocks.map.settings.load_on_click.info",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_link",
+      "label": "t:blocks.map.settings.show_link.label",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "height",
+      "label": "t:blocks.map.settings.height.label",
+      "min": 200,
+      "max": 900,
+      "step": 10,
+      "unit": "px",
+      "default": 450
+    },
+    {
+      "type": "range",
+      "id": "height_mobile",
+      "label": "t:blocks.map.settings.height_mobile.label",
+      "min": 200,
+      "max": 700,
+      "step": 10,
+      "unit": "px",
+      "default": 320
+    },
+    {
+      "type": "checkbox",
+      "id": "rounded",
+      "label": "t:blocks.map.settings.rounded.label",
+      "default": true
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:blocks.map.name"
+    }
+  ]
+}
+{% endschema %}

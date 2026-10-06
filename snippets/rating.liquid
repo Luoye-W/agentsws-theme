@@ -1,0 +1,26 @@
+{% doc %}
+  @description Star rating (0–5) drawn with two layers of stars clipped to the score, plus the review count. Screen readers hear "4.5 out of 5 stars, 12 reviews". Reads the standard Shopify reviews metafields that review apps fill.
+  Use when: product cards and product pages, when a reviews app provides product.metafields.reviews.rating.
+
+  @param {object} rating - The rating value (product.metafields.reviews.rating.value)
+  @param {number} [count] - Number of reviews
+
+  @example
+  {% render 'rating', rating: product.metafields.reviews.rating.value, count: product.metafields.reviews.rating_count.value %}
+{% enddoc %}
+{%- liquid
+  assign score = rating.rating | default: rating | plus: 0
+  assign scale_max = rating.scale_max | default: 5 | plus: 0
+  assign percent = score | times: 100.0 | divided_by: scale_max
+  assign score_text = score | round: 1
+-%}
+<div class="flex items-center gap-1.5 type-xs">
+  <span class="relative inline-block leading-none tracking-[0.1em] text-fg/20" aria-hidden="true">
+    ★★★★★
+    <span class="absolute inset-0 overflow-hidden whitespace-nowrap text-rating w-(--rating)" style="--rating: {{ percent }}%;">★★★★★</span>
+  </span>
+  <span class="sr-only">{{ 'products.rating.stars' | t: rating: score_text, max: scale_max }}</span>
+  {%- if count and count > 0 -%}
+    <span class="text-muted">({{ count }}<span class="sr-only"> {{ 'products.rating.reviews' | t: count: count }}</span>)</span>
+  {%- endif -%}
+</div>

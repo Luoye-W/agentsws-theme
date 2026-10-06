@@ -1,0 +1,66 @@
+{% doc %}
+  @description List items (<li>, icon + text) for a product's highlights read from a metafield. The metafield is a list of single line texts (or a multi-line text), one line per item written "icon: text", e.g. "truck: Ships in 24 hours". Icon names: check, truck, return, shield, lock, chat, star, globe, gift, leaf, clock, pin, ruler, info, bolt, battery, water, headphones, speaker, bluetooth; lines without a known icon get a check mark. Outputs nothing when the metafield is empty, so callers capture it and skip their wrapper when blank.
+  Use when: the "Product highlights" block (metafield mode) and product cards' spec icons row — one parser for both.
+
+  @param {object} product - The product
+  @param {string} [field] - Metafield "namespace.key", default "custom.highlights"
+  @param {number} [limit] - Maximum number of items, default 12
+  @param {string} [item_class] - Classes for each <li>, default 'flex items-start gap-3'
+  @param {string} [icon_class] - Classes for each icon, default 'mt-0.5 size-5 shrink-0'
+  @param {boolean} [icon_only] - Show only the icon and put the text in the tooltip and for screen readers (compact rows)
+
+  @example
+  {% capture items %}{% render 'highlight-items', product: product, limit: 3, item_class: 'flex items-center gap-1.5', icon_class: 'size-4 shrink-0' %}{% endcapture %}
+{% enddoc %}
+{%- liquid
+  assign known_icons = 'check,truck,return,shield,lock,chat,star,globe,gift,leaf,clock,pin,ruler,info,bolt,battery,water,headphones,speaker,bluetooth' | split: ','
+  assign field_path = field | default: 'custom.highlights' | strip
+  assign namespace = field_path | split: '.' | first
+  assign key = field_path | split: '.' | last
+  assign max_items = limit | default: 12
+  assign li_class = item_class | default: 'flex items-start gap-3'
+  assign svg_class = icon_class | default: 'mt-0.5 size-5 shrink-0'
+
+  assign items = nil
+  assign metafield = product.metafields[namespace][key]
+  if metafield.type contains 'list'
+    assign items = metafield.value
+  elsif metafield.value != blank
+    assign items = metafield.value | newline_to_br | split: '<br />'
+  endif
+-%}
+{%- if items != blank -%}
+  {%- assign shown = 0 -%}
+  {%- for item in items -%}
+    {%- liquid
+      if shown >= max_items
+        break
+      endif
+      assign line = item | strip
+      if line == blank
+        continue
+      endif
+      assign shown = shown | plus: 1
+      assign icon_name = 'check'
+      assign line_text = line
+      if line contains ':'
+        assign candidate = line | split: ':' | first | strip | downcase
+        if known_icons contains candidate
+          assign icon_name = candidate
+          assign line_text = line | split: ':' | slice: 1, 20 | join: ':' | strip
+        endif
+      endif
+    -%}
+    {%- if icon_only -%}
+      <li class="{{ li_class }}" title="{{ line_text | escape }}">
+        {%- render 'icon', name: icon_name, class: svg_class -%}
+        <span class="sr-only">{{ line_text | escape }}</span>
+      </li>
+    {%- else -%}
+      <li class="{{ li_class }}">
+        {%- render 'icon', name: icon_name, class: svg_class -%}
+        <span class="min-w-0">{{ line_text | escape }}</span>
+      </li>
+    {%- endif -%}
+  {%- endfor -%}
+{%- endif -%}
