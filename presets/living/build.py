@@ -1,4 +1,4 @@
-"""Generates the Inova demo preset (furniture & lighting). Run: python3 presets/inova/build.py
+"""Generates the Living demo preset (furniture & lighting). Run: python3 presets/living/build.py
 Demo content uses Shopify mock.shop catalogs (Haven & Hearth, Lumina Form Collective) imported into the demo store."""
 import json, pathlib
 HERE = pathlib.Path(__file__).parent
@@ -43,7 +43,7 @@ S["bundle"] = section("bundle-builder", {"eyebrow": "Mix and match", "heading": 
 S["featured"] = section("featured-product", {"product": "ash-hardwood-dining-chair-with-linea-silhouette", "gallery_layout": "slider", "thumbnail_position": "start", "media_width": "large", "badge_text": "Featured piece • Featured piece • ", "badge_icon": "sparkle", "enable_zoom": True, "show_details_link": True, "padding_top": 72, "padding_bottom": 72}, [
     ("title", blk("product-title", {"size": "h2", "show_vendor": True})), ("rating", blk("product-rating", {"anchor": ""})), ("price", blk("product-price", {"show_tax_note": False})),
     ("picker", blk("product-variant-picker", {"style": "buttons", "swatches": True})), ("buy", blk("product-buy-buttons", {"show_quantity": True, "show_dynamic_checkout": False}))])
-S["arrivals"] = section("featured-collection", {"heading": "New arrivals", "text": "<p>Explore pieces for living, dining and working, from Shopify's sample furniture and lighting catalogs.</p>", "collection": "demo-inova-all", "products_to_show": 10, "columns_desktop": 4, "layout": "carousel", "mobile_layout": "slider", "show_view_all": False, "padding_top": 72, "padding_bottom": 72})
+S["arrivals"] = section("featured-collection", {"heading": "New arrivals", "text": "<p>Explore pieces for living, dining and working, from Shopify's sample furniture and lighting catalogs.</p>", "collection": "demo-living-all", "products_to_show": 10, "columns_desktop": 4, "layout": "carousel", "mobile_layout": "slider", "show_view_all": False, "padding_top": 72, "padding_bottom": 72})
 S["about"] = section("image-with-text", {"image": img("a2fbe9e4-851b-4354-bd1d-cd6008fc8936.png"), "image_position": "start", "image_width": "half", "image_ratio": "portrait", "image_style": "overlap", "second_image": img("4bf3aed8-d59c-46db-bb85-efb8d8c65015.png"), "image_rotation": 4, "color_scheme": "scheme-2", "padding_top": 96, "padding_bottom": 96}, [
     ("e", heading("About us", "eyebrow", "p")), ("h", heading("Modern design, timeless aesthetics, meticulous craftsmanship.", "h2", "h2")), ("b", button("More about us", "shopify://pages/contact"))])
 S["services"] = section("multicolumn", {"heading": "", "columns": 4, "columns_mobile": "2", "mobile_layout": "stack", "card_style": "filled", "icon_position": "start", "icon_size": 28, "padding_top": 56, "padding_bottom": 56}, [
@@ -72,7 +72,7 @@ overlay["sections"]["floating_bar"].update({"disabled": False, "settings": {**ov
 # Collection page (reference: plain header + breadcrumb, subcollection tabs, sidebar filters, 2x2 promo tile, dark story banner, services)
 C = {}
 C["main"] = section("main-collection", {"header_style": "plain", "show_breadcrumb": True, "show_description": False, "heading_size": "display", "header_alignment": "start",
-    "subcollection_source": "list", "subcollections": ["demo-inova-all", "quiet-living-spaces", "the-communal-hearth", "luminous-intervals", "sculptural-foundations"],
+    "subcollection_source": "list", "subcollections": ["demo-living-all", "quiet-living-spaces", "the-communal-hearth", "luminous-intervals", "sculptural-foundations"],
     "subcollection_style": "tabs", "subcollection_placement": "toolbar", "subcollection_show_count": True, "products_per_page": 12, "columns_desktop": 3, "columns_mobile": "2",
     "pagination": "load_more", "card_quick_add": True, "enable_filters": True, "filter_layout": "sidebar", "enable_sorting": True, "padding_top": 32, "padding_bottom": 96}, [
     ("promo", blk("promo", {"position": 5, "column_span": "2", "row_span": "2", "image": img("4abef0c7-ac75-481b-afbd-41096b7f0f0f.png"), "overlay_opacity": 30,
@@ -86,13 +86,13 @@ C["services"] = S["services"]
 
 
 header = {"type": "header", "name": "t:sections.groups.header", "sections": {
-    "header": section("header", {"menu": "demo-inova-main", "layout": "logo_center_menu_left", "sticky_mode": "scroll_up", "open_on": "hover", "border": False, "show_country_selector": True})},
+    "header": section("header", {"menu": "demo-living-main", "layout": "logo_center_menu_left", "sticky_mode": "scroll_up", "open_on": "hover", "border": False, "show_country_selector": True})},
     "order": ["header"]}
 (HERE / "sections").mkdir(exist_ok=True)
 (HERE / "sections/header-group.json").write_text(json.dumps(header, indent=2) + "\n")
 footer = {"type": "footer", "name": "t:sections.groups.footer", "sections": {"footer": section("footer", {"color_scheme": "scheme-4", "show_payment_icons": True, "show_policy_links": True}, [
     ("signup", blk("email-signup", {"heading": "Join our newsletter", "button_style": "arrow", "consent": "You can unsubscribe at any time."})),
-    ("shop", blk("menu", {"heading": "Shop", "menu": "demo-inova-main"})),
+    ("shop", blk("menu", {"heading": "Shop", "menu": "demo-living-main"})),
     ("help", blk("menu", {"heading": "Help", "menu": "footer"})),
     ("social", blk("social-links", {"heading": "Follow us"}))])}, "order": ["footer"]}
 (HERE / "sections/footer-group.json").write_text(json.dumps(footer, indent=2) + "\n")
@@ -112,7 +112,7 @@ settings = {"color_schemes": {k: {"settings": v} for k, v in schemes.items()},
     "social_instagram": "https://instagram.com/shopify", "social_facebook": "https://facebook.com/shopify", "social_pinterest": "https://pinterest.com/shopify", "social_x": "https://x.com/shopify"}
 (HERE / "config").mkdir(exist_ok=True)
 (HERE / "config/settings_data.json").write_text(json.dumps({"current": settings}, indent=2) + "\n")
-print("inova preset written")
+print("living preset written")
 
 # Product page: the template is kept as JSON beside this script (long block lists read better that way)
 (HERE / "templates/product.json").write_text((HERE / "product.template.json").read_text())

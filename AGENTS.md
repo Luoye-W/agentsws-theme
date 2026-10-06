@@ -27,9 +27,8 @@ Before writing code, state which rung you chose and why the lower rungs are not 
    Core files are overwritten on upgrade; `npm run verify` fails when they change in a store repo.
 2. **Never publish.** Push only to a development/unpublished theme. A human publishes.
 3. **Run `npm run verify` and fix everything** before handing off. Do not weaken or skip checks.
-4. **Clean room.** Never read, copy or paraphrase code, schema, class names or assets from other themes
-   (paid themes such as Concept, or Shopify's Dawn/Horizon/Skeleton). You may look at other storefronts in a
-   browser to understand *behavior*, never their source.
+4. **Original code.** All code in this repo is written from scratch. Don't copy or paraphrase code, schema, class names
+   or assets from other themes.
 5. **No fake urgency.** Countdowns need a real end date; stock messages need real inventory.
 6. **Translations.** Every storefront string uses `{{ 'key' | t }}` (`locales/en.default.json`).
    Every schema label uses `t:` keys present in **both** `locales/en.default.schema.json` and `locales/zh-CN.schema.json`.

@@ -409,7 +409,7 @@
       "settings": {
         "heading": "New arrivals",
         "text": "<p>Explore pieces for living, dining and working, from Shopify's sample furniture and lighting catalogs.</p>",
-        "collection": "demo-inova-all",
+        "collection": "demo-living-all",
         "products_to_show": 10,
         "columns_desktop": 4,
         "layout": "carousel",

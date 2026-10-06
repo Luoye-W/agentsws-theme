@@ -5,7 +5,7 @@
     "header": {
       "type": "header",
       "settings": {
-        "menu": "demo-inova-main",
+        "menu": "demo-living-main",
         "layout": "logo_center_menu_left",
         "sticky_mode": "scroll_up",
         "open_on": "hover",

@@ -2,6 +2,36 @@
 
 ## Unreleased
 
+- **Home & content sections:** `featured-product` (rotating badge), `bundle-builder` (pick N, sticky summary; no discounts
+  applied by the theme), `shop-the-feed`, `people-cards` (drawer or profile link, stagger layout), `floating-bar` (overlay
+  group, all pages or home only), `scroll-reveal-text`, `inline-image-text` (`[image1]` tokens), `scroll-story` (sticky
+  media + steps), `anchor-nav` (scroll spy), `tech-specs` (accordion groups from text or metafields + "in the box"),
+  `map` section/block (Google Maps embed from an address, load on click), `contact-detail` block. Slideshow peek layout;
+  transparent header over slideshow, video and reveal sections; image-with-text overlap and card layouts; testimonials
+  scattered and banner; blog-posts lead list; collection-list tiles; collage subtitles; scrolling-images tilt and twin rows;
+  hero inset; timeline split cards; FAQ group cards, jump links and a contact-form panel; "squiggle" heading highlight.
+- **Collection & search:** header styles (plain / banner / split) with breadcrumbs (JSON-LD), subcollection tabs with
+  counts, filter layouts (sidebar / drawer / horizontal), in-grid promo tiles, pagination numbers / load more / infinite,
+  column switch; search result-type tabs and suggestions.
+- **Product:** gallery layouts incl. featured column, media width as a percentage (`media_width: custom` +
+  `media_width_percent`), ratios incl. "first image" and wide, zoom lightbox / hover / none, mobile peek and dots /
+  thumbnails / counter, sticky info toggle, alt-text tags for colour-specific media (`#color:black`), below-media blocks
+  (`product-spec-tiles`), `product-vendor`, `product-share`, title with inline price, price on the add-to-cart button,
+  image swatches, add-ons card. Note: `media_ratio: natural` now means "each image its own shape" ("first" is the old
+  behaviour); phones show dots by default.
+- **Swatches:** sources in order: variant image (picture mode), Shopify option-value swatch, `swatch_map` (hex, a file
+  from Content → Files, or an image URL), the value name as a colour, then a letter. New settings `swatch_option_names`,
+  `swatch_image_preview`, `card_swatch_type`.
+- **Cards:** spec icons row and rating chip (per section), sale countdown pill from a real date metafield
+  (`card_countdown`), "Sold out" badge position.
+- **Blog, article, cart, collections list:** blog collage layout and mobile tag dropdown; article table of contents,
+  reading progress, author box, prev/next; cart discount codes, gift wrap, shipping estimator, recommendations, notes;
+  collections-list tile / overlay cards.
+- **Tooling:** `npm run demo -- <preset> --sync` (code first, JSON after, never deletes); upstream `verify` fails on a
+  stale `scripts/core-manifest.json`; lint `template-settings` and `single-content-for-blocks`.
+- **Fixes:** hidden screen-reader labels no longer widen the page inside scrolling rows; word spacing kept in generated
+  word spans; quick add for products with a single named variant in cart recommendations.
+
 - **Fix: sections that read their child blocks' settings.** For theme blocks, Liquid's `section.blocks` only has `id` and
   `type` (`"@theme"`), so these silently read nothing. Converted to section-local blocks (settings kept, template/preset
   `type` values renamed): `lookbook` `_hotspot` → `hotspot` (product list works again), `featured-collections-tabs`
@@ -13,7 +43,7 @@
   "Adapt to image" slideshow height comes from the first slide itself.
 - Lint rule `theme-block-settings` flags reading `.settings` / `.type` of theme blocks through `section.blocks`.
 
-## 0.8.0 — batches 5–8: feature parity with the reference spec (built clean-room from a functional spec)
+## 0.8.0 — batches 5–8: chrome, product, media, content and pages
 
 - **Chrome (5):** header layouts (logo left/center, menu left/center/split/drawer), sticky modes incl. hide-on-scroll, transparent
   header over a hero, hover/click dropdowns, mega-menu promos (`_mega-menu`), accordion or sliding mobile menu; announcement bar
@@ -35,7 +65,7 @@
   (Esc never confirms), `cookie-banner` (Customer Privacy API, never blocks scrolling).
 - `verify` now catches Theme Check errors reported as `"error"` strings.
 
-## 0.4.0 — batch 4: theme settings parity (and beyond)
+## 0.4.0 — batch 4: theme settings
 
 - **Color schemes** (Shopify `color_scheme_group`, gradient backgrounds) replace the single palette; every section/group picks a
   `color_scheme`; page and drawer schemes are global settings. Store repos: run `node scripts/migrate-color-schemes.mjs` once.

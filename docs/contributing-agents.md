@@ -3,10 +3,9 @@
 For agents building **core** features in this repository (repoRole `upstream`), usually in parallel git worktrees.
 Store repos follow AGENTS.md only (custom- files). Everything in AGENTS.md applies here too.
 
-## Clean room (hard rule)
-- The only description of reference-theme behaviour is a functional spec written in your own words (kept in the store
-  repo, e.g. `docs/reference-theme-spec.md`) and screenshots of public storefronts.
-- Never open or read another theme's source (Concept, Dawn, Horizon, …) — not locally, not online.
+## Original code (hard rule)
+- All code is written from scratch in this repo. Don't copy code, schema, class names or assets from other themes.
+- Describe the behaviour you are building in your own words (task brief, issue) and build from that description.
 
 ## Conventions
 - Core file names have no `custom-` prefix; private child blocks start with `_`.
