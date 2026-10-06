@@ -30,7 +30,7 @@ Store repos follow AGENTS.md only (custom- files). Everything in AGENTS.md appli
 - No fake content: neutral placeholders, no invented reviews/ratings/stock/deadlines.
 
 ## Worktree tooling
-- `ln -s /Users/yeluo/Documents/agentsws-theme/node_modules node_modules` (ignored by git).
+- `ln -s <path-to-your-main-checkout>/node_modules node_modules` (ignored by git).
 - Theme Check in a worktree under `.claude/` may report `scripts/scaffold/*` (ignore paths don't match there); judge by
   offenses outside `scripts/`, or run verify on a copy outside `.claude/`.
 - `npm run build && npm run verify` must pass. Preview visually with `npm run demo -- <preset> --dev` when a store login exists.
