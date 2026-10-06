@@ -50,6 +50,14 @@ step('CATALOG.json up to date', 'npm run build:catalog', () => {
   return { ok: r.code === 0, detail: r.code ? r.out : '' };
 });
 
+// Store repos compare core files against this manifest, so a stale one makes every store's verify fail after an upgrade.
+if ((JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).agentsws?.repoRole ?? 'upstream') === 'upstream') {
+  step('core manifest up to date (upstream)', 'npm run core:manifest', () => {
+    const r = run(process.execPath, ['scripts/core-manifest.mjs', '--check']);
+    return { ok: r.code === 0, detail: r.code ? r.out : '' };
+  });
+}
+
 step('theme rules (lint)', 'Follow the "fix" line of each finding.', () => {
   const r = run(process.execPath, ['scripts/lint.mjs', '--json']);
   const data = JSON.parse(r.stdout);
