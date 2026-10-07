@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.9.1 — release metadata fix
 
 - **Fix:** v0.9.0 shipped a stale `CATALOG.json` and `scripts/core-manifest.json` (the version bump changed
   `config/settings_schema.json`), so store repos flagged `settings_schema.json` as an edited core file after upgrading.
