@@ -39,6 +39,10 @@ Store repos follow AGENTS.md only (custom- files). Everything in AGENTS.md appli
 `CHANGELOG.md`, `README.md`, `package.json`, `config/settings_data.json`, `scripts/*` (unless your task says so), `src/*`,
 and generated files (`assets/app.css`, `CATALOG.json`, `CLASS_VOCAB.md`, `scripts/core-manifest.json`).
 
+## Releasing (maintainers)
+Run `npm run release -- <x.y.z> "<title>"` (never bump versions by hand: the core manifest and CATALOG.json record them),
+review the diff, commit `release: v<x.y.z>`, then tag and push.
+
 ## Report back
 Files added/changed/deleted, every new setting id, template/preset changes, new events, what was deferred and why, risks,
 branch name and last commit hash.

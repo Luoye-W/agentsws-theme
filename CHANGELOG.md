@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **Fix:** v0.9.0 shipped a stale `CATALOG.json` and `scripts/core-manifest.json` (the version bump changed
+  `config/settings_schema.json`), so store repos flagged `settings_schema.json` as an edited core file after upgrading.
+  Both regenerated.
+- `npm run release -- <x.y.z> "<title>"`: sets the version in `package.json` and `theme_version`, renames
+  "## Unreleased", regenerates `CATALOG.json` and the core manifest, then runs verify. It never commits, tags or pushes.
+
 ## 0.9.0 — sections, collection, product, swatches, cards, blog & cart, tooling
 
 - **Home & content sections:** `featured-product` (rotating badge), `bundle-builder` (pick N, sticky summary; no discounts

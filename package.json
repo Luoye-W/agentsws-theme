@@ -35,6 +35,7 @@
     "verify:preview": "node scripts/verify.mjs --preview",
     "core:manifest": "node scripts/core-manifest.mjs",
     "settings": "node scripts/settings.mjs",
-    "demo": "node scripts/demo.mjs"
+    "demo": "node scripts/demo.mjs",
+    "release": "node scripts/release.mjs"
   }
 }
