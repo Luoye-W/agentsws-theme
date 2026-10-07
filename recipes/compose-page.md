@@ -1,6 +1,6 @@
 # Compose page content from existing blocks (L2)
 
-Use the core **container** section and existing blocks (`heading`, `text`, `button`, `image`, `group`, `spacer`, app blocks, any `custom-` blocks). Check `CATALOG.json` for everything available.
+Use the core **container** section and existing blocks (`heading`, `text`, `button`, `image`, `group`, `spacer`, app blocks, any `custom-` blocks). Check `CATALOG.index.json` for everything available (full settings per entry in `CATALOG.json`).
 
 ## Homepage or existing page
 

@@ -37,7 +37,7 @@ Store repos follow AGENTS.md only (custom- files). Everything in AGENTS.md appli
 
 ## Files only the merger edits
 `CHANGELOG.md`, `README.md`, `package.json`, `config/settings_data.json`, `scripts/*` (unless your task says so), `src/*`,
-and generated files (`assets/app.css`, `CATALOG.json`, `CLASS_VOCAB.md`, `scripts/core-manifest.json`).
+and generated files (`assets/app.css`, `CATALOG.json`, `CATALOG.index.json`, `CLASS_VOCAB.md`, `scripts/core-manifest.json`).
 
 ## Releasing (maintainers)
 Run `npm run release -- <x.y.z> "<title>"` (never bump versions by hand: the core manifest and CATALOG.json record them),

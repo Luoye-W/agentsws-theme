@@ -45,7 +45,7 @@ step('assets/app.css matches sources', 'npm run build:css', () => {
   return { ok: fresh === committed, detail: fresh === committed ? '' : 'assets/app.css is stale (new or removed classes).' };
 });
 
-step('CATALOG.json up to date', 'npm run build:catalog', () => {
+step('CATALOG.json + CATALOG.index.json up to date', 'npm run build:catalog', () => {
   const r = run(process.execPath, ['scripts/build-catalog.mjs', '--check']);
   return { ok: r.code === 0, detail: r.code ? r.out : '' };
 });

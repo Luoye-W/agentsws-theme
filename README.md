@@ -14,7 +14,8 @@ operator (plain language) → AI agent → custom- files in this repo → previe
 ```
 
 - **`AGENTS.md`** — the rules an agent follows: change ladder (settings → data → compose → extend), naming, CSS/JS conventions, hand-off format.
-- **`CATALOG.json`** — generated index of every section, block and snippet with purpose, "use when", settings and dependencies.
+- **`CATALOG.index.json`** — generated one-line-per-entry table of contents (id, file, "use when", setting count); agents read it first.
+- **`CATALOG.json`** — generated full index of every section, block and snippet with purpose, "use when", settings and dependencies.
 - **`recipes/`** — step-by-step handling of common requests.
 - **`npm run new`** — scaffolds upgrade-safe `custom-` blocks and sections with docs and translations.
 - **`npm run verify`** — the gate: Theme Check, Tailwind freshness, catalog, theme-specific lint; `verify:preview` adds screenshots and an accessibility scan on a development theme.

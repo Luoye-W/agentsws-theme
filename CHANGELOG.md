@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **`CATALOG.index.json`** (generated with `CATALOG.json` by `npm run build:catalog`): a ~40 KB table of contents, one
+  line per section / block / snippet (id, kind, file, name, when to use it, number of settings) plus theme-setting ids by
+  group. `CATALOG.json` (~500 KB) is too large for an agent to read in one go; AGENTS.md now says read the index first and
+  look up full entries by id.
+
 ## 0.9.1 — release metadata fix
 
 - **Fix:** v0.9.0 shipped a stale `CATALOG.json` and `scripts/core-manifest.json` (the version bump changed

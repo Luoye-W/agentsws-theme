@@ -4,7 +4,9 @@ You are an AI agent customizing **agentsws-theme**, a Shopify theme (Liquid + th
 The person asking for changes is usually a store operator who does not read code. Your job: make the change
 safely, prove it works, and hand back something they can judge by looking at it.
 
-**Read in this order:** this file → `CATALOG.json` (what already exists) → `recipes/README.md` (how to do common requests).
+**Read in this order:** this file → `CATALOG.index.json` (what already exists — one line per section, block and snippet, ~40 KB)
+→ `recipes/README.md` (how to do common requests). Look up only the entries you need in `CATALOG.json` (full settings,
+blocks, params, examples — too large to read whole) or run `npm run settings -- list`.
 Do not browse the whole repo first.
 
 ---
@@ -56,13 +58,13 @@ scripts/    build, catalog, lint, verify, scaffold — repo tooling, not uploade
 | `oss-` | open-source edition only | removed from Theme Store packages; place only via JSON, never `render` them |
 | `_` | private block | hidden from the editor picker; must be referenced explicitly |
 
-Generated files — never edit by hand: `assets/app.css`, `CATALOG.json`, `CLASS_VOCAB.md`, `scripts/core-manifest.json`.
+Generated files — never edit by hand: `assets/app.css`, `CATALOG.json`, `CATALOG.index.json`, `CLASS_VOCAB.md`, `scripts/core-manifest.json`.
 
 ## 4. Liquid rules
 
 - Blocks and snippets start with `{% doc %}` containing `@description`, `@param` for every argument and an `@example`. Blocks also need a `Use when:` line (optional for snippets).
   Sections cannot use `{% doc %}`: start them with `{% comment %} @description … Use when: … {% endcomment %}`.
-  This text becomes `CATALOG.json`, which is how the next agent finds your work.
+  This text becomes `CATALOG.json` and `CATALOG.index.json`, which is how the next agent finds your work.
 - Theme blocks use `"tag": null` and put `{{ block.shopify_attributes }}` on their root element.
 - Sections that hold content accept `{ "type": "@theme" }` and `{ "type": "@app" }` blocks.
 - **A section cannot read its theme blocks' settings.** For theme blocks (`@theme`, private `_name`) `section.blocks` only has
@@ -110,7 +112,7 @@ Generated files — never edit by hand: `assets/app.css`, `CATALOG.json`, `CLASS
 npm install                 # once
 npm run dev                 # Tailwind watch + shopify theme dev (hot reload on a dev theme)
 npm run new -- block <name> --description "…" --use-when "…"    # scaffold (adds custom- prefix, translations, catalog)
-npm run build               # vocab docs + app.css + CATALOG.json
+npm run build               # vocab docs + app.css + CATALOG.json + CATALOG.index.json
 npm run settings -- list    # read / validate / change theme and section settings (see recipes/change-style.md)
 npm run verify              # static gate: vocab, css freshness, catalog, lint, Theme Check
 npm run verify:preview      # + push to development theme, screenshots (mobile/desktop), accessibility scan
@@ -139,7 +141,7 @@ Scaffolded files contain placeholder settings (`heading`, `text`) and English la
 | `remote-asset` | Scripts/styles only from Shopify's CDN |
 | `core-protected` | Core edits (theme files and `src/`) are lost on upgrade (error when `package.json` → `agentsws.repoRole` is `store`) |
 | `no-minified-assets`, `css-budget` (30 KB gzipped), `block-limit` (300) | Theme Store / platform limits |
-| stale `assets/app.css`, `CATALOG.json`, `CLASS_VOCAB.md` | Generated files must match sources |
+| stale `assets/app.css`, `CATALOG.json`, `CATALOG.index.json`, `CLASS_VOCAB.md` | Generated files must match sources |
 | Shopify Theme Check (errors) | Syntax, schema, translations, missing blocks/assets |
 
 ## 9. Hand-off message (write it in the operator's language)
