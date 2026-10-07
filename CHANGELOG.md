@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.9.0 — sections, collection, product, swatches, cards, blog & cart, tooling
 
 - **Home & content sections:** `featured-product` (rotating badge), `bundle-builder` (pick N, sticky summary; no discounts
   applied by the theme), `shop-the-feed`, `people-cards` (drawer or profile link, stagger layout), `floating-bar` (overlay
