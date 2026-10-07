@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.9.2 — slim catalog index for agents
 
 - **`CATALOG.index.json`** (generated with `CATALOG.json` by `npm run build:catalog`): a ~40 KB table of contents, one
   line per section / block / snippet (id, kind, file, name, when to use it, number of settings) plus theme-setting ids by
